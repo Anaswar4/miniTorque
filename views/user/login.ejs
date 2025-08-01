@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - miniTorque</title>
+   <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link href="/css/login.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="row w-100 justify-content-center">
+      <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-4">
+        <div class="login-container">
+          <div class="logo-section text-center mb-4">
+            <div class="logo">miniTorque</div>
+            <div class="tagline">Premium Diecast Collection</div>
+          </div>
+
+          <!-- Server-side error -->
+          <% if (error) { %>
+            <div class="alert alert-danger text-center"><%= error %></div>
+          <% } %>
+
+          <!-- Login Form -->
+          <form id="loginForm" action="/login" method="POST" novalidate>
+            
+            <!-- Email Field -->
+            <div class="mb-3">
+              <label for="email" class="form-label">
+                <i class="fas fa-envelope me-2"></i>Email Address
+              </label>
+              <input
+                type="email"
+                class="form-control custom-input"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                autocomplete="email"
+                required
+              />
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+              <label for="password" class="form-label">
+                <i class="fas fa-lock me-2"></i>Password
+              </label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  class="form-control custom-input"
+                  id="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  class="btn btn-outline-secondary toggle-password"
+                  type="button"
+                  id="togglePassword"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="invalid-feedback">Password must be at least 8 characters long.</div>
+            </div>
+
+            <!-- Forgot Password -->
+            <div class="mb-4 text-end">
+              <a href="/forgot-password" class="forgot-password">Forgot Password?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn login-btn w-100 mb-3">
+              <span class="btn-text">Sign In</span>
+              <span class="btn-loading d-none">
+                <i class="fas fa-spinner fa-spin me-2"></i>Signing In...
+              </span>
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="divider my-4"><span class="px-3">or</span></div>
+
+          <!-- google Login -->
+          <div class="mb-4">
+      <a href="/auth/google" class="btn btn-outline-primary w-100 social-btn">
+        <i class="fab fa-google me-2"></i> Continue with Google
+      </a>
+    </div>
+
+          <!-- Sign Up Link -->
+          <div class="signup-link text-center">
+            Don't have an account? <a href="/signup">Sign up now</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

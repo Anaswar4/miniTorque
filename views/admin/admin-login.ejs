@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login - miniTorque</title>
+  <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet"/>
+  
+  <!-- Remix Icon -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/admin-login.css">
+
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+  <div class="container">
+    <div class="login-container mx-auto bg-white p-4 p-md-5">
+      <div class="text-center mb-4">
+        <h1 class="admin-logo">miniTorque</h1>
+        <p class="text-muted fw-semibold">ADMIN DASHBOARD</p>
+      </div>
+
+      <form id="adminLogin" method="POST">
+        
+        <div class="mb-3">
+          <label for="email" class="form-label"><i class="ri-mail-line me-1"></i>Email Address</label>
+          <input type="email" name="email" id="email" class="form-control" placeholder="Enter your email"/>
+          <div id="emailError" class="text-danger small mt-1"></div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label"><i class="ri-lock-2-line me-1"></i>Password</label>
+          <div class="input-group">
+            <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password"/>
+            <button type="button" class="btn btn-outline-secondary toggle-password">
+              <i class="ri-eye-off-line"></i>
+            </button>
+          </div>
+          <div id="passwordError" class="text-danger small mt-1"></div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-3">
+          <a href="/admin/forgot-password" class="text-decoration-none text-dark small">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-danger w-100 mb-3">LOGIN TO ADMIN</button>
+
+        <div class="admin-notify text-center mt-3">
+          <i class="ri-shield-check-line me-1"></i> This portal is for authorized administrators only
+        </div>
+        <div class="text-center mt-3">
+            <p class="small text-muted mb-0">
+                Need customer access?
+            <a href="/login" class="text-decoration-none fw-medium">Customer Login</a>
+            </p>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+      // Password toggle functionality
+      document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+          const input = this.previousElementSibling;
+          const icon = this.querySelector('i');
+
+          if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+          } else {
+            input.type = 'password';
+            icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+          }
+        });
+      });
+
+      document
+        .getElementById("adminLogin")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value.trim();
+
+          document.getElementById("emailError").textContent = "";
+          document.getElementById("passwordError").textContent = "";
+
+          let isValid = true;
+
+          if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+            document.getElementById("emailError").textContent =
+              "Valid email is required.";
+            isValid = false;
+          }
+
+          if (!password || password.length < 6) {
+            document.getElementById("passwordError").textContent =
+              "Password must be at least 8 characters.";
+            isValid = false;
+          }
+
+          if (isValid) {
+            try {
+              const response = await fetch("/admin/admin-login", { 
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  email,
+                  password,
+                }),
+              });
+
+              const result = await response.json();
+              if (result.success) {
+                Swal.fire({
+                  icon: "success",
+                  title: "Admin Login Successful",
+                  text: result.message || 'Welcome to miniTorque Admin',
+                  confirmButtonText: "Go to Dashboard",
+                })
+                 .then(() => {
+                  window.location.href = "/admin/admin-dashboard";
+                });
+              } else {
+                Swal.fire({
+                  icon: "error",
+                  title: "Admin Login Error",
+                  text: result.message || "Invalid credentials or insufficient permissions",
+                });
+              }
+            } catch (error) {
+              console.log("Admin login error", error);
+              Swal.fire({
+                icon: "error",
+                title: "Server Error",
+                text: "Server not responding. Try again later.",
+              });
+            }
+          }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+/* === miniTorque Login Page Styles === */
+
+/* Variables */
+:root {
+  --red: #e60023;
+  --red-dark: #b3001b;
+  --text-dark: #222;
+  --text-muted: #555;
+  --white: #ffffff;
+  --input-border: rgba(0, 0, 0, 0.1);
+  --input-focus: rgba(230, 0, 35, 0.4);
+}
+
+/* General */
+body {
+  background-color: var(--white);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Background animation (optional) */
+.bg-elements {
+  display: none; /* Or keep it minimal if needed */
+}
+
+/* Login container */
+.login-container {
+  background-color: var(--white);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo section */
+.logo {
+  font-size: 2.8rem;
+  font-weight: bold;
+  color: var(--red);
+  
+  letter-spacing: -1px;
+}
+
+.tagline {
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Form Inputs */
+.custom-input {
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background-color: var(--white);
+  color: var(--text-dark);
+}
+
+.custom-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 0.25rem var(--input-focus);
+}
+
+/* Toggle Password */
+.toggle-password {
+  border: 1px solid var(--input-border);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  background-color: var(--white);
+  color: var(--text-muted);
+}
+
+.toggle-password:hover {
+  color: var(--red);
+  background-color: #f9f9f9;
+  border-color: var(--red);
+}
+
+/* Forgot password */
+.forgot-password {
+  color: var(--red);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+/* Sign In Button */
+.login-btn {
+  background-color: var(--red);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-btn:hover {
+  background-color: var(--red-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(230, 0, 35, 0.2);
+}
+
+/* Divider */
+.divider {
+  text-align: center;
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  background-color: #ccc;
+}
+
+.divider::before {
+  left: 0;
+}
+.divider::after {
+  right: 0;
+}
+
+.divider span {
+  background-color: var(--white);
+  padding: 0 10px;
+  color: #777;
+  font-size: 0.85rem;
+}
+
+/* Google / Social Button */
+.social-btn {
+  border: 1px solid var(--text-dark);
+  color: var(--text-dark);
+  font-weight: 500;
+  padding: 0.6rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  background-color: var(--white);
+}
+
+.social-btn:hover {
+  background-color: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+
+/* Signup link */
+.signup-link {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.signup-link a {
+  color: var(--red);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+
+/* Invalid inputs */
+.is-invalid {
+  border-color: var(--red);
+  box-shadow: 0 0 0 0.2rem rgba(230, 0, 35, 0.25);
+}
+
+.invalid-feedback {
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .login-container {
+    padding: 2rem 1.25rem;
+  }
+  .logo {
+    font-size: 2.3rem;
+  }
+}

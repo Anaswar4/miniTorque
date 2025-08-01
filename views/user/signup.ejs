@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/css/signup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-header">
+            <h1 class="brand-name">miniTorque</h1>
+            <p class="signup-subtitle">Create account</p>
+        </div>
+        <div class="form-container">
+            <h2 class="form-title">Sign Up</h2>
+            <p class="form-description">Please fill in the details below to get started.</p>
+
+            <!-- ✅ Error Message Block -->
+            <% if (error) { %>
+                <div class="error-message" style="color: red; margin-bottom: 15px; text-align: center;">
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <form id="signupForm" class="signup-form" method="POST" action="/signup">
+
+                <div class="form-group">
+                    <label for="fullName" class="form-label"><i class="fas fa-user"></i> Full Name</label>
+                    <div class="input-container">
+                        <input type="text" id="fullName" name="fullName" class="form-control" placeholder=" " value="<%= formData.fullName || '' %>">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label"><i class="fas fa-envelope"></i> Email</label>
+                    <div class="input-container">
+                        <input type="email" id="email" name="email" class="form-control" placeholder=" " value="<%= formData.email || '' %>">
+                    </div>
+                </div>
+                
+                <div class="form-group password-container">
+                    <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+                    <div class="input-container">
+                        <input type="password" id="password" name="password" class="form-control" placeholder=" " aria-describedby="passwordRequirements">
+                        <button type="button" class="toggle-password" data-target="password" aria-label="Toggle password visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="password-strength" id="passwordRequirements">
+                        <div class="strength-bar"><div class="strength-fill"></div></div>
+                        <div class="strength-text">
+                            <span class="strength-label">Password Strength:</span> <span class="strength-value">Weak</span>
+                        </div>
+                        <div class="strength-requirements">
+                            <div class="requirement" id="length"><i class="fas fa-circle"></i> At least 8 characters</div>
+                            <div class="requirement" id="uppercase"><i class="fas fa-circle"></i> At least 1 uppercase letter</div>
+                            <div class="requirement" id="lowercase"><i class="fas fa-circle"></i> At least 1 lowercase letter</div>
+                            <div class="requirement" id="special"><i class="fas fa-circle"></i> At least 1 special character</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword" class="form-label"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <div class="input-container">
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder=" ">
+                        <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Toggle confirm password visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <span class="btn-text">Sign Up</span>
+                    <span class="btn-loading d-none"><span class="spinner-border" role="status"></span></span>
+                </button>
+            </form>
+
+            <div class="signup-footer">
+                <p>Already have an account? <a href="/login" class="login-link">Log in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/js/signup.js"></script>
+</body>
+</html>

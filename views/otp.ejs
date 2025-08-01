@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Otp</title>
+  <link rel="stylesheet" href="/css/otp.css">
+   <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+</head>
+<body>
+  <div class="container">
+    <div class="brand-name">miniTorque</div>
+    <div class="subtitle">VERIFY YOUR EMAIL</div>
+
+    <div class="form-title">Enter Verification Code</div>
+    <div class="form-description">
+      We've sent a 6-digit verification code to<br>
+      <span class="email-display" id="userEmail"><%= email %></span><br>
+      <div class="timer" id="timer" style="color: #ff4444; font-weight: 500;"></div>
+
+      <!-- ✅ New timer expired message -->
+      <div id="timerExpired" class="expired-message" style="display: none; color: #dc3545; font-weight: 500;">
+        OTP has expired. Please request a new code.
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="error-message" id="errorMessage" >
+        <%= error %>
+      </div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="success-message" id="successMessage" >
+        <%= success %>
+      </div>
+    <% } %>
+
+    <!-- ✅ New dynamic status message -->
+    <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+    <form id="otpForm">
+      <input type="hidden" name="email" id="userEmailInput" value="<%= email %>">
+
+      <div class="otp-container">
+        <% for (let i = 1; i <= 6; i++) { %>
+          <input type="tel" inputmode="numeric" pattern="\d{1}" class="otp-input" maxlength="1" name="digit<%= i %>" data-index="<%= i - 1 %>" autocomplete="off">
+        <% } %>
+      </div>
+
+      <button type="submit" class="verify-btn" id="verifyBtn">
+        <span class="btn-text">Verify OTP</span>
+        <span class="btn-loader" style="display: none;">Verifying...</span>
+      </button>
+    </form>
+
+    <div class="resend-section">
+      Didn't receive the code?
+      <a href="#" class="resend-link" id="resendLink">Resend Code</a>
+    </div>
+
+    <a href="/signup" class="back-link" id="backLink">← Back to Sign Up</a>
+  </div>
+
+  <script src="/js/otp.js"></script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<%- include("../partials/head") %>
+<style>
+/* ====== RESET ====== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* ====== CAROUSEL ====== */
+.carousel-container {
+    position: relative;
+    max-width: 1200px;
+    margin: 40px auto;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.carousel {
+    display: flex;
+    transition: transform 0.5s ease;
+}
+.carousel-slide {
+    min-width: 100%;
+    height: 500px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    position: relative;
+}
+.carousel-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+}
+.carousel-content {
+    position: relative;
+    z-index: 2;
+}
+.carousel-content h2 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+.carousel-content p {
+    font-size: 20px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.carousel-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+}
+.indicator {
+    pointer-events: auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.indicator.active {
+    background: #fff;
+    transform: scale(1.2);
+}
+@media (max-width: 768px) {
+    .carousel-slide { height: 300px; }
+    .carousel-content h2 { font-size: 32px; }
+}
+@media (max-width: 480px) {
+    .carousel-slide { height: 200px; }
+    .carousel-content h2 { font-size: 20px; }
+    .carousel-content p { font-size: 14px; }
+}
+
+/* ====== MAIN CONTENT ====== */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+.section-title {
+    text-align: center;
+    font-size: 42px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 50px;
+}
+@media (max-width: 768px) {
+    .main-content { padding: 40px 10px; }
+    .section-title { font-size: 32px; margin-bottom: 30px; }
+}
+@media (max-width: 480px) {
+    .section-title { font-size: 22px; }
+}
+
+/* ====== PRODUCT GRID - FIXED HOVER EFFECTS ====== */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-bottom: 80px;
+}
+.product-card {
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(220,53,69,0.15);
+}
+.product-image {
+    width: 100%;
+    height: 250px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+.product-card:hover .product-image {
+    transform: scale(1.05);
+}
+.wishlist-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    font-size: 18px;
+    color: #666;
+    z-index: 10;
+}
+.wishlist-btn:hover {
+    background: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+.wishlist-btn.active {
+    background: #dc3545;
+    color: #fff;
+}
+.product-info {
+    padding: 25px;
+    position: relative;
+    z-index: 5;
+}
+.product-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+    transition: color 0.3s ease;
+}
+.product-card:hover .product-title {
+    color: #dc3545;
+}
+.product-price {
+    font-size: 24px;
+    font-weight: bold;
+    color: #dc3545;
+    transition: transform 0.3s ease;
+}
+.product-card:hover .product-price {
+    transform: scale(1.05);
+}
+.add-to-cart-btn {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(50px);
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+    font-size: 14px;
+}
+.product-card:hover .add-to-cart-btn {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.add-to-cart-btn:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220,53,69,0.4);
+}
+@media (max-width: 768px) {
+    .products-grid { grid-template-columns: 1fr; }
+    .product-image { height: 200px; }
+    .product-card:hover {
+        transform: translateY(-5px);
+    }
+}
+
+/* ====== WHY CHOOSE SECTION ====== */
+.why-choose {
+    background: #fff;
+    padding: 80px 20px;
+    margin: 60px 0;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+.why-choose h2 {
+    text-align: center;
+    font-size: 42px;
+    margin-bottom: 60px;
+    color: #333;
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.feature-card {
+    text-align: center;
+    padding: 30px 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    transition: all 0.3s;
+}
+.feature-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.feature-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+.feature-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+.feature-description {
+    color: #666;
+    line-height: 1.6;
+}
+@media (max-width: 768px) {
+    .why-choose { padding: 60px 10px; margin: 40px 0; }
+    .features-grid { grid-template-columns: 1fr; }
+    .why-choose h2 { font-size: 32px; margin-bottom: 30px; }
+}
+@media (max-width: 480px) {
+    .why-choose { padding: 40px 10px; margin: 20px 0; }
+    .why-choose h2 { font-size: 22px; }
+}
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<!-- Carousel Banner -->
+<% if (slides && Array.isArray(slides) && slides.length > 0) { %>
+<div class="carousel-container">
+    <div class="carousel" id="carousel">
+        <% slides.forEach(slide => { %>
+            <div class="carousel-slide" style="background-image: url('<%= slide.image %>')">
+                <div class="carousel-content">
+                    <h2><%= slide.title %></h2>
+                    <p><%= slide.description %></p>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+    <div class="carousel-indicators">
+        <% slides.forEach((slide, index) => { %>
+            <div class="indicator <%= index === 0 ? 'active' : '' %>" data-slide="<%= index %>"></div>
+        <% }) %>
+    </div>
+</div>
+<% } else { %>
+    <p>No carousel slides available.</p>
+<% } %>
+
+<!-- Main Content -->
+<main class="main-content" id="collection">
+    <!-- Featured Products -->
+    <section>
+        <h2 class="section-title">Featured Products</h2>
+        <div class="products-grid">
+            <% if (products && Array.isArray(products) && products.length > 0) { %>
+                <% products.forEach(product => { %>
+                    <div class="product-card">
+                        <div class="product-image" style="background-image: url('<%= product.image %>')">
+                            <button class="wishlist-btn" onclick="toggleWishlist(this)">♡</button>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title"><%= product.title %></h3>
+                            <p class="product-price"><%= product.price %></p>
+                            <button class="add-to-cart-btn">Add to Cart</button>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>No products available.</p>
+            <% } %>
+        </div>
+    </section>
+</main>
+
+<!-- Why Choose Section -->
+<section class="why-choose" id="about">
+    <h2>Why Choose miniTorque?</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-face-grin-stars fa-shake"></i></div>
+            <h3 class="feature-title">Premium Quality</h3>
+            <p class="feature-description">Exceptional attention to detail with authentic paint schemes and precise engineering.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-car-burst fa-bounce"></i></div>
+            <h3 class="feature-title">Rare Collectibles</h3>
+            <p class="feature-description">Access exclusive limited editions from prestigious automotive brands.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fa-solid fa-truck-fast fa-flip"></i></div>
+            <h3 class="feature-title">Secure Shipping</h3>
+            <p class="feature-description">Carefully packaged and delivered safely with full insurance coverage.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<%- include("../partials/footer") %>
+
+<script src="/js/home.js"></script>
+</body>
+</html>
