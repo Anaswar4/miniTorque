@@ -1,272 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>miniTorque </title>
-    <!-- favicon -->
-    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
-      rel="stylesheet"
-    />
-    <!-- SweetAlert2 CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <link rel="stylesheet" href="/styles/user/landingPageStyle.css" />
-    <link rel="stylesheet" href="/styles/user/productDetails.css" />
-    <style>
-      .dropdown-menu {
-        border-radius: 15px;
-        padding: 10px 0;
-        min-width: 220px;
-        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>miniTorque </title>
+  <!-- favicon -->
+  <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
+  <!-- Fixed: Matching Bootstrap versions -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
+  <!-- SweetAlert2 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  
+  <style>
+    .dropdown-menu {
+      border-radius: 15px;
+      padding: 10px 0;
+      min-width: 220px;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-item {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .dropdown-item i {
+      margin-right: 12px;
+      font-size: 20px;
+      color: #555;
+    }
+
+    .dropdown-divider {
+      margin: 5px 0;
+    }
+
+    .user-dropdown {
+      position: relative;
+    }
+
+    /* New dropdown styles */
+    .account-dropdown {
+      min-width: 280px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      border: 1px solid #e9ecef;
+    }
+
+    .user-info-header {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px 12px 0 0;
+      margin: -10px -0px 0 0;
+      padding: 0 !important;
+    }
+
+    .user-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+
+    .user-email {
+      color: #6c757d;
+      font-size: 0.8rem;
+    }
+
+    .account-dropdown .dropdown-item {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .account-dropdown .dropdown-item:hover {
+      background-color: #f8f9fa;
+      color: #dc3545;
+      transform: translateX(5px);
+    }
+
+    .account-dropdown .dropdown-item i {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      margin-right: 10px;
+    }
+
+    .logout-btn:hover {
+      background-color: #fff5f5 !important;
+      color: #dc3545 !important;
+    }
+
+    .search-input {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+
+    .ps-4 {
+      padding-left: 2.5rem !important;
+    }
+
+    .search-input input {
+      width: 200px;
+    }
+
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-radius: 0.5rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      max-height: 400px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .search-results.show {
+      display: block;
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      border-bottom: 1px solid #e5e5e5;
+      text-decoration: none;
+      color: #1a1a1a;
+      transition: background-color 0.2s ease;
+    }
+
+    .search-result-item:hover {
+      background-color: #f5f5f5;
+    }
+
+    .search-result-item img {
+      width: 40px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 0.25rem;
+      margin-right: 15px;
+    }
+
+    .search-result-item .title {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .search-result-item .author {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .no-results {
+      padding: 15px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .mobile-search {
+      display: none;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 991.98px) {
+      .search-input.d-none.d-lg-block {
+        display: none !important;
       }
-      .dropdown-item {
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        color: #333;
-        font-weight: 500;
-      }
-      .dropdown-item i {
-        margin-right: 12px;
-        font-size: 20px;
-        color: #555;
-      }
-      .dropdown-divider {
-        margin: 5px 0;
-      }
-      .user-dropdown {
-        position: relative;
-      }
-      .search-input {
-        position: relative;
-      }
-      .search-icon {
-        position: absolute;
-        top: 50%;
-        left: 10px;
-        transform: translateY(-50%);
-        color: #6b7280;
-      }
-      .ps-4 {
-        padding-left: 2.5rem !important;
-      }
-      .search-input input {
-        width: 200px;
-      }
-      .search-results {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: #fff;
-        border-radius: 0.5rem;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        max-height: 400px;
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-      }
-      .search-results.show {
+
+      .mobile-search {
         display: block;
       }
-      .search-result-item {
-        display: flex;
-        align-items: center;
-        padding: 10px 15px;
-        border-bottom: 1px solid #e5e5e5;
-        text-decoration: none;
-        color: #1a1a1a;
-        transition: background-color 0.2s ease;
-      }
-      .search-result-item:hover {
-        background-color: #f5f5f5;
-      }
-      .search-result-item img {
-        width: 40px;
-        height: 60px;
-        object-fit: cover;
-        border-radius: 0.25rem;
-        margin-right: 15px;
-      }
-      .search-result-item .title {
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-      .search-result-item .author {
-        font-size: 0.75rem;
-        color: #6b7280;
-      }
-      .no-results {
-        padding: 15px;
-        text-align: center;
-        color: #6b7280;
-        font-size: 0.9rem;
-      }
-      .mobile-search {
-        display: none;
+
+      .search-results {
         width: 100%;
-        margin-bottom: 10px;
       }
-      @media (max-width: 991.98px) {
-        .search-input.d-none.d-lg-block {
-          display: none !important;
-        }
-        .mobile-search {
-          display: block;
-        }
-        .search-results {
-          width: 100%;
-        }
-      }
+    }
+
+    .header-icons {
+      display: flex;
+      align-items: center;
+    }
+
+    .icon-btn {
+      position: relative;
+      padding: 0.5rem;
+      color: #333;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.5rem;
+      transition: all 0.2s ease;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .icon-btn:hover {
+      color: #000;
+    }
+
+    .icon-btn .count {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background-color: #dc3545;
+      color: white;
+      border-radius: 50%;
+      font-size: 0.7rem;
+      min-width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    @media (max-width: 575.98px) {
       .header-icons {
-        display: flex;
-        align-items: center;
+        margin-top: 0.5rem;
       }
-      .icon-btn {
-        position: relative;
-        padding: 0.5rem;
-        color: #333;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 0.5rem;
-        transition: all 0.2s ease;
-      }
-      .icon-btn:hover {
-        color: #000;
-      }
-      .icon-btn .count {
-        position: absolute;
-        top: 0;
-        right: 0;
-        background-color: #dc3545;
-        color: white;
-        border-radius: 50%;
-        font-size: 0.7rem;
-        min-width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-      }
-      @media (max-width: 575.98px) {
-        .header-icons {
-          margin-top: 0.5rem;
-        }
-      }
+    }
 
-      /* Navigation hover effects */
-      .nav-link {
-        transition: color 0.2s ease;
-        color: #6c757d;
-      }
+    /* Navigation hover effects */
+    .nav-link {
+      transition: color 0.2s ease;
+      color: #6c757d;
+    }
 
-      .nav-link:hover {
-        color: #dc3545 !important;
-      }
+    .nav-link:hover {
+      color: #dc3545 !important;
+    }
 
-      /* Active page indicator */
-      .nav-link.active {
-        color: #dc3545 !important;
-        font-weight: 600 !important;
-      }
+    /* Active page indicator */
+    .nav-link.active {
+      color: #dc3545 !important;
+      font-weight: 600 !important;
+    }
 
-      /* Brand */
-     .navbar-brand .fw-bold {
-           color: #dc3545; /* red miniTorque */
-           font-weight: 700 !important;
-           font-size: 1.8rem !important;
-           margin-bottom: 0;
-           line-height: 1;
-     }
+    /* Brand */
+    .navbar-brand .fw-bold {
+      color: #dc3545;
+      /* red miniTorque */
+      font-weight: 700 !important;
+      font-size: 1.8rem !important;
+      margin-bottom: 0;
+      line-height: 1;
+    }
 
-      .navbar-brand p {
-        color: #6c757d; /* grey subtitle */
-        font-size: 0.75rem;
-        margin-top: 2px;
-        margin-left: 12px;
-        margin-bottom: 0;
-        line-height: 1;
-     }
-    </style>
-  </head>
-  <body class="paper-texture">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-      <div class="container py-2">
-        <a class="navbar-brand" href="/">
-          <span class="ms-2 fw-bold fs-4">miniTorque </span>
-          <p> Premium Diecast Collection</p>
-        </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <i class="ri-menu-line"></i>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav mx-auto">
-            <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="/">Home</a>
-            </li>
-            <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="/shopPage">Shop</a>
-            </li>
-            <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="/about">About</a>
-            </li>
-            <li class="nav-item mx-2">
-              <a class="nav-link fw-medium" href="/contact">Contact</a>
-            </li>
-          </ul>
-          <div class="d-flex align-items-center flex-column flex-lg-row">
-            <div class="mobile-search">
-              <div class="search-input">
-                <input
-                  type="text"
-                  class="form-control ps-4 search-field"
-                  placeholder="Search..."
-                  style="border-radius: 0.5rem; padding-left: 2.5rem"
-                />
-                <div class="search-icon">
-                  <i class="ri-search-line"></i>
-                </div>
-                <div class="search-results" id="mobileSearchResults"></div>
-              </div>
-            </div>
-            <div class="search-input d-none d-lg-block me-3">
-              <input
-                type="text"
-                class="form-control ps-4 search-field"
-                placeholder="Search..."
-                style="border-radius: 0.5rem; padding-left: 2.5rem"
-              />
+    .navbar-brand p {
+      color: #6c757d;
+      /* grey subtitle */
+      font-size: 0.75rem;
+      margin-top: 2px;
+      margin-left: 12px;
+      margin-bottom: 0;
+      line-height: 1;
+    }
+
+    /* Ensure dropdown menu is properly positioned */
+    .dropdown-menu.show {
+      display: block;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: auto;
+      z-index: 1000;
+    }
+  </style>
+</head>
+
+<body class="paper-texture">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <div class="container py-2">
+      <a class="navbar-brand" href="/">
+        <span class="ms-2 fw-bold fs-4">miniTorque </span>
+        <p> Premium Diecast Collection</p>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="ri-menu-line"></i>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mx-auto">
+          <li class="nav-item mx-2">
+            <a class="nav-link fw-medium" href="/">Home</a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link fw-medium" href="/shopPage">Shop</a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link fw-medium" href="/about">About</a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link fw-medium" href="/contact">Contact</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center flex-column flex-lg-row">
+          <div class="mobile-search">
+            <div class="search-input">
+              <input type="text" id="mobileSearchInput" name="mobileSearch" class="form-control ps-4 search-field" placeholder="Search..."
+                style="border-radius: 0.5rem; padding-left: 2.5rem" autocomplete="off" />
               <div class="search-icon">
                 <i class="ri-search-line"></i>
               </div>
-              <div class="search-results" id="desktopSearchResults"></div>
+              <div class="search-results" id="mobileSearchResults"></div>
             </div>
-            <div class="header-icons">
-              <% if (!locals.isAuthenticated) { %>
+          </div>
+          <div class="search-input d-none d-lg-block me-3">
+            <input type="text" id="desktopSearchInput" name="desktopSearch" class="form-control ps-4 search-field" placeholder="Search..."
+              style="border-radius: 0.5rem; padding-left: 2.5rem" autocomplete="off" />
+            <div class="search-icon">
+              <i class="ri-search-line"></i>
+            </div>
+            <div class="search-results" id="desktopSearchResults"></div>
+          </div>
+          <div class="header-icons">
+            <%# Check if user is authenticated %>
+            <% 
+              // Debug: Log user object
+              console.log('User object in template:', typeof user !== 'undefined' ? user : 'undefined');
+              console.log('User exists:', typeof user !== 'undefined' && user);
+            %>
+            <% if (typeof user === 'undefined' || !user) { %>
+              <!-- Not authenticated -->
               <a href="/login" class="icon-btn" title="Wishlist">
                 <i class="ri-heart-line fs-5"></i>
                 <span class="count wishlist-count">0</span>
@@ -278,177 +372,362 @@
                 <i class="ri-shopping-bag-line fs-5"></i>
                 <span class="count cart-count">0</span>
               </a>
-              <% } else { %>
+            <% } else { %>
+              <!-- Authenticated -->
               <a href="/wishlist" class="icon-btn" title="Wishlist">
                 <i class="ri-heart-line fs-5"></i>
-                <span class="count wishlist-count" data-count="<%= locals.wishlistCount || 0 %>"><%= locals.wishlistCount || 0 %></span>
+                <span class="count wishlist-count" data-count="<%= locals.wishlistCount || 0 %>">
+                  <%= locals.wishlistCount || 0 %>
+                </span>
               </a>
+              <!-- User Dropdown -->
               <div class="dropdown user-dropdown">
-                <a
-                  class="icon-btn dropdown-toggle"
-                  href="#"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  id="userDropdown"
-                  title="Account"
-                >
+                <button class="icon-btn" type="button" 
+                        id="userDropdown" title="Account"
+                        data-user-authenticated="true">
                   <i class="ri-user-line fs-5"></i>
-                </a>
-                <ul
-                  class="dropdown-menu dropdown-menu-end"
-                  aria-labelledby="userDropdown"
-                >
+                </button>
+                <ul class="dropdown-menu account-dropdown dropdown-menu-end" aria-labelledby="userDropdown">
+                  <!-- User Information Header -->
+                  <li class="user-info-header">
+                    <div class="d-flex align-items-center p-3">
+                      <div class="user-avatar me-3">
+                        <%= (user.fullName || user.name || user.displayName || user.googleName || 'User').charAt(0).toUpperCase() %>
+                      </div>
+                      <div class="user-details">
+                        <div class="user-name">
+                          <%= user.fullName || user.name || user.displayName || user.googleName || 'User' %>
+                        </div>
+                        <div class="user-email">
+                          <%= user.email || 'No email provided' %>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <!-- Menu Items -->
                   <li>
                     <a class="dropdown-item" href="/profile">
-                      <i class="ri-user-3-line"></i> Your Profile
+                      <i class="ri-user-3-line"></i>My Account
                     </a>
                   </li>
-                  <li><hr class="dropdown-divider" /></li>
+                  <li><hr class="dropdown-divider"></li>
                   <li>
-                    <a class="dropdown-item" href="/logout">
-                      <i class="ri-logout-box-line"></i> Logout
+                    <a class="dropdown-item logout-btn" href="/logout">
+                      <i class="ri-logout-box-line"></i>Logout
                     </a>
                   </li>
                 </ul>
               </div>
+
               <a href="/cart" class="icon-btn cart-link" title="Cart">
                 <i class="ri-shopping-bag-line fs-5"></i>
-                <span class="count cart-count" data-count="<%= locals.cartCount || 0 %>"><%= locals.cartCount || 0 %></span>
+                <span class="count cart-count" data-count="<%= locals.cartCount || 0 %>">
+                  <%= locals.cartCount || 0 %>
+                </span>
               </a>
-              <% } %>
-            </div>
+            <% } %>
           </div>
         </div>
       </div>
-    </nav>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SweetAlert2 JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const searchFields = document.querySelectorAll(".search-field");
-        const desktopResults = document.getElementById("desktopSearchResults");
-        const mobileResults = document.getElementById("mobileSearchResults");
-        let debounceTimeout;
+    </div>
+  </nav>
 
-        function debounce(func, wait) {
-          return function (...args) {
-            clearTimeout(debounceTimeout);
-            debounceTimeout = setTimeout(() => func.apply(this, args), wait);
-          };
+  <!-- Bootstrap JS - load first -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+  <!-- SweetAlert2 JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Search functionality
+      const searchFields = document.querySelectorAll(".search-field");
+      const desktopResults = document.getElementById("desktopSearchResults");
+      const mobileResults = document.getElementById("mobileSearchResults");
+      let debounceTimeout;
+
+      function debounce(func, wait) {
+        return function (...args) {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      }
+
+      async function fetchSearchResults(query) {
+        try {
+          const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+          if (!response.ok) throw new Error("Network response was not ok");
+          const products = await response.json();
+          return products;
+        } catch (error) {
+          console.error("Error fetching search results:", error);
+          return [];
+        }
+      }
+
+      function renderSearchResults(products, resultsContainer) {
+        resultsContainer.innerHTML = "";
+        if (products.length === 0) {
+          resultsContainer.innerHTML = '<div class="no-results">No products found.</div>';
+          resultsContainer.classList.add("show");
+          return;
         }
 
-        async function fetchSearchResults(query) {
-          try {
-            const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
-            if (!response.ok) throw new Error("Network response was not ok");
-            const products = await response.json();
-            return products;
-          } catch (error) {
-            console.error("Error fetching search results:", error);
-            return [];
-          }
-        }
-
-        function renderSearchResults(products, resultsContainer) {
-          resultsContainer.innerHTML = "";
-          if (products.length === 0) {
-            resultsContainer.innerHTML = '<div class="no-results">No products found.</div>';
-            resultsContainer.classList.add("show");
-            return;
-          }
-
-          products.forEach((product) => {
-            const item = document.createElement("a");
-            item.href = `/products/${product._id}`;
-            item.classList.add("search-result-item");
-            item.innerHTML = `
-              <img src="${product.mainImage || "/api/placeholder/500/600"}" alt="${product.title}" />
+        products.forEach((product) => {
+          const item = document.createElement("a");
+          item.href = `/products/${product._id}`;
+          item.classList.add("search-result-item");
+          item.innerHTML = `
+              <img src="${product.mainImage || "/images/default-product.png"}" alt="${product.title}" />
               <div>
                 <div class="title">${product.title}</div>
                 <div class="author">${product.author}</div>
               </div>
             `;
-            resultsContainer.appendChild(item);
-          });
-          resultsContainer.classList.add("show");
-        }
+          resultsContainer.appendChild(item);
+        });
+        resultsContainer.classList.add("show");
+      }
 
-        searchFields.forEach((field) => {
-          field.addEventListener("input", debounce(async function () {
-            const query = this.value.trim();
-            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
+      searchFields.forEach((field) => {
+        field.addEventListener("input", debounce(async function () {
+          const query = this.value.trim();
+          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
 
-            if (query.length < 2) {
+          if (query.length < 2) {
+            resultsContainer.classList.remove("show");
+            resultsContainer.innerHTML = "";
+            return;
+          }
+
+          const products = await fetchSearchResults(query);
+          renderSearchResults(products, resultsContainer);
+        }, 300));
+
+        field.addEventListener("focus", function () {
+          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
+          if (resultsContainer.innerHTML) {
+            resultsContainer.classList.add("show");
+          }
+        });
+
+        field.addEventListener("blur", function (e) {
+          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
+          setTimeout(() => {
+            if (!resultsContainer.contains(e.relatedTarget)) {
               resultsContainer.classList.remove("show");
-              resultsContainer.innerHTML = "";
-              return;
             }
-
-            const products = await fetchSearchResults(query);
-            renderSearchResults(products, resultsContainer);
-          }, 300));
-
-          field.addEventListener("focus", function () {
-            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
-            if (resultsContainer.innerHTML) {
-              resultsContainer.classList.add("show");
-            }
-          });
-
-          field.addEventListener("blur", function (e) {
-            const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
-            setTimeout(() => {
-              if (!resultsContainer.contains(e.relatedTarget)) {
-                resultsContainer.classList.remove("show");
-              }
-            }, 200);
-          });
+          }, 200);
         });
+      });
 
-        [desktopResults, mobileResults].forEach((container) => {
+      // More specific mousedown event for search results only
+      [desktopResults, mobileResults].forEach((container) => {
+        if (container) {
           container.addEventListener("mousedown", function (e) {
-            e.preventDefault();
-          });
-        });
-
-        // Active page highlighting
-        function setActiveNavLink() {
-          const currentPath = window.location.pathname;
-          const navLinks = document.querySelectorAll('.nav-link');
-
-          // Remove active class from all links
-          navLinks.forEach(link => link.classList.remove('active'));
-
-          // Add active class to current page link
-          navLinks.forEach(link => {
-            const linkPath = new URL(link.href).pathname;
-
-            // Exact match for home page
-            if (currentPath === '/' && linkPath === '/') {
-              link.classList.add('active');
-            }
-            // For other pages, check if current path starts with link path
-            else if (currentPath !== '/' && linkPath !== '/' && currentPath.startsWith(linkPath)) {
-              link.classList.add('active');
-            }
-            // Special cases for specific routes
-            else if (currentPath.includes('/products') && linkPath === '/shopPage') {
-              link.classList.add('active');
-            }
-            else if (currentPath === '/about' && linkPath === '/about') {
-              link.classList.add('active');
-            }
-            else if (currentPath === '/contact' && linkPath === '/contact') {
-              link.classList.add('active');
+            // Only prevent default for search result items
+            if (e.target.closest('.search-result-item')) {
+              e.preventDefault();
             }
           });
         }
-
-        // Set active link on page load
-        setActiveNavLink();
       });
-    </script>
-  </body>
+
+      // Active page highlighting
+      function setActiveNavLink() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        // Remove active class from all links
+        navLinks.forEach(link => link.classList.remove('active'));
+
+        // Add active class to current page link
+        navLinks.forEach(link => {
+          const linkPath = new URL(link.href).pathname;
+
+          // Exact match for home page
+          if (currentPath === '/' && linkPath === '/') {
+            link.classList.add('active');
+          }
+          // For other pages, check if current path starts with link path
+          else if (currentPath !== '/' && linkPath !== '/' && currentPath.startsWith(linkPath)) {
+            link.classList.add('active');
+          }
+          // Special cases for specific routes
+          else if (currentPath.includes('/products') && linkPath === '/shopPage') {
+            link.classList.add('active');
+          }
+          else if (currentPath === '/about' && linkPath === '/about') {
+            link.classList.add('active');
+          }
+          else if (currentPath === '/contact' && linkPath === '/contact') {
+            link.classList.add('active');
+          }
+        });
+      }
+
+      // Set active link on page load
+      setActiveNavLink();
+
+      // User dropdown functionality - improved detection and initialization
+      function initializeUserDropdown() {
+        console.log('Initializing dropdown...');
+        
+        // Debug: Check if elements exist
+        console.log('Looking for userDropdown element...');
+        const userDropdownBtn = document.getElementById('userDropdown');
+        console.log('userDropdown element:', userDropdownBtn);
+        
+        // Debug: Check all elements with user-dropdown class
+        const userDropdownContainer = document.querySelector('.user-dropdown');
+        console.log('user-dropdown container:', userDropdownContainer);
+        
+        // Debug: Check authentication section
+        const headerIcons = document.querySelector('.header-icons');
+        console.log('header-icons container:', headerIcons);
+        console.log('header-icons innerHTML:', headerIcons ? headerIcons.innerHTML : 'not found');
+        
+        if (!userDropdownBtn) {
+          console.log('User dropdown button not found - checking if user is authenticated...');
+          
+          // Alternative check - look for any authenticated user elements
+          const wishlistLink = document.querySelector('a[href="/wishlist"]');
+          const cartLink = document.querySelector('a[href="/cart"]');
+          console.log('Wishlist link found:', !!wishlistLink);
+          console.log('Cart link found:', !!cartLink);
+          
+          if (wishlistLink || cartLink) {
+            console.log('User appears to be authenticated but dropdown button is missing from DOM');
+          } else {
+            console.log('User is not authenticated');
+          }
+          return;
+        }
+
+        // Check if user is authenticated by data attribute
+        const isAuthenticated = userDropdownBtn.getAttribute('data-user-authenticated') === 'true';
+        console.log('Authentication status from data attribute:', isAuthenticated);
+        
+        if (!isAuthenticated) {
+          console.log('User not authenticated according to data attribute');
+          return;
+        }
+
+        const dropdownContainer = userDropdownBtn.closest('.dropdown');
+        const dropdownMenu = dropdownContainer ? dropdownContainer.querySelector('.dropdown-menu') : null;
+
+        if (!dropdownMenu) {
+          console.log('Dropdown menu not found');
+          return;
+        }
+
+        console.log('User authenticated - initializing dropdown functionality');
+
+        // Close all dropdowns function
+        function closeAllDropdowns() {
+          document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+          });
+          document.querySelectorAll('.icon-btn[aria-expanded="true"]').forEach(btn => {
+            btn.setAttribute('aria-expanded', 'false');
+          });
+        }
+
+        // Toggle dropdown function
+        function toggleDropdown(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          console.log('Dropdown button clicked');
+
+          const isCurrentlyOpen = dropdownMenu.classList.contains('show');
+
+          // Close all dropdowns first
+          closeAllDropdowns();
+
+          // If current dropdown wasn't open, open it
+          if (!isCurrentlyOpen) {
+            dropdownMenu.classList.add('show');
+            userDropdownBtn.setAttribute('aria-expanded', 'true');
+            console.log('Dropdown opened');
+          } else {
+            console.log('Dropdown closed');
+          }
+        }
+
+        // Attach click event to dropdown button
+        userDropdownBtn.addEventListener('click', toggleDropdown);
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+          if (!dropdownContainer.contains(e.target)) {
+            dropdownMenu.classList.remove('show');
+            userDropdownBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Close dropdown when pressing Escape
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            closeAllDropdowns();
+          }
+        });
+
+        // Prevent dropdown from closing when clicking inside dropdown menu
+        dropdownMenu.addEventListener('click', function (e) {
+          // Allow links to work normally
+          if (!e.target.matches('a') && !e.target.matches('a *')) {
+            e.stopPropagation();
+          }
+        });
+
+        console.log('Dropdown functionality initialized successfully');
+      }
+
+      // Initialize user dropdown
+      initializeUserDropdown();
+
+      // Logout functionality with SweetAlert2
+      const logoutBtns = document.querySelectorAll('.logout-btn');
+      logoutBtns.forEach(logoutBtn => {
+        logoutBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+
+          // Show SweetAlert2 confirmation dialog
+          Swal.fire({
+            title: 'Are you sure?',
+            text: 'You will be logged out of your account.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, logout!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // Show loading state
+              Swal.fire({
+                title: 'Logging out...',
+                text: 'Please wait while we log you out.',
+                icon: 'info',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                  Swal.showLoading();
+                }
+              });
+
+              // Redirect to logout route
+              window.location.href = '/logout';
+            }
+          });
+        });
+      });
+    });
+  </script>
+</body>
+
 </html>

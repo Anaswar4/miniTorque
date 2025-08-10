@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       verifyText.style.display = 'none';
       loader.style.display = 'inline';
 
-      const response = await fetch('/otp', {
+      const response = await fetch('/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

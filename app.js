@@ -28,6 +28,13 @@ app.use(sessionMiddleware);
 app.use(passport.initialize()); // Initialize Passport
 app.use(passport.session()); // Enable Passport session support
 
+app.use((req, res, next) => {
+  res.locals.user = req.user || null;
+  next();
+});
+
+
+
 
 // Routes
 app.use('/', authRoutes);

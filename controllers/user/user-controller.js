@@ -30,39 +30,15 @@ const loadHome = (req, res) => {
     ];
 
     const slides = [
-      {
-        image: '/images/banner1.jpg',
-        title: 'Limited Edition Cars',
-        description: 'Exclusive models only at miniTorque.'
-      },
-      {
-        image: '/images/banner2.jpg',
-        title: 'Premium Detailing',
-        description: 'Every diecast tells a story.'
-      },
-      {
-        image: '/images/banner3.jpg',
-        title: 'Diecast',
-        description: 'Projection of a real car.'
-      }
+      { image: '/images/banner1.jpg', title: 'Limited Edition Cars', description: 'Exclusive models only at miniTorque.' },
+      { image: '/images/banner2.jpg', title: 'Premium Detailing', description: 'Every diecast tells a story.' },
+      { image: '/images/banner3.jpg', title: 'Diecast', description: 'Projection of a real car.' }
     ];
 
     const products = [
-      {
-        image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-        title: 'Lamborghini Aventador',
-        price: '₹1499'
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-        title: 'Ferrari LaFerrari',
-        price: '₹1699'
-      },
-      {
-        image: 'https://images.unsplash.com/photo-1558981285-6f0c94958bb6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-        title: 'Porsche 911 GT3',
-        price: '₹1599'
-      }
+      { image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Lamborghini Aventador', price: '₹1499' },
+      { image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Ferrari LaFerrari', price: '₹1699' },
+      { image: 'https://images.unsplash.com/photo-1558981285-6f0c94958bb6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Porsche 911 GT3', price: '₹1599' }
     ];
 
     res.render('user/home', {
@@ -135,11 +111,7 @@ const signup = async (req, res) => {
         });
       }
 
-      return res.render('otp', {
-        email,
-        success: null,
-        error: null,
-      });
+      return res.render('otp', { email, success: null, error: null });
     });
   } catch (error) {
     console.error('Signup Error:', error.message);
@@ -153,16 +125,10 @@ const signup = async (req, res) => {
 // Load OTP page
 const loadOtpPage = (req, res) => {
   const { tempUser } = req.session;
-  
   if (!tempUser || !tempUser.email) {
     return res.redirect('/signup');
   }
-
-  return res.render('otp', {
-    email: tempUser.email,
-    success: null,
-    error: null,
-  });
+  return res.render('otp', { email: tempUser.email, success: null, error: null });
 };
 
 // Handle OTP verification
@@ -226,7 +192,7 @@ const resendOTP = async (req, res, next) => {
       console.log('newOtp is:', newOTP);
 
       req.session.tempUser.otp = newOTP;
-      req.session.otpExpires = Date.now() + 5 * 60 * 1000; // Fixed to 5 minutes
+      req.session.otpExpires = Date.now() + 5 * 60 * 1000;
 
       await sendOTP(tempUser.email, newOTP);
 
@@ -240,26 +206,21 @@ const resendOTP = async (req, res, next) => {
 
 // Show login page
 const showLogin = async (req, res) => {
-  if (req.session.userId) {
-    // If already logged in, redirect to home
-    return res.redirect('/home');
-  }
-
-  return res.render('user/login', {
-    error: null,
-  });
+  if (req.session.userId) return res.redirect('/home');
+  return res.render('user/login', { error: null });
 };
 
-// Handle login
+// Handle login (FIXED for your issue)
 const login = async (req, res, next) => {
   const { email, password } = req.body;
 
-  if (!validateEmail(email) || !validatePassword(password)) {
+  // ✅ FIX: Check only email format + non-empty password
+  if (!validateEmail(email) || typeof password !== "string" || password.trim() === "") {
     return res.render('user/login', {
-      error: 'Invalid email or password format',
+      error: 'Invalid email or password',
     });
   }
- 
+
   try {
     const user = await userModel.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -274,21 +235,38 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Set session data consistently
-    req.session.userId = user._id;
-    req.session.email = user.email;
-    req.session.loginTime = new Date();
-
-    req.session.save((err) => {
+    req.session.regenerate((err) => {
       if (err) {
-        console.error('Login session save error:', err);
+        console.error('Session regen error:', err);
         return res.status(500).render('user/login', {
-          error: 'Login failed. Please try again.',
+          error: 'Session error. Please try again.',
         });
       }
 
-      console.log('Login successful, redirecting to /home');
-      return res.redirect('/home');
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Passport login error:', err);
+          return res.status(500).render('user/login', {
+            error: 'Login failed. Please try again.',
+          });
+        }
+
+        req.session.userId = user._id;
+        req.session.email = user.email;
+        req.session.loginTime = new Date();
+
+        req.session.save((err) => {
+          if (err) {
+            console.error('Login session save error:', err);
+            return res.status(500).render('user/login', {
+              error: 'Login failed. Please try again.',
+            });
+          }
+
+          console.log('Normal login successful, redirecting to /home');
+          return res.redirect('/home');
+        });
+      });
     });
   } catch (err) {
     console.error('Error in login:', err);
@@ -303,35 +281,22 @@ const logout = async (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 };
 
-// Show forgot password page
-const forgotPasswordPage = (req, res) => {
-  res.render('user/forgot-password', {
-    error: null,
-  });
-};
+// Forgot password + OTP verification
+const forgotPasswordPage = (req, res) => res.render('user/forgot-password', { error: null });
 
 const handleForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
     if (!validateEmail(email)) {
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
     const user = await userModel.findOne({ email: email.toLowerCase().trim() });
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Email not found' });
-    }
-
-    if (!user.isVerified) {
-      return res.status(403).json({ success: false, message: 'Account not verified' });
-    }
+    if (!user) return res.status(404).json({ success: false, message: 'Email not found' });
+    if (!user.isVerified) return res.status(403).json({ success: false, message: 'Account not verified' });
 
     const otp = generateOTP();
     await sendOTP(email, otp);
-
-    // Store in session for verification
     req.session.forgotOtp = otp;
     req.session.forgotEmail = email;
     req.session.otpExpires = Date.now() + 5 * 60 * 1000;
@@ -344,18 +309,11 @@ const handleForgotPassword = async (req, res) => {
   }
 };
 
-// Show forgot OTP verification page
 const showForgotOtpPage = (req, res) => {
-  if (!req.session.forgotEmail) {
-    return res.redirect('/forgot-password');
-  }
-
-  res.render('user/forgot-verify-otp', {
-    email: req.session.forgotEmail,
-  });
+  if (!req.session.forgotEmail) return res.redirect('/forgot-password');
+  res.render('user/forgot-verify-otp', { email: req.session.forgotEmail });
 };
 
-// Handle OTP verification for forgot password
 const verifyForgotOtp = (req, res) => {
   const { otp } = req.body;
   const sessionOtp = req.session.forgotOtp;
@@ -379,17 +337,13 @@ const verifyForgotOtp = (req, res) => {
   return res.json({ success: true, redirectUrl: '/reset-password' });
 };
 
-// Resend OTP for forgot password
 const resendForgotOtp = async (req, res) => {
   try {
     const email = req.session.forgotEmail;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Session expired. Try again.' });
-    }
+    if (!email) return res.status(400).json({ success: false, message: 'Session expired. Try again.' });
 
     const otp = generateOTP();
     await sendOTP(email, otp);
-
     req.session.forgotOtp = otp;
     req.session.otpExpires = Date.now() + 5 * 60 * 1000;
 
@@ -401,44 +355,35 @@ const resendForgotOtp = async (req, res) => {
   }
 };
 
-// Show new password form (after OTP verification)
 const renderResetPasswordPage = (req, res) => {
   if (!req.session.otpVerified || !req.session.forgotEmail) {
     return res.redirect('/forgot-password');
   }
-
   res.render('user/new-password');
 };
 
-// Handle new password submission
 const handleNewPassword = async (req, res) => {
   try {
     const { newPassword, confirmPassword } = req.body;
-
     if (!req.session.otpVerified || !req.session.forgotEmail) {
       return res.status(400).json({ success: false, message: 'Session expired or unauthorized access.' });
     }
-
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ success: false, message: 'Passwords do not match.' });
     }
-
     if (!validatePassword(newPassword)) {
       return res.status(400).json({ success: false, message: 'Password is not strong enough.' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     const updatedUser = await userModel.findOneAndUpdate(
       { email: req.session.forgotEmail },
       { password: hashedPassword }
     );
-
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // Clear reset-related session
     req.session.forgotEmail = null;
     req.session.forgotOtp = null;
     req.session.otpVerified = null;
@@ -451,7 +396,6 @@ const handleNewPassword = async (req, res) => {
   }
 };
 
-// Export all with correct names to match routes
 module.exports = {
   loadHome,
   showLogin,
