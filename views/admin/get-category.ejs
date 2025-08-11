@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Category Management - ArvanClaire</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.all.min.js"></script>
+  <link rel="stylesheet" href="/css/admin/get-category.css">
+</head>
+<body>
+  <%- include("../partials/sidebar") %>
+
+  <div class="main-content">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Category Management</li>
+      </ol>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">Category Management</h1>
+          <p class="page-subtitle">Organize and manage your product categories</p>
+        </div>
+        <div class="header-right">
+          <button class="add-category-btn" onclick="showAddModal()">
+            <i class="fas fa-plus"></i> <span>Add New Category</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-stats-card">
+      <div class="search-section">
+        <div class="search-header">
+          <h3 class="search-title"><i class="fas fa-search"></i> Search Categories</h3>
+        </div>
+        <div class="search-wrapper">
+          <div class="search-input-container">
+            <input type="text" class="form-control search-input" placeholder="Search by category name..." id="searchInput"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="categories-card">
+      <div class="card-header">
+        <div class="header-left">
+          <h3 class="card-title"><i class="fas fa-list"></i> All Categories</h3>
+          <p class="card-subtitle">Manage your product categories</p>
+        </div>
+        <div class="header-right">
+          <span class="count-badge" id="categoryCount">0 categories</span>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="modern-table" id="categoryTable">
+          <thead>
+            <tr>
+              <th>#</th><th>Name</th><th>Description</th><th>Status</th><th>Created</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="categoryTableBody">
+            <tr>
+              <td colspan="6" class="loading-state">
+                <div class="loading-content">
+                  <i class="fas fa-spinner fa-spin"></i> <span>Loading categories...</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-wrapper">
+        <div class="pagination-info" id="paginationInfo">Showing 0 to 0 of 0 entries</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let categories = [];
+    let filteredCategories = [];
+
+    // --- ADD CATEGORY MODAL ---
+    function showAddModal() {
+      Swal.fire({
+        title: 'Add New Category',
+        html: `
+          <label>Name</label>
+          <input id="swal-name" class="swal2-input" placeholder="Category name">
+          <label>Description</label>
+          <textarea id="swal-desc" class="swal2-textarea" placeholder="Description"></textarea>
+          <label>Status</label>
+          <select id="swal-status" class="swal2-input">
+            <option value="true" selected>Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Save',
+        preConfirm: () => {
+          const name = document.getElementById('swal-name').value.trim();
+          const description = document.getElementById('swal-desc').value.trim();
+          const status = document.getElementById('swal-status').value === 'true';
+          if (!name) {
+            Swal.showValidationMessage('Please enter a category name');
+            return false;
+          }
+          if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+            Swal.showValidationMessage('Category name already exists');
+            return false;
+          }
+          return { name, description, status };
+        }
+      }).then(async result => {
+        if (result.isConfirmed) await addCategory(result.value);
+      });
+    }
+
+    async function addCategory(data) {
+      try {
+        const res = await fetch('/admin/get-categories', {
+          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error((await res.json()).message);
+        await fetchCategories();
+        Swal.fire('Success','Category added','success');
+      } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+      }
+    }
+
+    // --- EDIT CATEGORY ---
+    function showEditModal(id) {
+      const cat = categories.find(c => c._id === id);
+      if (!cat) return;
+      Swal.fire({
+        title: 'Edit Category',
+        html: `
+          <label>Name</label>
+          <input id="swal-name" class="swal2-input" value="${cat.name}">
+          <label>Description</label>
+          <textarea id="swal-desc" class="swal2-textarea">${cat.description || ''}</textarea>
+          <label>Status</label>
+          <select id="swal-status" class="swal2-input">
+            <option value="true" ${cat.isListed ? 'selected' : ''}>Active</option>
+            <option value="false" ${!cat.isListed ? 'selected' : ''}>Inactive</option>
+          </select>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Update',
+        preConfirm: () => {
+          const name = document.getElementById('swal-name').value.trim();
+          const description = document.getElementById('swal-desc').value.trim();
+          const status = document.getElementById('swal-status').value === 'true';
+          if (!name) {
+            Swal.showValidationMessage('Please enter a category name');
+            return false;
+          }
+          if (categories.some(c => c._id !== id && c.name.toLowerCase() === name.toLowerCase())) {
+            Swal.showValidationMessage('Another category with this name exists');
+            return false;
+          }
+          return { name, description, status };
+        }
+      }).then(async result => {
+        if (result.isConfirmed) await updateCategory(id, result.value);
+      });
+    }
+
+    async function updateCategory(id, data) {
+      try {
+        const res = await fetch(`/admin/get-categories/${id}`, {
+          method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error((await res.json()).message);
+        await fetchCategories();
+        Swal.fire('Updated','Category updated successfully','success');
+      } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+      }
+    }
+
+    // --- DELETE CATEGORY (SOFT DELETE) ---
+    async function deleteCategory(id) {
+      const cat = categories.find(c => c._id === id);
+      if (!cat) return;
+      Swal.fire({
+        title: 'Delete Category?',
+        text: `This will hide "${cat.name}" from users. You can restore later.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d33'
+      }).then(async res => {
+        if (res.isConfirmed) {
+          try {
+            const delRes = await fetch(`/admin/get-categories/${id}`, { method: 'DELETE' });
+            if (!delRes.ok) throw new Error((await delRes.json()).message);
+            await fetchCategories();
+            Swal.fire('Deleted','Category deleted (soft delete)','success');
+          } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+          }
+        }
+      });
+    }
+
+    // --- TOGGLE STATUS ---
+    async function toggleStatus(id, el) {
+      const newStatus = el.checked;
+      try {
+        const res = await fetch(`/admin/get-categories/${id}/status`, {
+          method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: newStatus})
+        });
+        if (!res.ok) { el.checked = !newStatus; throw new Error((await res.json()).message); }
+        Swal.fire('Success', `Status updated to ${newStatus?'Active':'Inactive'}`, 'success');
+      } catch (e) {
+        el.checked = !newStatus;
+        Swal.fire('Error', e.message, 'error');
+      }
+    }
+
+    // Search filter
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.addEventListener('input', ()=>applySearchFilter());
+
+    function applySearchFilter(){
+      const term = searchInput.value.toLowerCase().trim();
+      filteredCategories = term==='' ? [...categories] : categories.filter(c =>
+        c.name.toLowerCase().includes(term) || (c.description && c.description.toLowerCase().includes(term))
+      );
+      renderTable(); updateCount();
+    }
+    function updateCount(){
+      document.getElementById('categoryCount').textContent = `${filteredCategories.length} categories`;
+    }
+
+    // Fetch categories
+    async function fetchCategories(){
+      try{
+        const res = await fetch('/admin/get-categories');
+        if(!res.ok) throw new Error((await res.json()).message);
+        categories = await res.json();
+        applySearchFilter();
+      }catch(e){
+        Swal.fire('Error', e.message, 'error');
+      }
+    }
+
+    // Render
+    function renderTable(){
+      const tbody = document.getElementById('categoryTableBody');
+      tbody.innerHTML = filteredCategories.length===0 ? 
+        `<tr><td colspan="6" class="empty-state">No categories</td></tr>` :
+        filteredCategories.map((c,i)=>`
+          <tr>
+            <td>${i+1}</td>
+            <td>${c.name}</td>
+            <td>${c.description || '<span class="text-muted">No description</span>'}</td>
+            <td><label class="status-toggle"><input type="checkbox" ${c.isListed?'checked':''} onchange="toggleStatus('${c._id}',this)"><span class="toggle-slider"></span></label></td>
+            <td>${c.date}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="showEditModal('${c._id}')"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c._id}')"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchCategories);
+  </script>
+</body>
+</html>
