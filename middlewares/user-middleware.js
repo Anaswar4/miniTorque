@@ -1,150 +1,138 @@
 const User = require("../models/user-model");
 
-//Handle google user and normal user 
+/**
+ * Middleware to check if the logged-in user is blocked by admin
+ * - If blocked: destroy session, clear cookie, redirect (or send JSON for API)
+ * - Runs before protected routes to auto-logout blocked users
+ */
 const checkUserBlocked = async (req, res, next) => {
   try {
-    const userId = req.session.userId || req.session.googleUserId;
+    const userId = req.session?.userId || req.session?.googleUserId;
+    if (!userId) return next(); // User not logged in, continue
 
-    // If no session found, move to next
-    if (!userId) 
-      return next();
-
-    // Fetch user from DB
     const user = await User.findById(userId);
 
     // If user doesn't exist or is blocked
     if (!user || user.isBlocked) {
-      // Only clear user-specific session data, not the entire session
-      // This prevents affecting admin sessions
-      if (req.session.userId) {
-        delete req.session.userId;
-      }
-      if (req.session.googleUserId) {
-        delete req.session.googleUserId;
-      }
-      if (req.session.email) {
-        delete req.session.email;
-      }
-      if (req.session.loginTime) {
-        delete req.session.loginTime;
-      }
+      // Safely destroy the session
+      return req.session?.destroy((err) => {
+        if (err) console.error("Error destroying session:", err);
 
-      // Save the session to persist the changes
-      req.session.save((err) => {
-        if (err) console.error('Error saving session after user logout:', err);
+        // Clear session cookie
+        res.clearCookie("connect.sid");
+
+        // Handle AJAX/API requests
+        if (
+          req.xhr ||
+          req.headers.accept?.includes("json") ||
+          req.headers["content-type"]?.includes("json") ||
+          req.path.startsWith("/api/") ||
+          req.path.includes("/checkout/")
+        ) {
+          return res.status(401).json({
+            success: false,
+            blocked: true,
+            message: "Your account has been blocked. Please contact support.",
+            redirect: "/login?blocked=true"
+          });
+        }
+
+        // Regular browser request → redirect with blocked flag (triggers popup)
+        return res.redirect("/login?blocked=true");
       });
-
-      // AJAX request handling - check for various indicators of AJAX/API requests
-      if (req.xhr || 
-          req.headers.accept?.indexOf('json') > -1 || 
-          req.headers['content-type']?.indexOf('json') > -1 ||
-          req.path.startsWith('/api/') ||
-          req.path.includes('/checkout/')) {
-        return res.status(401).json({
-          success: false,
-          blocked: true,
-          message: 'Your account has been blocked. Please contact support.',
-          redirect: '/login?blocked=true'
-        });
-      }
-
-      // Regular redirect with blocked flag
-      return res.redirect('/login?blocked=true');
     }
 
-    // User valid
+    // User exists & not blocked
     return next();
 
   } catch (error) {
-    console.error('Error checking user blocked status:', error);
+    console.error("Error checking user blocked status:", error);
 
-    // Only clear user-specific session data on error, not the entire session
-    if (req.session.userId) {
-      delete req.session.userId;
-    }
-    if (req.session.googleUserId) {
-      delete req.session.googleUserId;
-    }
+    // In case of DB or session error, log out and redirect
+    return req.session?.destroy(() => {
+      res.clearCookie("connect.sid");
 
-    if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
-      return res.status(500).json({
-        success: false,
-        message: 'Authentication error. Please login again.',
-        redirect: '/login'
-      });
-    }
+      if (req.xhr || req.headers.accept?.includes("json")) {
+        return res.status(500).json({
+          success: false,
+          message: "Authentication error. Please log in again.",
+          redirect: "/login"
+        });
+      }
 
-    return res.redirect('/login');
+      return res.redirect("/login");
+    });
   }
 };
 
-//Makes that user data available in all views (EJS pages)
+/**
+ * Makes user data available to all EJS templates in res.locals.user
+ */
 const addUserContext = async (req, res, next) => {
   try {
-    // Check if user is logged in
     if (req.session.userId) {
-      // Get user data from database
       const userData = await User.findById(req.session.userId);
-
-      // Add user data to res.locals so it's available in all views
       res.locals.user = userData;
     } else {
-      // No user logged in
       res.locals.user = null;
     }
-
     next();
   } catch (error) {
-    console.error('Error in addUserContext middleware:', error);
-    // Don't block the request, just set user to null
+    console.error("Error in addUserContext:", error);
     res.locals.user = null;
     next();
   }
 };
 
-// Authentication middleware - check if user is logged in
+/**
+ * Middleware to ensure user is logged in
+ */
 const isUserAuthenticated = (req, res, next) => {
-  if (req.session.userId) {
-    return next();
-  }
-  return res.redirect('/login');
+  if (req.session.userId) return next();
+  return res.redirect("/login");
 };
 
-// Prevent caching middleware
+/**
+ * Prevent browser caching of sensitive pages
+ */
 const preventCache = (req, res, next) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   next();
 };
 
-// Redirect authenticated users away from login/signup pages
+/**
+ * Redirect already-authenticated users away from login/signup
+ */
 const redirectIfAuthenticated = (req, res, next) => {
-  if (req.session.userId) {
-    return res.redirect('/home');
-  }
+  if (req.session.userId) return res.redirect("/home");
   next();
 };
 
-// Validate session middleware
+/**
+ * Validate session and optionally handle expiration
+ */
 const validateSession = (req, res, next) => {
-  // Basic session validation
-  if (req.session && req.session.userId) {
-    // Check if session has expired (optional)
+  if (req.session?.userId) {
     const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
-    if (req.session.loginTime && (Date.now() - new Date(req.session.loginTime).getTime()) > sessionTimeout) {
-      req.session.destroy();
-      return res.redirect('/login?expired=true');
+    if (
+      req.session.loginTime &&
+      Date.now() - new Date(req.session.loginTime).getTime() > sessionTimeout
+    ) {
+      return req.session.destroy(() => {
+        res.redirect("/login?expired=true");
+      });
     }
   }
   next();
 };
 
-module.exports = { 
-  checkUserBlocked, 
+module.exports = {
+  checkUserBlocked,
   addUserContext,
   isUserAuthenticated,
   preventCache,
   redirectIfAuthenticated,
-  validateSession,
+  validateSession
 };

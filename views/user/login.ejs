@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - miniTorque</title>
-   <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+  <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
 
   <!-- Bootstrap CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
@@ -12,6 +12,9 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <!-- Custom CSS -->
   <link href="/css/login.css" rel="stylesheet" />
+
+  <!-- SweetAlert2 (added here so it's ready before login.js runs) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
@@ -93,10 +96,10 @@
 
           <!-- google Login -->
           <div class="mb-4">
-      <a href="/auth/google" class="btn btn-outline-primary w-100 social-btn">
-        <i class="fab fa-google me-2"></i> Continue with Google
-      </a>
-    </div>
+            <a href="/auth/google" class="btn btn-outline-primary w-100 social-btn">
+              <i class="fab fa-google me-2"></i> Continue with Google
+            </a>
+          </div>
 
           <!-- Sign Up Link -->
           <div class="signup-link text-center">
@@ -109,6 +112,13 @@
 
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Pass blocked flag from server to JS -->
+  <script>
+    window.isBlocked = <%= blocked ? 'true' : 'false' %>;
+  </script>
+
+  <!-- Login page JavaScript -->
   <script src="/js/login.js"></script>
 </body>
 </html>

@@ -1,19 +1,10 @@
 const express = require("express");
 const adminRoute = express.Router();
 
-
 const adminController = require("../../controllers/admin/admin-controller");
 const getUsersController = require("../../controllers/admin/get-usersController");
-// const getCategoryController = require("../controllers/admin/get-categoryController");
-// const productController = require("../controllers/admin/product-controller");
-// const orderController = require("../controllers/admin/order-controller");
-// const returnController = require("../controllers/admin/return-controller");
-// const { productUpload, handleMulterError } = require("../config/multer-config");
-const dashboardController = require("../../controllers/admin/dashboard-controller");
 
-// const couponController = require("../controllers/admin/coupon-controller");
-// const salesReportController = require("../controllers/admin/sales-report-controller");
-// const ledgerController = require("../controllers/admin/ledger-controller");
+const dashboardController = require("../../controllers/admin/dashboard-controller");
 const { isAdminAuthenticated, preventCache, redirectIfAdminAuthenticated } = require('../../middlewares/auth-middleware');
 
 

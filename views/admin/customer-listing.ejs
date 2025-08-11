@@ -1,647 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Management - miniTorque</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
-    <link rel="stylesheet" href="/css/customer-listing.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Management - miniTorque</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
+  <link rel="stylesheet" href="/css/customer-listing.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-    <!-- Include Admin Sidebar -->
-    <%- include("../partials/sidebar") %>
+  <%- include("../partials/sidebar") %>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Breadcrumbs -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/admin-dashboard">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Customer Management</li>
-            </ol>
-        </nav>
+  <div class="main-content">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin-dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Customer Management</li>
+      </ol>
+    </nav>
 
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="header-content">
-                <div class="header-left">
-                    <h1 class="page-title">Customer Management</h1>
-                    <p class="page-subtitle">Manage and view all registered customers</p>
-                </div>
-                <div class="header-right">
-                </div>
-            </div>
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">Customer Management</h1>
+          <p class="page-subtitle">Manage and view all registered customers</p>
         </div>
-
-        <!-- Search and Filters -->
-        <div class="filters-card">
-            <div class="filters-header">
-                <h3 class="filters-title">
-                    <i class="fas fa-search"></i>
-                    Search & Filter Customers
-                </h3>
-            </div>
-            <div class="filters-grid">
-                <div class="filter-group">
-                    <label class="filter-label">Search Customers</label>
-                    <div class="search-input-wrapper">
-                        <input type="text" class="form-control search-input" id="customerSearch" placeholder="Search by name or email..." value="<%= searchTerm %>">
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label class="filter-label">Status Filter</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="" <%= statusFilter === '' ? 'selected' : '' %>>All Status</option>
-                        <option value="active" <%= statusFilter === 'active' ? 'selected' : '' %>>Active</option>
-                        <option value="blocked" <%= statusFilter === 'blocked' ? 'selected' : '' %>>Blocked</option>
-                    </select>
-                </div>
-                <div class="filter-group filter-actions">
-                    <button type="button" class="filter-btn primary" onclick="applyFilters()">
-                        <i class="fas fa-filter"></i>
-                        Apply Filters
-                    </button>
-                    <button type="button" class="filter-btn secondary" onclick="resetFilters()">
-                        <i class="fas fa-refresh"></i>
-                        Reset
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Customers Table Section -->
-        <div class="customers-card">
-            <div class="card-header">
-                <div class="header-left">
-                    <h3 class="card-title">
-                        <i class="fas fa-list"></i>
-                        Customer Directory
-                    </h3>
-                    <p class="card-subtitle">Complete list of registered customers</p>
-                </div>
-                <div class="header-right">
-                    <div class="customer-count">
-                        <span class="count-badge" id="filteredCustomerCount"><%= totalUsers %> total customers</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loadingState" class="loading-state" style="display: none;">
-                <div class="loading-content">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Loading customers...</p>
-                </div>
-            </div>
-
-            <div class="table-wrapper" id="tableWrapper">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th class="col-customer">Customer</th>
-                            <th class="col-email">Email</th>
-                            <th class="col-date">Join Date</th>
-                            <th class="col-status">Status</th>
-                            <th class="col-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customersTableBody">
-                        <% users.forEach(user => { %>
-                            <tr>
-                                <td>
-                                    <div class="customer-info">
-                                        <div class="customer-avatar">
-                                            <%= user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase() %>
-                                        </div>
-                                        <div class="customer-details">
-                                            <div class="customer-name"><%= user.displayName || user.email.split('@')[0] %></div>
-                                            <div class="customer-id">ID: <%= user._id.toString().slice(-6) %></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="email-cell">
-                                        <i class="fas fa-envelope"></i>
-                                        <span><%= user.email %></span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="date-cell">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <span><%= new Date(user.createdAt).toLocaleDateString() %></span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="status-display">
-                                        <span class="status-badge status-<%= user.isBlocked ? 'blocked' : 'active' %>">
-                                            <i class="fas fa-<%= user.isBlocked ? 'ban' : 'check-circle' %>"></i>
-                                            <span><%= user.isBlocked ? 'Blocked' : 'Active' %></span>
-                                        </span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-sm <%= user.isBlocked ? 'btn-success' : 'btn-warning' %>" 
-                                                onclick="toggleCustomerStatus('<%= user._id %>', <%= user.isBlocked %>)"
-                                                title="<%= user.isBlocked ? 'Activate Customer' : 'Block Customer' %>">
-                                            <i class="fas fa-<%= user.isBlocked ? 'check' : 'ban' %>"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="pagination-wrapper">
-                <div class="pagination-info">
-                    Showing <span id="showingStart"><%= startIdx + 1 %></span> to <span id="showingEnd"><%= endIdx %></span> of <span id="totalCustomers"><%= totalUsers %></span> customers
-                </div>
-                <nav aria-label="Customer pagination">
-                    <ul class="pagination" id="pagination">
-                        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>" id="prevPage">
-                            <a class="page-link" href="#" aria-label="Previous">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        </li>
-                        <% for(let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-                                <a class="page-link" href="#" onclick="goToPage(<%= i %>)"><%= i %></a>
-                            </li>
-                        <% } %>
-                        <li class="page-item <%= currentPage === totalPages || totalPages === 0 ? 'disabled' : '' %>" id="nextPage">
-                            <a class="page-link" href="#" aria-label="Next">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <script>
-        // Global state management
-        let currentState = {
-            page: <%= currentPage %>,
-            totalPages: <%= totalPages %>,
-            totalUsers: <%= totalUsers %>,
-            isLoading: false
-        };
-
-        const customersPerPage = 10;
-
-        // Utility function for consistent display name logic (matches backend)
-        function getDisplayName(user) {
-            return user.displayName || (user.fullName && user.fullName.trim() !== '' ? user.fullName : user.email.split('@')[0]);
-        }
-
-        // Debounce function with improved performance
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func.apply(this, args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Show loading state
-        function showLoading() {
-            if (currentState.isLoading) return;
-            currentState.isLoading = true;
-            document.getElementById('loadingState').style.display = 'block';
-            document.getElementById('tableWrapper').style.opacity = '0.5';
-        }
-
-        // Hide loading state
-        function hideLoading() {
-            currentState.isLoading = false;
-            document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('tableWrapper').style.opacity = '1';
-        }
-
-        // Error handling with user feedback
-        function handleError(error, userMessage = 'An error occurred') {
-            console.error('Error:', error);
-            hideLoading();
-            Swal.fire({
-                title: 'Error',
-                text: userMessage,
-                icon: 'error',
-                confirmButtonColor: '#000000',
-                customClass: {
-                    popup: 'modern-swal'
-                }
-            });
-        }
-
-        // Enhanced fetch with error handling
-        async function fetchWithErrorHandling(url, options = {}) {
-            try {
-                const response = await fetch(url, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    },
-                    ...options
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                return await response.json();
-            } catch (error) {
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                    throw new Error('Network error. Please check your connection.');
-                }
-                throw error;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const customerSearch = document.getElementById('customerSearch');
-            const statusFilter = document.getElementById('statusFilter');
-            const prevPage = document.getElementById('prevPage');
-            const nextPage = document.getElementById('nextPage');
-
-            // Debounced search functionality
-            const debouncedSearch = debounce(function() {
-                currentState.page = 1;
-                fetchUsers();
-            }, 300);
-
-            // Search functionality
-            customerSearch.addEventListener('input', debouncedSearch);
-
-            // Status filter functionality with debouncing
-            const debouncedStatusFilter = debounce(function() {
-                currentState.page = 1;
-                fetchUsers();
-            }, 100);
-
-            statusFilter.addEventListener('change', debouncedStatusFilter);
-
-            // Pagination controls with validation
-            prevPage.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (currentState.page > 1 && !currentState.isLoading) {
-                    currentState.page--;
-                    fetchUsers();
-                }
-            });
-
-            nextPage.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (currentState.page < currentState.totalPages && !currentState.isLoading) {
-                    currentState.page++;
-                    fetchUsers();
-                }
-            });
-        });
-
-        // Apply filters function
-        function applyFilters() {
-            if (currentState.isLoading) return;
-            currentState.page = 1;
-            fetchUsers();
-        }
-
-        // Reset filters function
-        function resetFilters() {
-            if (currentState.isLoading) return;
-            document.getElementById('customerSearch').value = '';
-            document.getElementById('statusFilter').value = '';
-            currentState.page = 1;
-            fetchUsers();
-        }
-
-        // Navigate to page with validation
-        function goToPage(page) {
-            if (currentState.isLoading || page < 1 || page > currentState.totalPages) return;
-            currentState.page = page;
-            fetchUsers();
-        }
-
-        // Enhanced fetch users function
-        async function fetchUsers() {
-            if (currentState.isLoading) return;
-
-            const searchTerm = document.getElementById('customerSearch').value.trim();
-            const statusFilter = document.getElementById('statusFilter').value;
-
-            showLoading();
-
-            try {
-                const queryParams = new URLSearchParams({
-                    search: searchTerm,
-                    page: currentState.page,
-                    status: statusFilter
-                });
-
-                const data = await fetchWithErrorHandling(`/admin/get-users?${queryParams}`);
-
-                if (!data.success) {
-                    throw new Error(data.message || 'Failed to fetch users');
-                }
-
-                // Update global state
-                currentState.totalPages = data.totalPages || 1;
-                currentState.totalUsers = data.totalUsers || 0;
-
-                renderCustomersTable(data.users || [], data);
-            } catch (error) {
-                handleError(error, 'Failed to load customers. Please try again.');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Enhanced render customers table
-        function renderCustomersTable(users, paginationData) {
-            const tableBody = document.getElementById('customersTableBody');
-            const filteredCount = document.getElementById('filteredCustomerCount');
-            
-            if (!tableBody) return;
-
-            tableBody.innerHTML = '';
-
-            if (!users || users.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="empty-state">
-                            <div class="empty-content">
-                                <i class="fas fa-users"></i>
-                                <h5>No customers found</h5>
-                                <p>Try adjusting your search or filter criteria.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                if (filteredCount) filteredCount.textContent = '0 customers found';
-                updatePaginationInfo(0, 0, paginationData.totalUsers || 0);
-                updatePagination();
-                return;
-            }
-
-            users.forEach(user => {
-                const displayName = getDisplayName(user);
-                const avatarChar = displayName.charAt(0).toUpperCase();
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>
-                        <div class="customer-info">
-                            <div class="customer-avatar">
-                                ${avatarChar}
-                            </div>
-                            <div class="customer-details">
-                                <div class="customer-name">${displayName}</div>
-                                <div class="customer-id">ID: ${user._id.toString().slice(-6)}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="email-cell">
-                            <i class="fas fa-envelope"></i>
-                            <span>${user.email}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="date-cell">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>${new Date(user.createdAt).toLocaleDateString()}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="status-display">
-                            <span class="status-badge status-${user.isBlocked ? 'blocked' : 'active'}">
-                                <i class="fas fa-${user.isBlocked ? 'ban' : 'check-circle'}"></i>
-                                <span>${user.isBlocked ? 'Blocked' : 'Active'}</span>
-                            </span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-sm ${user.isBlocked ? 'btn-success' : 'btn-warning'}" 
-                                    onclick="toggleCustomerStatus('${user._id}', ${user.isBlocked})"
-                                    title="${user.isBlocked ? 'Activate Customer' : 'Block Customer'}">
-                                <i class="fas fa-${user.isBlocked ? 'check' : 'ban'}"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-
-            // Update pagination info and UI
-            updatePaginationInfo(paginationData.startIdx + 1, paginationData.endIdx, paginationData.totalUsers);
-            if (filteredCount) {
-                filteredCount.textContent = `${paginationData.totalUsers} total customers`;
-            }
-            updatePagination();
-        }
-
-        // Update pagination info
-        function updatePaginationInfo(start, end, total) {
-            const showingStart = document.getElementById('showingStart');
-            const showingEnd = document.getElementById('showingEnd');
-            const totalCustomers = document.getElementById('totalCustomers');
-
-            if (showingStart) showingStart.textContent = start || 0;
-            if (showingEnd) showingEnd.textContent = end || 0;
-            if (totalCustomers) totalCustomers.textContent = total || 0;
-        }
-
-        // Enhanced update pagination links
-        function updatePagination() {
-            const pagination = document.getElementById('pagination');
-            if (!pagination) return;
-
-            const pageLinks = pagination.querySelectorAll('.page-item:not(#prevPage):not(#nextPage)');
-            pageLinks.forEach(link => link.remove());
-
-            // Add page links
-            for (let i = 1; i <= currentState.totalPages; i++) {
-                const li = document.createElement('li');
-                li.className = `page-item ${i === currentState.page ? 'active' : ''}`;
-                li.innerHTML = `<a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>`;
-                pagination.insertBefore(li, document.getElementById('nextPage'));
-            }
-
-            // Update navigation buttons
-            const prevBtn = document.getElementById('prevPage');
-            const nextBtn = document.getElementById('nextPage');
-            
-            if (prevBtn) {
-                prevBtn.classList.toggle('disabled', currentState.page === 1);
-            }
-            if (nextBtn) {
-                nextBtn.classList.toggle('disabled', currentState.page === currentState.totalPages || currentState.totalPages === 0);
-            }
-        }
-
-        // Enhanced toggle customer status
-        async function toggleCustomerStatus(userId, isBlocked) {
-            if (currentState.isLoading) return;
-
-            const action = isBlocked ? 'unblock' : 'block';
-            const actionText = isBlocked ? 'activate' : 'block';
-
-            try {
-                const result = await Swal.fire({
-                    title: 'Confirm Status Change',
-                    text: `Are you sure you want to ${actionText} this customer?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#000000',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: `Yes, ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`,
-                    cancelButtonText: 'Cancel',
-                    customClass: {
-                        popup: 'modern-swal'
-                    }
-                });
-
-                if (!result.isConfirmed) return;
-
-                showLoading();
-
-                const data = await fetchWithErrorHandling(`/admin/get-users/${userId}/${action}`, {
-                    method: 'PUT'
-                });
-
-                if (!data.success) {
-                    throw new Error(data.message || `Failed to ${action} user`);
-                }
-
-                await Swal.fire({
-                    title: 'Success!',
-                    text: `Customer has been ${actionText}ed successfully.`,
-                    icon: 'success',
-                    confirmButtonColor: '#000000',
-                    customClass: {
-                        popup: 'modern-swal'
-                    }
-                });
-
-                // Refresh the current page
-                fetchUsers();
-
-            } catch (error) {
-                handleError(error, `Failed to ${actionText} customer. Please try again.`);
-            }
-        }
-    </script>
-
-    <style>
-        .loading-state {
-            text-align: center;
-            padding: 40px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .loading-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .loading-content i {
-            font-size: 2rem;
-            color: #6c757d;
-        }
-
-        .loading-content p {
-            margin: 0;
-            color: #6c757d;
-            font-weight: 500;
-        }
-
-        .empty-state {
-            text-align: center !important;
-            padding: 60px 20px !important;
-        }
-
-        .empty-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .empty-content i {
-            font-size: 3rem;
-            color: #dee2e6;
-        }
-
-        .empty-content h5 {
-            margin: 0;
-            color: #6c757d;
-            font-weight: 600;
-        }
-
-        .empty-content p {
-            margin: 0;
-            color: #adb5bd;
-            font-size: 0.9rem;
-        }
-
-        .table-wrapper {
-            transition: opacity 0.3s ease;
-        }
-
-        .modern-swal {
-            border-radius: 12px !important;
-        }
-
-        .customer-count .count-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .pagination .page-item.disabled .page-link {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .action-buttons .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Responsive improvements */
-        @media (max-width: 768px) {
-            .loading-content {
-                padding: 20px;
-            }
-            
-            .empty-content {
-                padding: 40px 15px;
-            }
-            
-            .pagination-info {
-                font-size: 0.875rem;
-            }
-        }
-    </style>
+    <!-- Filters -->
+    <div class="filters-card">
+      <div class="filters-header">
+        <h3 class="filters-title"><i class="fas fa-search"></i> Search & Filter Customers</h3>
+      </div>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label" for="customerSearch">Search Customers</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="customerSearch" class="form-control search-input" placeholder="Search by name or email..." value="<%= searchTerm %>">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="statusFilter">Status Filter</label>
+          <select id="statusFilter" class="form-select">
+            <option value="" <%= statusFilter === '' ? 'selected' : '' %>>All Status</option>
+            <option value="active" <%= statusFilter === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="blocked" <%= statusFilter === 'blocked' ? 'selected' : '' %>>Blocked</option>
+          </select>
+        </div>
+        <div class="filter-group filter-actions">
+          <button type="button" class="filter-btn primary" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply Filters</button>
+          <button type="button" class="filter-btn secondary" onclick="resetFilters()"><i class="fas fa-refresh"></i> Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="customers-card">
+      <div class="card-header">
+        <div class="header-left">
+          <h3 class="card-title"><i class="fas fa-list"></i> Customer Directory</h3>
+          <p class="card-subtitle">Complete list of registered customers</p>
+        </div>
+        <div class="header-right">
+          <div class="customer-count">
+            <span class="count-badge" id="filteredCustomerCount"><%= totalUsers %> total customers</span>
+          </div>
+        </div>
+      </div>
+      <div id="loadingState" class="loading-state" style="display:none;">
+        <div class="loading-content"><i class="fas fa-spinner fa-spin"></i><p>Loading customers...</p></div>
+      </div>
+      <div class="table-wrapper" id="tableWrapper">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Join Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="customersTableBody">
+            <% users.forEach(user => { %>
+              <tr>
+                <td>
+                  <div class="customer-info">
+                    <div class="customer-avatar"><%= user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase() %></div>
+                    <div class="customer-details">
+                      <div class="customer-name"><%= user.displayName || user.email.split('@')[0] %></div>
+                      <div class="customer-id">ID: <%= user._id.toString().slice(-6) %></div>
+                    </div>
+                  </div>
+                </td>
+                <td><div class="email-cell"><i class="fas fa-envelope"></i> <span><%= user.email %></span></div></td>
+                <td><div class="date-cell"><i class="fas fa-calendar-alt"></i> <span><%= new Date(user.createdAt).toLocaleDateString() %></span></div></td>
+                <td>
+                  <div class="status-display">
+                    <span class="status-badge status-<%= user.isBlocked ? 'blocked' : 'active' %>">
+                      <i class="fas fa-<%= user.isBlocked ? 'ban' : 'check-circle' %>"></i>
+                      <span><%= user.isBlocked ? 'Blocked' : 'Active' %></span>
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn btn-sm <%= user.isBlocked ? 'btn-success' : 'btn-warning' %>"
+                      onclick="toggleCustomerStatus('<%= user._id %>', <%= user.isBlocked %>)"
+                      title="<%= user.isBlocked ? 'Activate Customer' : 'Block Customer' %>">
+                      <i class="fas fa-<%= user.isBlocked ? 'check' : 'ban' %>"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-wrapper">
+        <div class="pagination-info">
+          Showing <span id="showingStart"><%= startIdx + 1 %></span> to <span id="showingEnd"><%= endIdx %></span> of <span id="totalCustomers"><%= totalUsers %></span> customers
+        </div>
+        <nav aria-label="Customer pagination">
+          <ul class="pagination" id="pagination">
+            <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>" id="prevPage">
+              <a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>
+            </li>
+            <% for (let i=1; i<=totalPages; i++) { %>
+              <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                <a class="page-link" href="#" onclick="goToPage(<%= i %>)"><%= i %></a>
+              </li>
+            <% } %>
+            <li class="page-item <%= currentPage === totalPages || totalPages === 0 ? 'disabled' : '' %>" id="nextPage">
+              <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+<script>
+let currentState = { page: <%= currentPage %>, totalPages: <%= totalPages %>, totalUsers: <%= totalUsers %>, isLoading: false };
+
+function showLoading(){ if(currentState.isLoading) return; currentState.isLoading=true; loadingState.style.display="block"; tableWrapper.style.opacity="0.5"; }
+function hideLoading(){ currentState.isLoading=false; loadingState.style.display="none"; tableWrapper.style.opacity="1"; }
+
+function handleError(e,msg){ console.error(e); hideLoading(); Swal.fire({title:"Error",text:msg,icon:"error"}); }
+
+async function fetchWithErrorHandling(url,opt={}){ const r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt}); if(!r.ok){throw new Error((await r.json().catch(()=>({}))).message||`HTTP ${r.status}`);} return r.json(); }
+
+async function fetchUsers(){
+  if(currentState.isLoading) return;
+  showLoading();
+  try{
+    const q=new URLSearchParams({ search: customerSearch.value.trim(), page: currentState.page, status: statusFilter.value });
+    const data=await fetchWithErrorHandling(`/admin/get-users?${q}`);
+    if(!data.success) throw new Error(data.message||'Failed to load');
+    currentState.totalPages=data.totalPages||1; currentState.totalUsers=data.totalUsers||0;
+    renderCustomersTable(data.users||[], data);
+  }catch(e){ handleError(e,'Failed to load customers.'); }
+  finally{ hideLoading(); }
+}
+
+function renderCustomersTable(users,pd){
+  const body=customersTableBody; body.innerHTML='';
+  if(!users.length){ body.innerHTML=`<tr><td colspan="5" class="empty-state"><div class="empty-content"><i class="fas fa-users"></i><h5>No customers found</h5><p>Try adjusting filters.</p></div></td></tr>`; filteredCustomerCount.textContent='0 customers found'; updatePaginationInfo(0,0,pd.totalUsers||0); updatePagination(); return; }
+  users.forEach(u=>{
+    const name = u.displayName || (u.fullName && u.fullName.trim()!=='' ? u.fullName : u.email.split('@')[0]);
+    body.innerHTML += `<tr>
+      <td><div class="customer-info"><div class="customer-avatar">${name.charAt(0).toUpperCase()}</div><div class="customer-details"><div class="customer-name">${name}</div><div class="customer-id">ID: ${u._id.toString().slice(-6)}</div></div></div></td>
+      <td><div class="email-cell"><i class="fas fa-envelope"></i> <span>${u.email}</span></div></td>
+      <td><div class="date-cell"><i class="fas fa-calendar-alt"></i> <span>${new Date(u.createdAt).toLocaleDateString()}</span></div></td>
+      <td><div class="status-display"><span class="status-badge status-${u.isBlocked?'blocked':'active'}"><i class="fas fa-${u.isBlocked?'ban':'check-circle'}"></i> <span>${u.isBlocked?'Blocked':'Active'}</span></span></div></td>
+      <td><div class="action-buttons"><button class="btn btn-sm ${u.isBlocked?'btn-success':'btn-warning'}" onclick="toggleCustomerStatus('${u._id}', ${u.isBlocked})" title="${u.isBlocked?'Activate Customer':'Block Customer'}"><i class="fas fa-${u.isBlocked?'check':'ban'}"></i></button></div></td>
+    </tr>`;
+  });
+  filteredCustomerCount.textContent=`${pd.totalUsers} total customers`;
+  updatePaginationInfo(pd.startIdx+1,pd.endIdx,pd.totalUsers); updatePagination();
+}
+
+function updatePaginationInfo(s,e,t){ showingStart.textContent=s||0; showingEnd.textContent=e||0; totalCustomers.textContent=t||0; }
+function updatePagination(){ document.querySelectorAll('#pagination .page-item:not(#prevPage):not(#nextPage)').forEach(l=>l.remove()); for(let i=1;i<=currentState.totalPages;i++){ const li=document.createElement('li'); li.className=`page-item ${i===currentState.page?'active':''}`; li.innerHTML=`<a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>`; pagination.insertBefore(li,nextPage);} prevPage.classList.toggle('disabled',currentState.page===1); nextPage.classList.toggle('disabled',currentState.page===currentState.totalPages||currentState.totalPages===0); }
+
+async function toggleCustomerStatus(userId, isBlocked){
+  if(currentState.isLoading) return;
+  const action = isBlocked ? 'unblock' : 'block';
+  const actionText = isBlocked ? 'activate' : 'block';
+  try{
+    const result = await Swal.fire({ title:'Confirm Status Change', text:`Are you sure you want to ${actionText} this customer?`, icon:'question', showCancelButton:true, confirmButtonColor:'#000', cancelButtonColor:'#6c757d', confirmButtonText:`Yes, ${actionText}`, cancelButtonText:'Cancel'});
+    if(!result.isConfirmed) return;
+    showLoading();
+    const data=await fetchWithErrorHandling(`/admin/get-users/${userId}/${action}`, {method:'PUT'});
+    if(!data.success) throw new Error(data.message||`Failed to ${action} user`);
+    // Immediate UI update
+    const rowBtn = document.querySelector(`button[onclick="toggleCustomerStatus('${userId}', ${isBlocked})"]`);
+    if(rowBtn){
+      const row = rowBtn.closest('tr');
+      // update status cell
+      const statusCell = row.querySelector('.status-badge');
+      if(statusCell){
+        statusCell.className = `status-badge status-${isBlocked?'active':'blocked'}`;
+        statusCell.innerHTML = isBlocked ? `<i class="fas fa-check-circle"></i> <span>Active</span>` : `<i class="fas fa-ban"></i> <span>Blocked</span>`;
+      }
+      // update button
+      rowBtn.className = `btn btn-sm ${isBlocked?'btn-warning':'btn-success'}`;
+      rowBtn.setAttribute('onclick', `toggleCustomerStatus('${userId}', ${!isBlocked})`);
+      rowBtn.setAttribute('title', isBlocked?'Block Customer':'Activate Customer');
+      rowBtn.innerHTML = `<i class="fas fa-${isBlocked?'ban':'check'}"></i>`;
+    }
+    await Swal.fire({title:'Success!', text:`Customer has been ${actionText}d successfully.`, icon:'success', confirmButtonColor:'#000'});
+    await fetchUsers();
+  }catch(e){ handleError(e,`Failed to ${actionText} customer.`); }
+  finally{ hideLoading(); }
+}
+
+function applyFilters(){ currentState.page=1; fetchUsers(); }
+function resetFilters(){ customerSearch.value=''; statusFilter.value=''; currentState.page=1; fetchUsers(); }
+function goToPage(page){ if(currentState.isLoading||page<1||page>currentState.totalPages) return; currentState.page=page; fetchUsers(); }
+function debounce(fn,delay){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), delay); }; }
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  customerSearch.addEventListener('input', debounce(()=>{currentState.page=1;fetchUsers();},300));
+  statusFilter.addEventListener('change', debounce(()=>{currentState.page=1;fetchUsers();},100));
+  prevPage.addEventListener('click',e=>{e.preventDefault(); if(currentState.page>1){currentState.page--;fetchUsers();}});
+  nextPage.addEventListener('click',e=>{e.preventDefault(); if(currentState.page<currentState.totalPages){currentState.page++;fetchUsers();}});
+});
+</script>
 </body>
 </html>

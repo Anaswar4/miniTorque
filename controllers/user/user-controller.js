@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 5,
 });
 
@@ -36,9 +36,9 @@ const loadHome = (req, res) => {
     ];
 
     const products = [
-      { image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Lamborghini Aventador', price: '₹1499' },
-      { image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Ferrari LaFerrari', price: '₹1699' },
-      { image: 'https://images.unsplash.com/photo-1558981285-6f0c94958bb6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', title: 'Porsche 911 GT3', price: '₹1599' }
+      { image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=600&q=80', title: 'Lamborghini Aventador', price: '₹1499' },
+      { image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&w=600&q=80', title: 'Ferrari LaFerrari', price: '₹1699' },
+      { image: 'https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&w=600&q=80', title: 'Porsche 911 GT3', price: '₹1599' }
     ];
 
     res.render('user/home', {
@@ -53,7 +53,7 @@ const loadHome = (req, res) => {
   }
 };
 
-// Handle signup and initiate OTP
+// Handle signup
 const signup = async (req, res) => {
   const { fullName, email, password, confirmPassword } = req.body;
 
@@ -134,7 +134,6 @@ const loadOtpPage = (req, res) => {
 // Handle OTP verification
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
-  const userOTP = otp;
   const { tempUser, otpExpires } = req.session;
 
   try {
@@ -150,11 +149,11 @@ const verifyOTP = async (req, res) => {
       throw new Error('OTP expired. Please sign up again.');
     }
 
-    if (!userOTP || !/^\d{6}$/.test(userOTP)) {
+    if (!otp || !/^\d{6}$/.test(otp)) {
       throw new Error('Invalid OTP format');
     }
 
-    if (userOTP !== tempUser.otp) {
+    if (otp !== tempUser.otp) {
       throw new Error('Invalid OTP');
     }
 
@@ -175,8 +174,8 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-// Resend OTP function
-const resendOTP = async (req, res, next) => {
+// Resend OTP
+const resendOTP = async (req, res) => {
   try {
     await resendLimiter(req, res, async () => {
       const { email } = req.body;
@@ -193,7 +192,6 @@ const resendOTP = async (req, res, next) => {
 
       req.session.tempUser.otp = newOTP;
       req.session.otpExpires = Date.now() + 5 * 60 * 1000;
-
       await sendOTP(tempUser.email, newOTP);
 
       res.json({ success: true, message: 'OTP resent successfully' });
@@ -207,48 +205,43 @@ const resendOTP = async (req, res, next) => {
 // Show login page
 const showLogin = async (req, res) => {
   if (req.session.userId) return res.redirect('/home');
-  return res.render('user/login', { error: null });
+  const blocked = req.query.blocked === 'true';
+  return res.render('user/login', { error: null, blocked });
 };
 
-// Handle login (FIXED for your issue)
-const login = async (req, res, next) => {
+// Handle login with blocked check
+const login = async (req, res) => {
   const { email, password } = req.body;
 
-  // ✅ FIX: Check only email format + non-empty password
   if (!validateEmail(email) || typeof password !== "string" || password.trim() === "") {
-    return res.render('user/login', {
-      error: 'Invalid email or password',
-    });
+    return res.render('user/login', { error: 'Invalid email or password', blocked: false });
   }
 
   try {
     const user = await userModel.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.render('user/login', {
-        error: 'Invalid credentials',
-      });
+      return res.render('user/login', { error: 'Invalid credentials', blocked: false });
+    }
+
+    // Blocked user check → redirect with flag for popup
+    if (user.isBlocked) {
+      return res.redirect('/login?blocked=true');
     }
 
     if (!user.isVerified) {
-      return res.render('user/login', {
-        error: 'Please verify your email before logging in',
-      });
+      return res.render('user/login', { error: 'Please verify your email before logging in', blocked: false });
     }
 
     req.session.regenerate((err) => {
       if (err) {
         console.error('Session regen error:', err);
-        return res.status(500).render('user/login', {
-          error: 'Session error. Please try again.',
-        });
+        return res.status(500).render('user/login', { error: 'Session error. Please try again.', blocked: false });
       }
 
       req.login(user, (err) => {
         if (err) {
           console.error('Passport login error:', err);
-          return res.status(500).render('user/login', {
-            error: 'Login failed. Please try again.',
-          });
+          return res.status(500).render('user/login', { error: 'Login failed. Please try again.', blocked: false });
         }
 
         req.session.userId = user._id;
@@ -258,11 +251,8 @@ const login = async (req, res, next) => {
         req.session.save((err) => {
           if (err) {
             console.error('Login session save error:', err);
-            return res.status(500).render('user/login', {
-              error: 'Login failed. Please try again.',
-            });
+            return res.status(500).render('user/login', { error: 'Login failed. Please try again.', blocked: false });
           }
-
           console.log('Normal login successful, redirecting to /home');
           return res.redirect('/home');
         });
@@ -270,9 +260,7 @@ const login = async (req, res, next) => {
     });
   } catch (err) {
     console.error('Error in login:', err);
-    res.status(500).render('user/login', {
-      error: 'Something went wrong. Please try again.',
-    });
+    res.status(500).render('user/login', { error: 'Something went wrong. Please try again.', blocked: false });
   }
 };
 
@@ -281,7 +269,7 @@ const logout = async (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 };
 
-// Forgot password + OTP verification
+// Forgot password
 const forgotPasswordPage = (req, res) => res.render('user/forgot-password', { error: null });
 
 const handleForgotPassword = async (req, res) => {
@@ -290,13 +278,13 @@ const handleForgotPassword = async (req, res) => {
     if (!validateEmail(email)) {
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
-
     const user = await userModel.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(404).json({ success: false, message: 'Email not found' });
     if (!user.isVerified) return res.status(403).json({ success: false, message: 'Account not verified' });
 
     const otp = generateOTP();
     await sendOTP(email, otp);
+
     req.session.forgotOtp = otp;
     req.session.forgotEmail = email;
     req.session.otpExpires = Date.now() + 5 * 60 * 1000;
@@ -320,17 +308,10 @@ const verifyForgotOtp = (req, res) => {
   const otpExpires = req.session.otpExpires;
 
   if (!sessionOtp || Date.now() > otpExpires) {
-    return res.status(400).json({
-      success: false,
-      message: 'OTP expired. Please request a new one.',
-    });
+    return res.status(400).json({ success: false, message: 'OTP expired. Please request a new one.' });
   }
-
   if (otp !== sessionOtp) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid OTP. Please try again.',
-    });
+    return res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
   }
 
   req.session.otpVerified = true;
@@ -344,6 +325,7 @@ const resendForgotOtp = async (req, res) => {
 
     const otp = generateOTP();
     await sendOTP(email, otp);
+
     req.session.forgotOtp = otp;
     req.session.otpExpires = Date.now() + 5 * 60 * 1000;
 

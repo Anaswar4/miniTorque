@@ -83,7 +83,7 @@ const postAdminLogin = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Welcome Admin",
-        redirectTo: '/admin-dashboard',
+        redirectTo: '/admin/admin-dashboard',
       });
     });
 

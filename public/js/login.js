@@ -1,6 +1,23 @@
 // miniTorque Login Page JavaScript
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 🔹 1. Check if the server said this user was blocked (from /login?blocked=true)
+    if (typeof window.isBlocked !== "undefined" && window.isBlocked) {
+        if (typeof Swal !== "undefined") {
+            Swal.fire({
+                icon: 'error',
+                title: 'Account Blocked',
+                text: 'Your account has been blocked by the admin.',
+                confirmButtonColor: '#d33'
+            });
+            // Optional: auto-redirect after popup closes
+            // .then(() => { window.location.href = '/login'; });
+        } else {
+            console.error("SweetAlert2 (Swal) is not loaded. Can't show blocked alert.");
+        }
+    }
+
     initializeFormValidation();
     initializePasswordToggle();
     initializeFormSubmission();
@@ -85,59 +102,57 @@ function initializePasswordToggle() {
 // 🚀 Submit Login Form
 // -----------------------------
 function initializeFormSubmission() {
-  const form = document.getElementById('loginForm');
-  const loginBtn = form.querySelector('.login-btn');
-  const btnText = loginBtn.querySelector('.btn-text');
-  const btnLoading = loginBtn.querySelector('.btn-loading');
+    const form = document.getElementById('loginForm');
+    const loginBtn = form.querySelector('.login-btn');
+    const btnText = loginBtn.querySelector('.btn-text');
+    const btnLoading = loginBtn.querySelector('.btn-loading');
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
 
-    const isEmailValid = validateEmail(emailInput);
-    const isPasswordValid = validatePassword(passwordInput);
+        const isEmailValid = validateEmail(emailInput);
+        const isPasswordValid = validatePassword(passwordInput);
 
-    if (!isEmailValid || !isPasswordValid) {
-      form.classList.add('shake');
-      setTimeout(() => form.classList.remove('shake'), 500);
-      return;
-    }
+        if (!isEmailValid || !isPasswordValid) {
+            form.classList.add('shake');
+            setTimeout(() => form.classList.remove('shake'), 500);
+            return;
+        }
 
-    setLoadingState(loginBtn, btnText, btnLoading, true);
+        setLoadingState(loginBtn, btnText, btnLoading, true);
 
-    try {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Important!
-                  },
-        body: new URLSearchParams({
-          email: emailInput.value.trim(),
-          password: passwordInput.value.trim()
-        })
-      });
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    email: emailInput.value.trim(),
+                    password: passwordInput.value.trim()
+                })
+            });
 
-      // Handle redirect manually
-      if (response.redirected) {
-        window.location.href = response.url; // ✅ Redirect to /home
-      } else {
-        const html = await response.text();
-        document.open();
-        document.write(html);
-        document.close();
-      }
-
-    } catch (error) {
-      console.error('Login failed:', error);
-      showAlert('danger', 'Server error. Please try again.');
-    } finally {
-      setLoadingState(loginBtn, btnText, btnLoading, false);
-    }
-  });
+            // Handle redirect manually
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                const html = await response.text();
+                document.open();
+                document.write(html);
+                document.close();
+            }
+        } catch (error) {
+            console.error('Login failed:', error);
+            showAlert('danger', 'Server error. Please try again.');
+        } finally {
+            setLoadingState(loginBtn, btnText, btnLoading, false);
+        }
+    });
 }
-
 
 function setLoadingState(btn, textEl, loadingEl, isLoading) {
     btn.disabled = isLoading;
@@ -148,7 +163,6 @@ function setLoadingState(btn, textEl, loadingEl, isLoading) {
 function handleLoginResponse(data, btn, textEl, loadingEl) {
     setLoadingState(btn, textEl, loadingEl, false);
     showAlert('success', `Welcome to miniTorque!<br><small>${data.email}</small>`);
-    // window.location.href = '/dashboard'; // Uncomment for actual redirect
 }
 
 // -----------------------------
@@ -196,7 +210,6 @@ function initializeSocialButtons() {
     });
 }
 
-
 // -----------------------------
 // ✨ Input Animations
 // -----------------------------
@@ -235,13 +248,3 @@ function insertShakeAnimationCSS() {
     `;
     document.head.appendChild(style);
 }
-
-// -----------------------------
-// 🔐 Forgot Password Info
-// -----------------------------
-// document.addEventListener('click', function (e) {
-//     if (e.target.classList.contains('forgot-password')) {
-//         e.preventDefault();
-//         showInfoMessage('Password reset coming soon!');
-//     }
-// });
