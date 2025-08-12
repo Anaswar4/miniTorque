@@ -35,16 +35,9 @@ const loadHome = (req, res) => {
       { image: '/images/banner3.jpg', title: 'Diecast', description: 'Projection of a real car.' }
     ];
 
-    const products = [
-      { image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=600&q=80', title: 'Lamborghini Aventador', price: '₹1499' },
-      { image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&w=600&q=80', title: 'Ferrari LaFerrari', price: '₹1699' },
-      { image: 'https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&w=600&q=80', title: 'Porsche 911 GT3', price: '₹1599' }
-    ];
-
     res.render('user/home', {
       user: req.user || null,
       slides,
-      products,
       navLinks
     });
   } catch (error) {

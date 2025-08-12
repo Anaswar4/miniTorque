@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - miniTorque</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <%- include("../partials/sidebar") %>
+        <link rel="stylesheet" href="/css/admin/new-product.css"
+</head>
+
+<body>
+
+    <div class="main-content">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/admin/get-product">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Add Product</li>
+            </ol>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-plus"></i>
+                Add New Product
+            </h1>
+            <p class="page-subtitle">Fill in the details below to add a new product to your inventory</p>
+        </div>
+
+        <div class="form-container">
+            <div class="form-body">
+                <form id="productForm" enctype="multipart/form-data">
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-info-circle"></i> Basic Information
+                        </h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productName" class="form-label">Product Name <span
+                                        class="required">*</span></label>
+                                <input type="text" id="productName" name="productName" class="form-control"
+                                    placeholder="Enter product name" required>
+                                <div class="error-message">Please enter a product name</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brand" class="form-label">Brand <span class="required">*</span></label>
+                                <input type="text" id="brand" name="brand" class="form-control"
+                                    placeholder="Enter brand name" required>
+                                <div class="error-message">Please enter a brand name</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="category" class="form-label">Category <span
+                                        class="required">*</span></label>
+                                <select id="category" name="category" class="form-select" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                                <div class="error-message">Please select a category</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="quantity" class="form-label">Stock Quantity <span
+                                        class="required">*</span></label>
+                                <input type="number" id="quantity" name="quantity" class="form-control"
+                                    placeholder="Enter stock quantity" min="0" step="1" required>
+                                <div class="error-message">Please enter a valid stock quantity</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-dollar-sign"></i> Pricing & Offers
+                        </h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="regularPrice" class="form-label">Regular Price <span
+                                        class="required">*</span></label>
+                                <input type="number" id="regularPrice" name="regularPrice" class="form-control"
+                                    placeholder="Enter regular price" step="0.01" required>
+                                <div class="error-message">Please enter a valid regular price</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="salePrice" class="form-label">Sale Price <span
+                                        class="required">*</span></label>
+                                <input type="number" id="salePrice" name="salePrice" class="form-control"
+                                    placeholder="Auto-calculated from regular price and discount" step="1" readonly
+                                    required>
+                                <div class="error-message">Please enter a valid sale price</div>
+                                <small class="form-text text-muted">This field is automatically calculated based on
+                                    regular price and discount percentage</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="productOffer" class="form-label">Product Offer (%)</label>
+                                <input type="number" id="productOffer" name="productOffer" class="form-control"
+                                    placeholder="Enter offer percentage" step="0.01" min="0" max="100">
+                                <div class="error-message">Please enter a valid offer (0-100)</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="features" class="form-label">Features <span
+                                        class="required">*</span></label>
+                                <input type="text" id="features" name="features" class="form-control"
+                                    placeholder="Enter product features" required>
+                                <div class="error-message">Please enter product features</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-list-ul"></i> Product Details
+                        </h3>
+                        <div class="form-group">
+                            <label for="description" class="form-label">Description <span
+                                    class="required">*</span></label>
+                            <textarea id="description" name="description" class="form-textarea" rows="4"
+                                placeholder="Enter product description" required></textarea>
+                            <div class="error-message">Please enter a product description</div>
+                        </div>
+                    </div>
+
+                    <!-- Product Images -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-images"></i> Product Images (Minimum 3 required)
+                        </h3>
+
+                        <div class="alert alert-info mb-3">
+                            <h6><i class="fas fa-info-circle"></i> Image Management Instructions:</h6>
+                            <ul class="mb-0">
+                                <li><i class="fas fa-star text-warning"></i> <strong>Click the star icon</strong> to set
+                                    an image as the main product image</li>
+                                <li><i class="fas fa-arrows-alt text-primary"></i> <strong>Drag and drop</strong> images
+                                    to reorder them</li>
+                                <li><i class="fas fa-crop text-info"></i> Each image will be <strong>cropped
+                                        individually</strong> for consistency</li>
+                                <li><i class="fas fa-times text-danger"></i> Click the <strong>X icon</strong> to remove
+                                    an image</li>
+                            </ul>
+                        </div>
+
+                        <div class="images-section">
+                            <div class="form-group">
+                                <label for="productImages" class="form-label">Upload Images <span
+                                        class="required">*</span></label>
+                                <input type="file" id="productImages" name="productImages" class="form-control"
+                                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" multiple required>
+                                <div class="error-message" id="imagesError">Please upload at least 3 images</div>
+                                <small class="form-text text-muted">Select multiple images. Each image will be cropped
+                                    individually.</small>
+                            </div>
+                            <div id="imagePreviews" class="images-grid"></div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <a href="/admin/get-product" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-dark">
+                            <i class="fas fa-save"></i> Save Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Crop Modal -->
+        <div class="modal fade" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cropModalLabel">
+                            <i class="fas fa-crop"></i> Crop Image
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="cropperContainer" >
+                            <img id="cropperImage" >
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Drag to move, resize corners to adjust the crop area
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="cropConfirm">
+                            <i class="fas fa-check"></i> Crop & Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+    <script>
+        // Fallback for Cropper.js if it doesn't load
+        window.addEventListener('load', function () {
+            if (typeof Cropper === 'undefined') {
+                console.warn('Primary Cropper.js failed to load, trying fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
+                script.onload = function () {
+                    console.log('Fallback Cropper.js loaded successfully');
+                };
+                script.onerror = function () {
+                    console.error('Both primary and fallback Cropper.js failed to load');
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('Cropper.js loaded successfully from primary source');
+            }
+        });
+    </script>
+    <script>
+        // Global variables
+        let categories = [];
+        let croppedImages = [];
+        let currentCropper;
+        let currentFileIndex = 0;
+        let currentCallback;
+        let selectedFiles = [];
+        let cropModal;
+        let mainImageIndex = null;
+        let draggedIndex = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check if required libraries are loaded
+            if (typeof bootstrap === 'undefined') {
+                Swal.fire('Error!', 'Bootstrap library is not loaded', 'error');
+                return;
+            }
+
+            if (typeof Cropper === 'undefined') {
+                Swal.fire('Error!', 'Cropper.js library is not loaded', 'error');
+                return;
+            }
+
+            fetchCategories();
+            setupEventListeners();
+
+            // Initialize modal
+            try {
+                cropModal = new bootstrap.Modal(document.getElementById('cropModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+            } catch (error) {
+                console.error('Error initializing modal:', error);
+                Swal.fire('Error!', 'Failed to initialize modal', 'error');
+            }
+        });
+
+        // Fetch categories from API
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/admin/get-categories');
+                console.log('Categories response status:', response.status);
+
+                if (!response.ok) throw new Error('Failed to fetch categories');
+                categories = await response.json();
+                console.log('Fetched categories:', categories);
+                populateCategoryDropdown();
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                Swal.fire('Error!', `Could not fetch categories: ${error.message}`, 'error');
+            }
+        }
+
+        // Populate category dropdown
+        function populateCategoryDropdown() {
+            const categorySelect = document.getElementById('category');
+            if (!categorySelect) return;
+
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category._id;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // File input change
+            const fileInput = document.getElementById('productImages');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelection);
+            }
+
+            // Form submission
+            const form = document.getElementById('productForm');
+            if (form) {
+                form.addEventListener('submit', handleFormSubmission);
+            }
+
+            // Crop confirmation
+            const cropConfirm = document.getElementById('cropConfirm');
+            if (cropConfirm) {
+                cropConfirm.addEventListener('click', handleCropConfirm);
+            }
+
+            // Real-time validation for all form fields
+            setupFieldValidation();
+
+            // Price calculation and validation
+            const regularPrice = document.getElementById('regularPrice');
+            const productOffer = document.getElementById('productOffer');
+            const salePrice = document.getElementById('salePrice');
+
+            if (regularPrice && productOffer && salePrice) {
+                // Calculate sale price when regular price changes
+                regularPrice.addEventListener('input', function () {
+                    validateRegularPrice();
+                    calculateSalePrice();
+                });
+
+                regularPrice.addEventListener('blur', function () {
+                    validateRegularPrice();
+                });
+
+                // Calculate sale price when discount changes
+                productOffer.addEventListener('input', function () {
+                    validateProductOffer();
+                    calculateSalePrice();
+                });
+
+                productOffer.addEventListener('blur', function () {
+                    validateProductOffer();
+                });
+
+                // Prevent manual editing of sale price
+                salePrice.addEventListener('focus', function () {
+                    this.blur(); // Remove focus to prevent editing
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Auto-calculated Field',
+                        text: 'Sale price is automatically calculated based on regular price and discount percentage.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                });
+
+                // Initial calculation if values exist
+                if (regularPrice.value) {
+                    calculateSalePrice();
+                }
+            }
+        }
+
+        // Setup real-time validation for all form fields
+        function setupFieldValidation() {
+            // Product Name validation
+            const productName = document.getElementById('productName');
+            if (productName) {
+                productName.addEventListener('input', validateProductName);
+                productName.addEventListener('blur', validateProductName);
+            }
+
+            // Brand validation
+            const brand = document.getElementById('brand');
+            if (brand) {
+                brand.addEventListener('input', validateBrand);
+                brand.addEventListener('blur', validateBrand);
+            }
+
+            // Category validation
+            const category = document.getElementById('category');
+            if (category) {
+                category.addEventListener('change', validateCategory);
+                category.addEventListener('blur', validateCategory);
+            }
+
+            // Quantity validation
+            const quantity = document.getElementById('quantity');
+            if (quantity) {
+                quantity.addEventListener('input', validateQuantity);
+                quantity.addEventListener('blur', validateQuantity);
+            }
+
+            // Features validation
+            const features = document.getElementById('features');
+            if (features) {
+                features.addEventListener('input', validateFeatures);
+                features.addEventListener('blur', validateFeatures);
+            }
+
+            // Description validation
+            const description = document.getElementById('description');
+            if (description) {
+                description.addEventListener('input', validateDescription);
+                description.addEventListener('blur', validateDescription);
+            }
+        }
+
+        // Individual field validation functions
+        function validateProductName() {
+            const productName = document.getElementById('productName');
+            const productNameGroup = productName.closest('.form-group');
+            const errorMsg = productNameGroup.querySelector('.error-message');
+            const value = productName.value.trim();
+
+            if (!value) {
+                showFieldError(productNameGroup, errorMsg, 'Product name is required');
+                return false;
+            } else if (value.length < 3) {
+                showFieldError(productNameGroup, errorMsg, 'Product name must be at least 3 characters long');
+                return false;
+            } else if (value.length > 100) {
+                showFieldError(productNameGroup, errorMsg, 'Product name cannot exceed 100 characters');
+                return false;
+            } else if (!/^[a-zA-Z0-9\s\-_&().,]+$/.test(value)) {
+                showFieldError(productNameGroup, errorMsg, 'Product name contains invalid characters');
+                return false;
+            } else {
+                hideFieldError(productNameGroup, errorMsg);
+                return true;
+            }
+        }
+
+        // Check for duplicate product name
+        async function checkDuplicateProductName(productName) {
+            try {
+                const response = await fetch('/admin/api/check-product-name', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productName: productName.trim() })
+                });
+
+                const result = await response.json();
+                return result.exists;
+            } catch (error) {
+                console.error('Error checking duplicate product name:', error);
+                return false; // Don't block submission on API error
+            }
+        }
+
+        function validateBrand() {
+            const brand = document.getElementById('brand');
+            const brandGroup = brand.closest('.form-group');
+            const errorMsg = brandGroup.querySelector('.error-message');
+            const value = brand.value.trim();
+
+            if (!value) {
+                showFieldError(brandGroup, errorMsg, 'Brand name is required');
+                return false;
+            } else if (value.length < 2) {
+                showFieldError(brandGroup, errorMsg, 'Brand name must be at least 2 characters long');
+                return false;
+            } else if (value.length > 50) {
+                showFieldError(brandGroup, errorMsg, 'Brand name cannot exceed 50 characters');
+                return false;
+            } else if (!/^[a-zA-Z0-9\s\-_&().,]+$/.test(value)) {
+                showFieldError(brandGroup, errorMsg, 'Brand name contains invalid characters');
+                return false;
+            } else {
+                hideFieldError(brandGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateCategory() {
+            const category = document.getElementById('category');
+            const categoryGroup = category.closest('.form-group');
+            const errorMsg = categoryGroup.querySelector('.error-message');
+
+            if (!category.value.trim()) {
+                showFieldError(categoryGroup, errorMsg, 'Please select a category');
+                return false;
+            } else {
+                hideFieldError(categoryGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateQuantity() {
+            const quantity = document.getElementById('quantity');
+            const quantityGroup = quantity.closest('.form-group');
+            const errorMsg = quantityGroup.querySelector('.error-message');
+            const value = quantity.value.trim();
+
+            if (!value) {
+                showFieldError(quantityGroup, errorMsg, 'Stock quantity is required');
+                return false;
+            }
+
+            const quantityValue = parseInt(value);
+            if (isNaN(quantityValue)) {
+                showFieldError(quantityGroup, errorMsg, 'Please enter a valid number');
+                return false;
+            } else if (quantityValue < 0) {
+                showFieldError(quantityGroup, errorMsg, 'Stock quantity cannot be negative');
+                return false;
+            } else if (!Number.isInteger(parseFloat(value))) {
+                showFieldError(quantityGroup, errorMsg, 'Stock quantity must be a whole number');
+                return false;
+            } else if (quantityValue > 10000) {
+                showFieldError(quantityGroup, errorMsg, 'Stock quantity cannot exceed 10,000');
+                return false;
+            } else {
+                hideFieldError(quantityGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateRegularPrice() {
+            const regularPrice = document.getElementById('regularPrice');
+            const regularPriceGroup = regularPrice.closest('.form-group');
+            const errorMsg = regularPriceGroup.querySelector('.error-message');
+            const value = regularPrice.value.trim();
+
+            if (!value) {
+                showFieldError(regularPriceGroup, errorMsg, 'Regular price is required');
+                return false;
+            }
+
+            const priceValue = parseFloat(value);
+            if (isNaN(priceValue)) {
+                showFieldError(regularPriceGroup, errorMsg, 'Please enter a valid price');
+                return false;
+            } else if (priceValue <= 0) {
+                showFieldError(regularPriceGroup, errorMsg, 'Price must be greater than 0');
+                return false;
+            } else if (priceValue > 1000000) {
+                showFieldError(regularPriceGroup, errorMsg, 'Price cannot exceed ₹10,00,000');
+                return false;
+            } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+                showFieldError(regularPriceGroup, errorMsg, 'Price can have maximum 2 decimal places');
+                return false;
+            } else {
+                hideFieldError(regularPriceGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateProductOffer() {
+            const productOffer = document.getElementById('productOffer');
+            const productOfferGroup = productOffer.closest('.form-group');
+            const errorMsg = productOfferGroup.querySelector('.error-message');
+            const value = productOffer.value.trim();
+
+            // Product offer is optional, so empty value is valid
+            if (!value) {
+                hideFieldError(productOfferGroup, errorMsg);
+                return true;
+            }
+
+            const offerValue = parseFloat(value);
+            if (isNaN(offerValue)) {
+                showFieldError(productOfferGroup, errorMsg, 'Please enter a valid offer percentage');
+                return false;
+            } else if (offerValue < 0) {
+                showFieldError(productOfferGroup, errorMsg, 'Offer percentage cannot be negative');
+                return false;
+            } else if (offerValue > 100) {
+                showFieldError(productOfferGroup, errorMsg, 'Offer percentage cannot exceed 100%');
+                return false;
+            } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+                showFieldError(productOfferGroup, errorMsg, 'Offer can have maximum 2 decimal places');
+                return false;
+            } else {
+                hideFieldError(productOfferGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateFeatures() {
+            const features = document.getElementById('features');
+            const featuresGroup = features.closest('.form-group');
+            const errorMsg = featuresGroup.querySelector('.error-message');
+            const value = features.value.trim();
+
+            if (!value) {
+                showFieldError(featuresGroup, errorMsg, 'Product features are required');
+                return false;
+            } else if (value.length < 10) {
+                showFieldError(featuresGroup, errorMsg, 'Features must be at least 10 characters long');
+                return false;
+            } else if (value.length > 500) {
+                showFieldError(featuresGroup, errorMsg, 'Features cannot exceed 500 characters');
+                return false;
+            } else {
+                hideFieldError(featuresGroup, errorMsg);
+                return true;
+            }
+        }
+
+        function validateDescription() {
+            const description = document.getElementById('description');
+            const descriptionGroup = description.closest('.form-group');
+            const errorMsg = descriptionGroup.querySelector('.error-message');
+            const value = description.value.trim();
+
+            if (!value) {
+                showFieldError(descriptionGroup, errorMsg, 'Product description is required');
+                return false;
+            } else if (value.length < 20) {
+                showFieldError(descriptionGroup, errorMsg, 'Description must be at least 20 characters long');
+                return false;
+            } else if (value.length > 2000) {
+                showFieldError(descriptionGroup, errorMsg, 'Description cannot exceed 2000 characters');
+                return false;
+            } else {
+                hideFieldError(descriptionGroup, errorMsg);
+                return true;
+            }
+        }
+
+        // Helper functions for showing/hiding field errors
+        function showFieldError(fieldGroup, errorElement, message) {
+            fieldGroup.classList.add('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function hideFieldError(fieldGroup, errorElement) {
+            fieldGroup.classList.remove('error');
+            errorElement.style.display = 'none';
+        }
+
+
+        // Handle file selection
+        function handleFileSelection(e) {
+            const files = Array.from(e.target.files);
+            console.log(`Selected ${files.length} files:`, files.map(f => f.name));
+
+            // Clear previous image errors
+            document.getElementById('imagesError').style.display = 'none';
+
+            // Check if no files selected
+            if (files.length === 0) {
+                document.getElementById('imagesError').textContent = 'Please upload at least 3 images';
+                document.getElementById('imagesError').style.display = 'block';
+                return;
+            }
+
+            // Validate file types first
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            const invalidFiles = [];
+            const validFiles = [];
+
+            files.forEach(file => {
+                if (allowedTypes.includes(file.type.toLowerCase())) {
+                    validFiles.push(file);
+                } else {
+                    invalidFiles.push(file.name);
+                }
+            });
+
+            // Show error for invalid file types
+            if (invalidFiles.length > 0) {
+                const errorMessage = `Invalid file type(s): ${invalidFiles.join(', ')}. Only JPEG, PNG, GIF, and WebP images are allowed.`;
+                document.getElementById('imagesError').textContent = errorMessage;
+                document.getElementById('imagesError').style.display = 'block';
+                e.target.value = ''; // Clear the input
+                return;
+            }
+
+            // Check minimum number of valid files
+            if (validFiles.length < 3) {
+                const errorMessage = validFiles.length === 0 ?
+                    'Please upload at least 3 images' :
+                    `Please upload at least 3 images. Currently have: ${validFiles.length} image(s)`;
+
+                document.getElementById('imagesError').textContent = errorMessage;
+                document.getElementById('imagesError').style.display = 'block';
+                e.target.value = ''; // Clear the input
+                return;
+            }
+
+            // All validations passed
+            document.getElementById('imagesError').style.display = 'none';
+            document.getElementById('imagePreviews').innerHTML = '';
+            croppedImages = [];
+            selectedFiles = validFiles;
+            currentFileIndex = 0;
+
+            console.log('Starting image processing sequence...');
+
+            // Show info message
+            Swal.fire({
+                title: 'Image Cropping',
+                text: `You selected ${validFiles.length} valid images. Each image will be cropped individually.`,
+                icon: 'info',
+                confirmButtonText: 'Start Cropping'
+            }).then(() => {
+                processImageSequentially(validFiles, 0);
+            });
+        }
+
+        // Process images one by one
+        function processImageSequentially(files, index) {
+            console.log(`Processing image ${index + 1} of ${files.length}`);
+
+            if (index >= files.length) {
+                console.log('All images processed!');
+                console.log('Final cropped images array:', croppedImages);
+
+                // Show completion message
+                Swal.fire({
+                    title: 'All Images Cropped!',
+                    text: `Successfully cropped ${files.length} images. You can now fill in the product details and save.`,
+                    icon: 'success',
+                    confirmButtonText: 'Continue'
+                });
+                return;
+            }
+
+            const file = files[index];
+            console.log(`Initializing cropper for file: ${file.name}`);
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                console.error(`File ${file.name} is not an image`);
+                Swal.fire('Error!', `File "${file.name}" is not a valid image`, 'error');
+                return;
+            }
+
+            initializeCropper(file, index, () => {
+                console.log(`Finished cropping image ${index + 1}, moving to next...`);
+                processImageSequentially(files, index + 1);
+            });
+        }
+
+       // Initialize cropper for a file
+function initializeCropper(file, index, callback) {
+    console.log(`Initializing cropper for image ${index + 1}: ${file.name}`);
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        console.log(`File loaded for cropping: ${file.name}`);
+
+        const img = document.getElementById('cropperImage');
+        if (!img) {
+            console.error('Cropper image element not found!');
+            return;
+        }
+
+        img.src = e.target.result;
+
+        // Destroy existing cropper if any
+        if (currentCropper) {
+            console.log('Destroying existing cropper');
+            currentCropper.destroy();
+            currentCropper = null;
+        }
+
+        // Wait for image to load before initializing cropper
+        img.onload = function () {
+            console.log('Image loaded, initializing Cropper.js');
+            console.log('Image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+            console.log('Image src length:', img.src.length);
+
+            try {
+    // Check if Cropper is available
+    if (typeof Cropper === 'undefined') {
+        throw new Error('Cropper.js is not available');
+    }
+
+    console.log('Preparing to show modal and initialize cropper...');
+
+    // Update modal title FIRST
+    document.querySelector('#cropModal .modal-title').textContent = `Crop Image ${index + 1} of ${selectedFiles.length}`;
+
+    // Show modal FIRST
+    console.log('Showing crop modal');
+    cropModal.show();
+
+    //  Use vanilla JavaScript instead of jQuery
+    const cropModalElement = document.getElementById('cropModal');
+    
+    // Listen for modal shown event
+    cropModalElement.addEventListener('shown.bs.modal', function modalShownHandler() {
+        console.log('Modal fully shown, now creating cropper...');
+        
+        // Remove the event listener after it fires once
+        cropModalElement.removeEventListener('shown.bs.modal', modalShownHandler);
+        
+        setTimeout(() => {
+            try {
+                currentCropper = new Cropper(img, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 1,
+                    responsive: true,
+                    background: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    ready: function () {
+                        console.log('Cropper initialized after modal fully shown');
+                    },
+                    error: function (event) {
+                        console.error('Cropper error event:', event);
+                    }
+                });
+
+                console.log('Cropper instance created:', currentCropper);
+                currentFileIndex = index;
+                currentCallback = callback;
+
+            } catch (cropperError) {
+                console.error('Failed to create Cropper instance:', cropperError);
+                useSimpleCropping(img, index, callback);
+                return;
+            }
+        }, 100);
+    });
+
+} catch (error) {
+    console.error('Error in modal/cropper setup:', error);
+    console.error('Error stack:', error.stack);
+    Swal.fire('Error!', `Failed to initialize image cropper: ${error.message}`, 'error');
+}
+
+        };
+
+        img.onerror = function () {
+            console.error('Failed to load image for cropping');
+            Swal.fire('Error!', 'Failed to load image for cropping', 'error');
+        };
+    };
+
+    reader.onerror = function () {
+        console.error('Failed to read file');
+        Swal.fire('Error!', 'Failed to read the selected file', 'error');
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+        // Handle crop confirmation
+        function handleCropConfirm() {
+            console.log('Crop confirm clicked');
+
+            if (!currentCropper) {
+                console.error('No cropper instance found');
+                Swal.fire('Error!', 'No cropper instance found', 'error');
+                return;
+            }
+
+            try {
+                console.log('Getting cropped canvas...');
+                const canvas = currentCropper.getCroppedCanvas({
+                    width: 800,
+                    height: 800,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+
+                if (!canvas) {
+                    throw new Error('Failed to get cropped canvas');
+                }
+
+                // Convert canvas to base64
+                const croppedImageData = canvas.toDataURL('image/jpeg', 0.9);
+                console.log(`Created cropped image ${currentFileIndex + 1}, size: ${croppedImageData.length} characters`);
+
+                // Create enhanced preview with star button
+                createImagePreview(croppedImageData, currentFileIndex);
+
+                // Store cropped image data
+                croppedImages[currentFileIndex] = croppedImageData;
+                console.log(`Stored cropped image ${currentFileIndex + 1}`);
+
+                // Clean up
+                currentCropper.destroy();
+                currentCropper = null;
+
+                // Hide modal
+                cropModal.hide();
+
+                // Show success message for this image
+                const remainingImages = selectedFiles.length - currentFileIndex - 1;
+                if (remainingImages > 0) {
+                    Swal.fire({
+                        title: 'Image Cropped!',
+                        text: `Image ${currentFileIndex + 1} cropped successfully. ${remainingImages} more to go.`,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+
+                // Call callback to process next image
+                setTimeout(() => {
+                    if (currentCallback) {
+                        currentCallback();
+                    }
+                }, remainingImages > 0 ? 1500 : 500);
+
+            } catch (error) {
+                console.error('Error during crop confirmation:', error);
+                Swal.fire('Error!', `Failed to crop image: ${error.message}`, 'error');
+            }
+        }
+
+        // Remove image
+        function removeImage(index) {
+            console.log(`Removing image at index ${index}`);
+
+            // Remove from arrays
+            croppedImages.splice(index, 1);
+            selectedFiles.splice(index, 1);
+
+            // Update main image index if needed
+            if (mainImageIndex === index) {
+                mainImageIndex = 0; // Set first image as main
+            } else if (mainImageIndex > index) {
+                mainImageIndex--;
+            }
+
+            // Update preview display
+            updateImagePreviews();
+
+            // Update validation
+            const validImages = croppedImages.filter(img => img);
+            if (validImages.length < 3) {
+                document.getElementById('imagesError').textContent = `At least 3 images required. Currently have: ${validImages.length}`;
+                document.getElementById('imagesError').style.display = 'block';
+            } else {
+                document.getElementById('imagesError').style.display = 'none';
+            }
+
+            console.log(`Remaining images: ${validImages.length}`);
+        }
+
+        // Calculate sale price based on regular price and discount
+        function calculateSalePrice() {
+            const regularPriceInput = document.getElementById('regularPrice');
+            const discountInput = document.getElementById('productOffer');
+            const salePriceInput = document.getElementById('salePrice');
+
+            const regularPrice = parseFloat(regularPriceInput.value) || 0;
+            const discount = parseFloat(discountInput.value) || 0;
+
+            if (regularPrice > 0) {
+                // Calculate sale price: Regular Price - (Regular Price * Discount / 100)
+                const discountAmount = (regularPrice * discount) / 100;
+                const salePrice = regularPrice - discountAmount;
+
+                // Set the calculated sale price (rounded to nearest whole number)
+                salePriceInput.value = Math.round(salePrice);
+
+                // Update visual feedback
+                updatePriceDisplay(regularPrice, discount, salePrice);
+
+                // Validate the calculated price
+                validatePrices();
+            } else {
+                salePriceInput.value = '';
+                clearPriceDisplay();
+            }
+        }
+
+        // Update price display with visual feedback
+        function updatePriceDisplay(regularPrice, discount, salePrice) {
+            const salePriceGroup = document.getElementById('salePrice').closest('.form-group');
+            const discountGroup = document.getElementById('productOffer').closest('.form-group');
+
+            // Add success styling
+            salePriceGroup.classList.remove('error');
+            salePriceGroup.classList.add('calculated');
+
+            // Show savings if discount is applied
+            if (discount > 0) {
+                const savings = regularPrice - salePrice;
+                const salePriceInput = document.getElementById('salePrice');
+                salePriceInput.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+                salePriceInput.style.color = '#155724';
+                salePriceInput.style.fontWeight = '600';
+
+                // Update placeholder to show savings
+                salePriceInput.placeholder = `Saved $${savings.toFixed(2)} (${discount}% off)`;
+            } else {
+                const salePriceInput = document.getElementById('salePrice');
+                salePriceInput.style.background = '#f8f9fa';
+                salePriceInput.style.color = '#495057';
+                salePriceInput.style.fontWeight = 'normal';
+                salePriceInput.placeholder = 'Same as regular price (no discount)';
+            }
+        }
+
+        // Clear price display styling
+        function clearPriceDisplay() {
+            const salePriceInput = document.getElementById('salePrice');
+            const salePriceGroup = salePriceInput.closest('.form-group');
+
+            salePriceGroup.classList.remove('calculated', 'error');
+            salePriceInput.style.background = '';
+            salePriceInput.style.color = '';
+            salePriceInput.style.fontWeight = '';
+            salePriceInput.placeholder = 'Auto-calculated from regular price and discount';
+        }
+
+        // Validate prices
+        function validatePrices() {
+            const regularPrice = parseFloat(document.getElementById('regularPrice').value) || 0;
+            const salePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+
+            const salePriceGroup = document.getElementById('salePrice').closest('.form-group');
+            const errorMsg = salePriceGroup.querySelector('.error-message');
+
+            if (salePrice > regularPrice && regularPrice > 0) {
+                salePriceGroup.classList.add('error');
+                errorMsg.textContent = 'Sale price cannot be higher than regular price';
+                errorMsg.style.display = 'block';
+            } else {
+                salePriceGroup.classList.remove('error');
+                errorMsg.style.display = 'none';
+            }
+        }
+
+        // Validate form
+        function validateForm() {
+            let isValid = true;
+
+            // Run all individual field validations
+            if (!validateProductName()) isValid = false;
+            if (!validateBrand()) isValid = false;
+            if (!validateCategory()) isValid = false;
+            if (!validateRegularPrice()) isValid = false;
+            if (!validateQuantity()) isValid = false;
+            if (!validateFeatures()) isValid = false;
+            if (!validateDescription()) isValid = false;
+            if (!validateProductOffer()) isValid = false;
+
+            // Validate sale price (auto-calculated field)
+            const salePrice = document.getElementById('salePrice');
+            const salePriceGroup = salePrice.closest('.form-group');
+            const salePriceError = salePriceGroup.querySelector('.error-message');
+            const salePriceValue = parseFloat(salePrice.value);
+            const regularPriceValue = parseFloat(document.getElementById('regularPrice').value);
+
+            if (!salePrice.value.trim()) {
+                showFieldError(salePriceGroup, salePriceError, 'Sale price is required (auto-calculated)');
+                isValid = false;
+            } else if (isNaN(salePriceValue) || salePriceValue <= 0) {
+                showFieldError(salePriceGroup, salePriceError, 'Invalid sale price calculation');
+                isValid = false;
+            } else if (salePriceValue > regularPriceValue && regularPriceValue > 0) {
+                showFieldError(salePriceGroup, salePriceError, 'Sale price cannot be higher than regular price');
+                isValid = false;
+            } else {
+                hideFieldError(salePriceGroup, salePriceError);
+            }
+
+            // Validate Images
+            const validCroppedImages = croppedImages.filter(img => img);
+            console.log(`Validation: Found ${validCroppedImages.length} cropped images`);
+
+            if (validCroppedImages.length < 3) {
+                document.getElementById('imagesError').textContent = `Please upload and crop at least 3 images. Currently have: ${validCroppedImages.length}`;
+                document.getElementById('imagesError').style.display = 'block';
+                isValid = false;
+            } else {
+                document.getElementById('imagesError').style.display = 'none';
+            }
+
+            console.log(`Form validation result: ${isValid}`);
+
+            // Show summary of validation errors if any
+            if (!isValid) {
+                const errorFields = document.querySelectorAll('.form-group.error');
+                const errorCount = errorFields.length;
+
+                if (errorCount > 0) {
+                    // Scroll to first error
+                    errorFields[0].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    // Show summary toast
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Errors',
+                        text: `Please fix ${errorCount} field error(s) before submitting.`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 4000,
+                        timerProgressBar: true
+                    });
+                }
+            }
+
+            return isValid;
+        }
+
+        // Handle form submission
+        async function handleFormSubmission(e) {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                Swal.fire('Validation Error!', 'Please check the form and fix all validation errors before submitting.', 'error');
+                return;
+            }
+
+            console.log('Submitting form...');
+            console.log('Cropped images:', croppedImages.filter(img => img));
+
+            Swal.fire({
+                title: 'Saving Product...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            try {
+                // Prepare form data
+                const formData = {
+                    productName: document.getElementById('productName').value,
+                    brand: document.getElementById('brand').value,
+                    category: document.getElementById('category').value,
+                    quantity: document.getElementById('quantity').value,
+                    regularPrice: document.getElementById('regularPrice').value,
+                    salePrice: document.getElementById('salePrice').value,
+                    productOffer: document.getElementById('productOffer').value || '0',
+                    features: document.getElementById('features').value,
+                    description: document.getElementById('description').value,
+                    croppedImages: JSON.stringify(croppedImages.filter(img => img)),
+                    mainImageIndex: mainImageIndex !== null ? mainImageIndex : 0
+                };
+
+                console.log('Form data:', formData);
+                console.log('Main image index being sent:', formData.mainImageIndex);
+                console.log('Total images being sent:', croppedImages.filter(img => img).length);
+
+                const response = await fetch('/admin/api/products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Response content type:', response.headers.get('content-type'));
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                let result;
+
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                    console.log('Server response:', result);
+
+                    if (response.ok && result.success) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Product has been added successfully!',
+                            icon: 'success',
+                            confirmButtonText: 'Go to Products'
+                        }).then(() => window.location.href = '/admin/get-product');
+                    } else {
+                        // Handle specific field errors (like duplicate product name)
+                        if (result.field === 'productName') {
+                            const productNameGroup = document.getElementById('productName').closest('.form-group');
+                            const errorMsg = productNameGroup.querySelector('.error-message');
+                            showFieldError(productNameGroup, errorMsg, result.message);
+
+                            // Scroll to the product name field
+                            document.getElementById('productName').scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+
+                            Swal.fire('Validation Error!', result.message, 'error');
+                        } else {
+                            throw new Error(result.message || 'Failed to save product');
+                        }
+                    }
+                } else {
+                    // If not JSON, get text to see what we're receiving
+                    const text = await response.text();
+                    console.log('Non-JSON response received:', text.substring(0, 500));
+                    throw new Error('Server returned HTML instead of JSON. This usually means authentication failed or wrong route.');
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                Swal.fire('Error!', `Failed to save product: ${error.message}`, 'error');
+            }
+        }
+
+        // Simple canvas-based cropping fallback
+        function useSimpleCropping(img, index, callback) {
+            console.log('Using simple canvas cropping fallback');
+
+            // Create a canvas for simple cropping
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to square (800x800)
+            canvas.width = 800;
+            canvas.height = 800;
+
+            // Calculate dimensions to crop to square
+            const size = Math.min(img.naturalWidth, img.naturalHeight);
+            const x = (img.naturalWidth - size) / 2;
+            const y = (img.naturalHeight - size) / 2;
+
+            // Draw cropped image to canvas
+            ctx.drawImage(img, x, y, size, size, 0, 0, 800, 800);
+
+            // Convert to base64
+            const croppedImageData = canvas.toDataURL('image/jpeg', 0.9);
+
+            console.log(`Simple crop completed for image ${index + 1}`);
+
+            // Create preview
+            const preview = document.createElement('div');
+            preview.className = 'image-preview';
+            preview.innerHTML = `
+                <img src="${croppedImageData}" alt="Preview ${index + 1}">
+                <button type="button" class="image-remove" onclick="removeImage(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+                <span class="image-label">Image ${index + 1} (Auto-cropped)</span>
+            `;
+            document.getElementById('imagePreviews').appendChild(preview);
+
+            // Store cropped image data
+            croppedImages[index] = croppedImageData;
+
+            // Hide modal and continue
+            cropModal.hide();
+
+            // Show success message
+            Swal.fire({
+                title: 'Auto-Cropped!',
+                text: `Image ${index + 1} was automatically cropped to square format.`,
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            // Continue to next image
+            setTimeout(() => {
+                if (callback) callback();
+            }, 1500);
+        }
+
+        // Create enhanced image preview with star button for main image selection
+        function createImagePreview(imageData, index) {
+            // Set first image as main if no main image is set yet
+            if (mainImageIndex === null) {
+                mainImageIndex = 0;
+                console.log('Setting first image as main image automatically');
+            }
+
+            const isMainImage = index === mainImageIndex;
+            console.log(`Creating preview for image ${index + 1}, isMain: ${isMainImage}, mainImageIndex: ${mainImageIndex}`);
+
+            const preview = document.createElement('div');
+            preview.className = `image-preview ${isMainImage ? 'main-image' : ''}`;
+            preview.draggable = true;
+            preview.dataset.index = index;
+
+            preview.innerHTML = `
+                <img src="${imageData}" alt="Preview ${index + 1}">
+                <div class="image-controls">
+                    <button type="button" class="image-btn main-btn ${isMainImage ? 'active' : ''}" data-index="${index}" title="Set as main image">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <button type="button" class="image-btn remove-btn" data-index="${index}" title="Remove image">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="image-order">${index + 1}</div>
+                ${isMainImage ? '<div class="main-image-badge">Main</div>' : ''}
+                <span class="image-label">${isMainImage ? 'Main Image' : `Image ${index + 1}`}</span>
+            `;
+
+            // Add event listeners for buttons
+            const mainBtn = preview.querySelector('.main-btn');
+            const removeBtn = preview.querySelector('.remove-btn');
+
+            mainBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                console.log(`Star clicked for image ${index + 1}`);
+                setMainImage(index);
+            });
+
+            removeBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                console.log(`Remove clicked for image ${index + 1}`);
+                removeImage(index);
+            });
+
+            // Add drag and drop event listeners
+            preview.addEventListener('dragstart', handleDragStart);
+            preview.addEventListener('dragover', handleDragOver);
+            preview.addEventListener('drop', handleDrop);
+            preview.addEventListener('dragend', handleDragEnd);
+
+            document.getElementById('imagePreviews').appendChild(preview);
+        }
+
+        // Set main image function
+        function setMainImage(index) {
+            console.log(`Setting image ${index + 1} as main image`);
+            console.log(`Previous main image index: ${mainImageIndex}`);
+            mainImageIndex = index;
+            console.log(`New main image index: ${mainImageIndex}`);
+            updateImagePreviews();
+
+            // Show confirmation
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true
+            });
+
+            Toast.fire({
+                icon: 'success',
+                title: `Image ${index + 1} set as main image!`
+            });
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.target.dataset.index);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.target.closest('.image-preview')?.classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const dropIndex = parseInt(e.target.closest('.image-preview').dataset.index);
+
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                // Reorder arrays
+                const draggedImage = croppedImages[draggedIndex];
+                const draggedFile = selectedFiles[draggedIndex];
+
+                // Remove from original position
+                croppedImages.splice(draggedIndex, 1);
+                selectedFiles.splice(draggedIndex, 1);
+
+                // Insert at new position
+                const newIndex = dropIndex > draggedIndex ? dropIndex - 1 : dropIndex;
+                croppedImages.splice(newIndex, 0, draggedImage);
+                selectedFiles.splice(newIndex, 0, draggedFile);
+
+                // Update main image index if needed
+                if (mainImageIndex === draggedIndex) {
+                    mainImageIndex = newIndex;
+                } else if (draggedIndex < mainImageIndex && newIndex >= mainImageIndex) {
+                    mainImageIndex--;
+                } else if (draggedIndex > mainImageIndex && newIndex <= mainImageIndex) {
+                    mainImageIndex++;
+                }
+
+                updateImagePreviews();
+                console.log('Images reordered successfully');
+            }
+
+            e.target.closest('.image-preview')?.classList.remove('drag-over');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.image-preview').forEach(preview => {
+                preview.classList.remove('drag-over');
+            });
+            draggedIndex = null;
+        }
+
+        // Update image previews
+        function updateImagePreviews() {
+            console.log('Updating image previews...');
+            console.log('Current main image index:', mainImageIndex);
+            console.log('Total cropped images:', croppedImages.length);
+
+            const container = document.getElementById('imagePreviews');
+            container.innerHTML = '';
+
+            croppedImages.forEach((imageData, index) => {
+                if (imageData) {
+                    console.log(`Creating preview for image ${index + 1}, isMain: ${index === mainImageIndex}`);
+                    createImagePreview(imageData, index);
+                }
+            });
+
+            console.log('Image previews updated successfully');
+        }
+
+    </script>
+</body>
+
+</html>
