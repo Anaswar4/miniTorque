@@ -91,12 +91,6 @@ router.get("/home", validateSession, addUserContext, checkUserBlocked, userContr
 // Logout route
 router.get("/logout", isUserAuthenticated, preventCache, checkUserBlocked, userController.logout);
 
-// Product-related routes
-// router.post("/product/:id/review", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.submitReview);
-// router.post("/product/:id/review/:reviewId/helpful", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.markHelpful);
-// router.get("/product/:id/status", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.checkProductStatus);
-
-
 // API routes for products with offers
 router.get("/api/products", validateSession, addUserContext, checkUserBlocked, userProductController.getProducts);
 router.get("/api/products/featured", validateSession, addUserContext, checkUserBlocked, userProductController.getFeaturedProducts);
@@ -106,6 +100,6 @@ router.get("/api/category/:categoryId/products", validateSession, addUserContext
 
 // Shop Page
 router.get("/shopPage", validateSession, addUserContext, checkUserBlocked, userProductController.getShopPage);
-
+router.get("/product/:id", validateSession, addUserContext, checkUserBlocked, userProductController.getProductDetails);
 
 module.exports = router;

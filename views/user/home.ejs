@@ -660,7 +660,7 @@ function displayProducts(products, containerId) {
 }
 
 // ====== WISHLIST FUNCTIONALITY ======
-// Toggle wishlist function (for FontAwesome icons)
+// Toggle wishlist function 
 function toggleWishlist(productId, buttonElement) {
     const heartIcon = buttonElement.querySelector('i');
     const isActive = buttonElement.classList.contains('active');
@@ -767,7 +767,7 @@ function initializeSmoothScrolling() {
 // View product function
 function viewProduct(productId) {
     console.log('View product:', productId);
-    // Example: window.location.href = `/product/${productId}`;
+     window.location.href = `/product/${productId}`;
 }
 
 // Add to cart function
@@ -790,7 +790,7 @@ function addToCart(productId) {
 // View all products function
 function viewAllProducts() {
     console.log('View all products');
-    // Example: window.location.href = '/products';
+     window.location.href = '/shopPage';
 }
 
 // ====== SCROLL ANIMATIONS ======

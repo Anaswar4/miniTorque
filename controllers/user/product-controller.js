@@ -307,9 +307,7 @@ const searchProducts = async (req, res) => {
     }
 };
 
-/**
- * ✅ NEW: Get shop page with server-side filtering and pagination
- */
+/* Get shop page with server-side filtering and pagination*/
 const getShopPage = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -457,6 +455,106 @@ const getShopPage = async (req, res) => {
         });
     }
 };
+const getProductDetails = async (req, res) => {
+    try {
+        const userId = req.session.user_id || null;
+        const productId = req.params.id;
+
+        // Find product and populate category
+        const product = await Product.findOne({
+            _id: productId,
+            isDeleted: false,
+            isBlocked: false,
+            isListed: true
+        }).populate('category', 'name description');
+
+        // Check if product exists and is available
+        if (!product) {
+            return res.status(404).render('pageNotFound', {
+                message: 'Product not found',
+                user: userId ? { id: userId } : null
+            });
+        }
+
+        // Get related products from same category (excluding current product)
+        const relatedProducts = await Product.find({
+            _id: { $ne: product._id },
+            category: product.category._id,
+            isDeleted: false,
+            isBlocked: false,
+            isListed: true,
+            status: "Available"
+        })
+        .populate('category', 'name')
+        .sort({ createdAt: -1 })
+        .limit(4)
+        .lean();
+
+        // Add calculated fields for related products
+        relatedProducts.forEach(relatedProduct => {
+            // Calculate final price (with productOffer if any)
+            if (relatedProduct.productOffer && relatedProduct.productOffer > 0) {
+                relatedProduct.finalPrice = relatedProduct.salePrice * (1 - relatedProduct.productOffer / 100);
+                relatedProduct.hasOffer = true;
+            } else {
+                relatedProduct.finalPrice = relatedProduct.salePrice;
+                relatedProduct.hasOffer = false;
+            }
+
+            // Check if product is new (created within last 30 days)
+            const now = new Date();
+            const createdAt = new Date(relatedProduct.createdAt);
+            const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+            relatedProduct.isNew = diffDays <= 30;
+        });
+
+        // Add calculated fields for main product
+        let finalPrice = product.salePrice;
+        let hasOffer = false;
+        let discountAmount = 0;
+
+        if (product.productOffer && product.productOffer > 0) {
+            finalPrice = product.salePrice * (1 - product.productOffer / 100);
+            hasOffer = true;
+            discountAmount = product.salePrice - finalPrice;
+        }
+
+        // Add calculated fields to product
+        product.finalPrice = finalPrice;
+        product.hasOffer = hasOffer;
+        product.discountAmount = discountAmount;
+
+        // Debug logging
+        console.log('Product details loaded:', {
+            productName: product.productName,
+            brand: product.brand,
+            salePrice: product.salePrice,
+            finalPrice: finalPrice,
+            productOffer: product.productOffer,
+            hasOffer: hasOffer,
+            quantity: product.quantity,
+            status: product.status,
+            relatedProductsCount: relatedProducts.length
+        });
+
+        // Render the product details page
+        res.render('user/product-details', {
+            product,
+            relatedProducts,
+            user: userId ? { id: userId } : null,
+            isAuthenticated: !!userId,
+            currentPage: 'product-details'
+        });
+
+    } catch (error) {
+        console.error('Error fetching product details:', error);
+        res.status(500).render('pageNotFound', {
+            message: 'Error loading product details',
+            user: req.session.user_id ? { id: req.session.user_id } : null
+        });
+    }
+};
+
 
 
 module.exports = {
@@ -465,5 +563,6 @@ module.exports = {
     getProductsByCategory,
     getFeaturedProducts,
     searchProducts,
-    getShopPage  
+    getShopPage,
+    getProductDetails
 };
