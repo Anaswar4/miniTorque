@@ -11,13 +11,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
-  <!-- Fixed: Matching Bootstrap versions -->
+  <!--  Bootstrap versions -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   
-  <style>
+<style>
     .dropdown-menu {
       border-radius: 15px;
       padding: 10px 0;
@@ -168,9 +168,10 @@
       background-color: #f5f5f5;
     }
 
+    /*  Square images and better text handling */
     .search-result-item img {
-      width: 40px;
-      height: 60px;
+      width: 45px;                    
+      height: 45px;                   
       object-fit: cover;
       border-radius: 0.25rem;
       margin-right: 15px;
@@ -179,11 +180,22 @@
     .search-result-item .title {
       font-size: 0.9rem;
       font-weight: 500;
+      white-space: nowrap;            
+      overflow: hidden;               
+      text-overflow: ellipsis;        
     }
 
     .search-result-item .author {
       font-size: 0.75rem;
       color: #6b7280;
+    }
+
+    /*  Price styling */
+    .search-result-item .price {
+      font-size: 0.8rem;
+      color: #000;
+      font-weight: 600;
+      margin-top: 2px;
     }
 
     .no-results {
@@ -304,7 +316,44 @@
       left: auto;
       z-index: 1000;
     }
-  </style>
+
+    /*  Clear button styles */
+    .search-clear-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #6b7280;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .search-clear-btn:hover {
+      background-color: #f3f4f6;
+      color: #dc3545;
+    }
+
+    .search-clear-btn:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    /* Adjust search input padding to make room for clear button */
+    .search-input input.has-clear {
+      padding-right: 2.5rem !important;
+    }
+
+    /* Search input focus with clear button */
+    .search-input input:focus + .search-icon + .search-clear-btn {
+      color: #dc3545;
+    }
+</style>
+
 </head>
 
 <body class="paper-texture">
@@ -337,28 +386,31 @@
           <div class="mobile-search">
             <div class="search-input">
               <input type="text" id="mobileSearchInput" name="mobileSearch" class="form-control ps-4 search-field" placeholder="Search..."
-                style="border-radius: 0.5rem; padding-left: 2.5rem" autocomplete="off" />
+                style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem" autocomplete="off" />
               <div class="search-icon">
                 <i class="ri-search-line"></i>
               </div>
+              <!--  NEW: Clear button for mobile -->
+              <button type="button" class="search-clear-btn" id="mobileClearBtn" title="Clear search" style="display: none;">
+                <i class="ri-close-line"></i>
+              </button>
               <div class="search-results" id="mobileSearchResults"></div>
             </div>
           </div>
           <div class="search-input d-none d-lg-block me-3">
             <input type="text" id="desktopSearchInput" name="desktopSearch" class="form-control ps-4 search-field" placeholder="Search..."
-              style="border-radius: 0.5rem; padding-left: 2.5rem" autocomplete="off" />
+              style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem" autocomplete="off" />
             <div class="search-icon">
               <i class="ri-search-line"></i>
             </div>
+            <!--  Clear button for desktop -->
+            <button type="button" class="search-clear-btn" id="desktopClearBtn" title="Clear search" style="display: none;">
+              <i class="ri-close-line"></i>
+            </button>
             <div class="search-results" id="desktopSearchResults"></div>
           </div>
           <div class="header-icons">
-            <%# Check if user is authenticated %>
-            <% 
-              // Debug: Log user object
-              console.log('User object in template:', typeof user !== 'undefined' ? user : 'undefined');
-              console.log('User exists:', typeof user !== 'undefined' && user);
-            %>
+           
             <% if (typeof user === 'undefined' || !user) { %>
               <!-- Not authenticated -->
               <a href="/login" class="icon-btn" title="Wishlist">
@@ -445,6 +497,8 @@
       const searchFields = document.querySelectorAll(".search-field");
       const desktopResults = document.getElementById("desktopSearchResults");
       const mobileResults = document.getElementById("mobileSearchResults");
+      const mobileClearBtn = document.getElementById("mobileClearBtn");
+      const desktopClearBtn = document.getElementById("desktopClearBtn");
       let debounceTimeout;
 
       function debounce(func, wait) {
@@ -456,10 +510,13 @@
 
       async function fetchSearchResults(query) {
         try {
-          const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+          //  existing API route
+          const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`);
           if (!response.ok) throw new Error("Network response was not ok");
-          const products = await response.json();
-          return products;
+          const data = await response.json();
+          
+          //  Return the products array from your API response
+          return data.success ? data.products : [];
         } catch (error) {
           console.error("Error fetching search results:", error);
           return [];
@@ -476,24 +533,75 @@
 
         products.forEach((product) => {
           const item = document.createElement("a");
-          item.href = `/products/${product._id}`;
+          //  Update href to match your route structure (adjust as needed)
+          item.href = `#`; // Or `/product/${product._id}` if you have that route
           item.classList.add("search-result-item");
+          
+          //  Use your actual product schema fields
           item.innerHTML = `
-              <img src="${product.mainImage || "/images/default-product.png"}" alt="${product.title}" />
+              <img src="/uploads/products/${product.mainImage}" 
+                   alt="${product.productName}" 
+                   onerror="this.src='/assets/placeholder.jpg'" />
               <div>
-                <div class="title">${product.title}</div>
-                <div class="author">${product.author}</div>
+                <div class="title">${product.productName}</div>
+                <div class="author">${product.brand}</div>
+                <div class="price">₹${product.salePrice.toFixed(2)}</div>
               </div>
             `;
+          
+          // Add click handler to view product
+          item.addEventListener('click', (e) => {
+            e.preventDefault();
+            viewProduct(product._id); // Use your existing viewProduct function
+          });
+          
           resultsContainer.appendChild(item);
         });
         resultsContainer.classList.add("show");
       }
 
+      //  Clear search functionality
+      function clearSearch(inputField, resultsContainer, clearBtn) {
+        inputField.value = '';
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.remove('show');
+        clearBtn.style.display = 'none';
+        inputField.classList.remove('has-clear');
+        inputField.focus();
+      }
+
+      //  Toggle clear button visibility
+      function toggleClearButton(inputField, clearBtn) {
+        const hasValue = inputField.value.trim().length > 0;
+        clearBtn.style.display = hasValue ? 'block' : 'none';
+        
+        if (hasValue) {
+          inputField.classList.add('has-clear');
+        } else {
+          inputField.classList.remove('has-clear');
+        }
+      }
+
+
+      //  Placeholder viewProduct function
+      function viewProduct(productId) {
+        console.log('View product:', productId);
+        // You can implement navigation to product detail page here
+        // window.location.href = `/product/${productId}`;
+      }
+
+      //  Search field event listeners
       searchFields.forEach((field) => {
+        const isMobile = field.id === 'mobileSearchInput';
+        const resultsContainer = isMobile ? mobileResults : desktopResults;
+        const clearBtn = isMobile ? mobileClearBtn : desktopClearBtn;
+
+        // Input event with clear button toggle
         field.addEventListener("input", debounce(async function () {
           const query = this.value.trim();
-          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
+          
+          // Toggle clear button
+          toggleClearButton(this, clearBtn);
 
           if (query.length < 2) {
             resultsContainer.classList.remove("show");
@@ -505,20 +613,38 @@
           renderSearchResults(products, resultsContainer);
         }, 300));
 
+        // Focus event
         field.addEventListener("focus", function () {
-          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
+          toggleClearButton(this, clearBtn);
           if (resultsContainer.innerHTML) {
             resultsContainer.classList.add("show");
           }
         });
 
+        // Blur event
         field.addEventListener("blur", function (e) {
-          const resultsContainer = this.closest(".mobile-search") ? mobileResults : desktopResults;
           setTimeout(() => {
-            if (!resultsContainer.contains(e.relatedTarget)) {
+            if (!resultsContainer.contains(e.relatedTarget) && 
+                !clearBtn.contains(e.relatedTarget)) {
               resultsContainer.classList.remove("show");
             }
           }, 200);
+        });
+
+        //  Clear button click event
+        if (clearBtn) {
+          clearBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            clearSearch(field, resultsContainer, clearBtn);
+          });
+        }
+
+        //  Escape key to clear
+        field.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            clearSearch(field, resultsContainer, clearBtn);
+          }
         });
       });
 

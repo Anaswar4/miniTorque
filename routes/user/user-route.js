@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const userController = require("../../controllers/user/user-controller");
+const userProductController = require("../../controllers/user/product-controller");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession } = require("../../middlewares/user-middleware");
 const { addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 
@@ -69,88 +70,42 @@ router.post("/resend-otp", redirectIfAuthenticated, userController.resendOTP);
 
 
 // Login route
-
 router.post("/login", redirectIfAuthenticated, userController.login);
 
 
 // Forgot password routes - redirect authenticated users
-//  Show forgot password page (GET)
-router.get(
-  "/forgot-password",
-  preventCache,
-  redirectIfAuthenticated,
-  validateSession,
-  userController.forgotPasswordPage
-);
-
-//  Handle forgot password form (POST)
-router.post(
-  "/forgot-password",
-  redirectIfAuthenticated,
-  userController.handleForgotPassword
-);
-
-//  Show OTP verification page (GET)
-router.get(
-  "/forgot-verify-otp",
-  preventCache,
-  redirectIfAuthenticated,
-  validateSession,
-  userController.showForgotOtpPage
-);
-
-// Handle OTP verification (POST)
-router.post(
-  "/forgot-verify-otp",
-  redirectIfAuthenticated,
-  userController.verifyForgotOtp
-);
-
-// Resend OTP for forgot password (POST)
-router.post(
-  "/resend-forgot-verify-otp",
-  redirectIfAuthenticated,
-  userController.resendForgotOtp
-);
-
-//  Render password reset page at /new-password (GET)
-router.get(
-  "/new-password",
-  preventCache,
-  redirectIfAuthenticated,
-  validateSession,
-  userController.renderResetPasswordPage
-);
-
-//  Render password reset page at /reset-password (GET) — add this!
-router.get(
-  "/reset-password",
-  preventCache,
-  redirectIfAuthenticated,
-  validateSession,
-  userController.renderResetPasswordPage
-);
-
-//Handle new password submission (POST, same endpoint for both URLs)
-router.post(
-  "/new-password",
-  redirectIfAuthenticated,
-  userController.handleNewPassword
-);
-router.post(
-  "/reset-password",
-  redirectIfAuthenticated,
-  userController.handleNewPassword
-);
-
+router.get( "/forgot-password",preventCache,redirectIfAuthenticated,validateSession,userController.forgotPasswordPage);
+router.post("/forgot-password",redirectIfAuthenticated,userController.handleForgotPassword);
+router.get("/forgot-verify-otp",preventCache,redirectIfAuthenticated,validateSession,userController.showForgotOtpPage);
+router.post( "/forgot-verify-otp",redirectIfAuthenticated,userController.verifyForgotOtp); 
+router.post("/resend-forgot-verify-otp",redirectIfAuthenticated,userController.resendForgotOtp); 
+router.get("/new-password",preventCache,redirectIfAuthenticated,validateSession,userController.renderResetPasswordPage);
+router.get("/reset-password",preventCache,redirectIfAuthenticated,validateSession,userController.renderResetPasswordPage);
+router.post("/new-password",redirectIfAuthenticated,userController.handleNewPassword);
+router.post("/reset-password",redirectIfAuthenticated,userController.handleNewPassword);
 
 
 // Authenticated routes
 router.get("/home", validateSession, addUserContext, checkUserBlocked, userController.loadHome);
 
-
 // Logout route
 router.get("/logout", isUserAuthenticated, preventCache, checkUserBlocked, userController.logout);
+
+// Product-related routes
+// router.post("/product/:id/review", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.submitReview);
+// router.post("/product/:id/review/:reviewId/helpful", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.markHelpful);
+// router.get("/product/:id/status", isUserAuthenticated, preventCache, checkUserBlocked, userShopController.checkProductStatus);
+
+
+// API routes for products with offers
+router.get("/api/products", validateSession, addUserContext, checkUserBlocked, userProductController.getProducts);
+router.get("/api/products/featured", validateSession, addUserContext, checkUserBlocked, userProductController.getFeaturedProducts);
+router.get("/api/products/search", validateSession, addUserContext, checkUserBlocked, userProductController.searchProducts);
+router.get("/api/products/:id", validateSession, addUserContext, checkUserBlocked, userProductController.getProductById);
+router.get("/api/category/:categoryId/products", validateSession, addUserContext, checkUserBlocked, userProductController.getProductsByCategory);
+
+// Shop Page
+router.get("/shopPage", validateSession, addUserContext, checkUserBlocked, userProductController.getShopPage);
 
 
 module.exports = router;

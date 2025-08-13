@@ -28,23 +28,15 @@ const loadHome = (req, res) => {
       { href: '#about', text: 'About', active: false },
       { href: '#contact', text: 'Contact', active: false }
     ];
-
-    const slides = [
-      { image: '/images/banner1.jpg', title: 'Limited Edition Cars', description: 'Exclusive models only at miniTorque.' },
-      { image: '/images/banner2.jpg', title: 'Premium Detailing', description: 'Every diecast tells a story.' },
-      { image: '/images/banner3.jpg', title: 'Diecast', description: 'Projection of a real car.' }
-    ];
-
     res.render('user/home', {
       user: req.user || null,
-      slides,
       navLinks
     });
   } catch (error) {
     console.error('Error in loadHome:', error.message);
     res.status(500).send('Internal Server Error');
   }
-};
+ };
 
 // Handle signup
 const signup = async (req, res) => {

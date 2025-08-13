@@ -84,35 +84,236 @@ body {
     background: #fff;
     transform: scale(1.2);
 }
-@media (max-width: 768px) {
-    .carousel-slide { height: 300px; }
-    .carousel-content h2 { font-size: 32px; }
-}
-@media (max-width: 480px) {
-    .carousel-slide { height: 200px; }
-    .carousel-content h2 { font-size: 20px; }
-    .carousel-content p { font-size: 14px; }
+
+/* ====== PRODUCT SECTIONS ====== */
+.products-section {
+    max-width: 1200px;
+    margin: 60px auto;
+    padding: 0 20px;
 }
 
-/* ====== MAIN CONTENT ====== */
-.main-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 60px 20px;
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 0 10px;
 }
-.section-title {
-    text-align: center;
-    font-size: 42px;
+
+.section-header h2 {
+    font-size: 32px;
     font-weight: bold;
     color: #333;
-    margin-bottom: 50px;
+    margin: 0;
 }
-@media (max-width: 768px) {
-    .main-content { padding: 40px 10px; }
-    .section-title { font-size: 32px; margin-bottom: 30px; }
+
+.view-all-btn {
+    background: none;
+    border: none;
+    color: #b50b0b;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
 }
-@media (max-width: 480px) {
-    .section-title { font-size: 22px; }
+
+.view-all-btn:hover {
+    background-color: #f8f9fa;
+    text-decoration: none;
+    color: #b50b0b;
+}
+
+/* ====== PRODUCT CARDS ====== */
+.product-card {
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: none;
+    height: 100%;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.product-image-container {
+    position: relative;
+    overflow: hidden;
+    height: 250px;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.product-card:hover .product-image {
+    transform: scale(1.05);
+}
+
+.product-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #dc3545;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 2;
+}
+
+/* ====== WISHLIST ICON ====== */
+.wishlist-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 3;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wishlist-icon:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wishlist-icon i {
+    font-size: 16px;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.wishlist-icon:hover i {
+    color: #dc3545;
+    transform: scale(1.1);
+}
+
+.wishlist-icon.active i {
+    color: #dc3545;
+}
+
+.product-info {
+    padding: 15px;
+}
+
+.product-brand {
+    color: #6c757d;
+    font-size: 13px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.product-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    height: 2.8em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+.price-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.current-price {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.original-price {
+    font-size: 14px;
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.add-to-cart {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    background-color: #000;
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.add-to-cart:hover {
+    background-color: #333;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.add-to-cart:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ====== LOADING STATES ====== */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.no-products {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.no-products i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    opacity: 0.5;
 }
 
 /* ====== WHY CHOOSE SECTION ====== */
@@ -161,41 +362,125 @@ body {
     color: #666;
     line-height: 1.6;
 }
+
+/* ====== RESPONSIVE ====== */
 @media (max-width: 768px) {
+    .carousel-slide { height: 300px; }
+    .carousel-content h2 { font-size: 32px; }
+    .products-section { padding: 0 10px; margin: 40px auto; }
+    .section-header h2 { font-size: 24px; }
     .why-choose { padding: 60px 10px; margin: 40px 0; }
     .features-grid { grid-template-columns: 1fr; }
     .why-choose h2 { font-size: 32px; margin-bottom: 30px; }
 }
+
 @media (max-width: 480px) {
+    .carousel-slide { height: 200px; }
+    .carousel-content h2 { font-size: 20px; }
+    .carousel-content p { font-size: 14px; }
+    .section-header h2 { font-size: 20px; }
     .why-choose { padding: 40px 10px; margin: 20px 0; }
     .why-choose h2 { font-size: 22px; }
+    .product-image-container { height: 200px; }
 }
 </style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Carousel Banner -->
-<% if (slides && Array.isArray(slides) && slides.length > 0) { %>
+<!-- Static Carousel Banner -->
 <div class="carousel-container">
     <div class="carousel" id="carousel">
-        <% slides.forEach(slide => { %>
-            <div class="carousel-slide" style="background-image: url('<%= slide.image %>')">
-                <div class="carousel-content">
-                    <h2><%= slide.title %></h2>
-                    <p><%= slide.description %></p>
-                </div>
+        <!-- Slide 1 -->
+        <div class="carousel-slide" style="background-image: url('/images/banner1.jpg')">
+            <div class="carousel-content">
+                <h2>Limited Edition Cars</h2>
+                <p>Discover exclusive miniature masterpieces that capture automotive excellence.</p>
             </div>
-        <% }) %>
+        </div>
+        
+        <!-- Slide 2 -->
+        <div class="carousel-slide" style="background-image: url('/images/banner2.jpg')">
+            <div class="carousel-content">
+                <h2>Premium Detailing</h2>
+                <p>Every diecast model showcases incredible attention to detail and craftsmanship.</p>
+            </div>
+        </div>
+        
+        <!-- Slide 3 -->
+        <div class="carousel-slide" style="background-image: url('/images/banner3.jpg')">
+            <div class="carousel-content">
+                <h2>Collector's Paradise</h2>
+                <p>Build your dream collection with authentic scaled automotive art.</p>
+            </div>
+        </div>
     </div>
+    
+    <!-- Static Indicators -->
     <div class="carousel-indicators">
-        <% slides.forEach((slide, index) => { %>
-            <div class="indicator <%= index === 0 ? 'active' : '' %>" data-slide="<%= index %>"></div>
-        <% }) %>
+        <div class="indicator active" data-slide="0"></div>
+        <div class="indicator" data-slide="1"></div>
+        <div class="indicator" data-slide="2"></div>
     </div>
 </div>
-<% } else { %>
-    <p>No carousel slides available.</p>
-<% } %>
+
+<!-- Flash Sales Section -->
+<section class="products-section">
+    <div class="section-header">
+        <h2><i class="fa-brands fa-pied-piper-hat fa-sm" style="color: #dc3545; margin-right: 10px;"></i>Flash Sales</h2>
+        <button class="view-all-btn" onclick="viewAllProducts()">
+            <i class="fas fa-arrow-right me-2"></i>View All
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="flashSalesLoading" class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading products...</span>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="flashSalesGrid" class="row g-4" style="display: none;">
+        <!-- Products will be loaded here -->
+    </div>
+
+    <!-- No Products Message -->
+    <div id="flashSalesEmpty" class="no-products" style="display: none;">
+        <i class="fas fa-box-open"></i>
+        <h4>No Flash Sale Products</h4>
+        <p>Check back later for amazing deals!</p>
+    </div>
+</section>
+
+<!-- New Arrivals Section -->
+<section class="products-section">
+    <div class="section-header">
+        <h2><i class="fa-brands fa-pied-piper-hat fa-sm" style="color: #dc3545; margin-right: 10px;"></i>New Arrivals</h2>
+        <button class="view-all-btn" onclick="viewAllProducts()">
+            <i class="fas fa-arrow-right me-2"></i>View All
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="newArrivalsLoading" class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading products...</span>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="newArrivalsGrid" class="row g-4" style="display: none;">
+        <!-- Products will be loaded here -->
+    </div>
+
+    <!-- No Products Message -->
+    <div id="newArrivalsEmpty" class="no-products" style="display: none;">
+        <i class="fas fa-star"></i>
+        <h4>No New Arrivals</h4>
+        <p>New products will appear here soon!</p>
+    </div>
+</section>
 
 <!-- Why Choose Section -->
 <section class="why-choose" id="about">
@@ -222,6 +507,344 @@ body {
 <!-- Footer -->
 <%- include("../partials/footer") %>
 
-<script src="/js/home.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ====== PAGE INITIALIZATION ======
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all functionality
+    loadFlashSales();
+    loadNewArrivals();
+    initializeCarousel();
+    initializeSmoothScrolling();
+    initializeScrollAnimations();
+});
+
+// ====== CAROUSEL FUNCTIONALITY ======
+function initializeCarousel() {
+    const slides = document.querySelectorAll('.carousel-slide');
+    const indicators = document.querySelectorAll('.indicator');
+    const carousel = document.getElementById('carousel');
+
+    if (slides.length > 0 && indicators.length > 0) {
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            currentSlide = index;
+            carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+            indicators.forEach((indicator, i) => {
+                indicator.classList.toggle('active', i === currentSlide);
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            showSlide(currentSlide);
+        }
+
+        // Auto-play carousel
+        setInterval(nextSlide, 5000);
+
+        // Indicator click handlers
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => showSlide(index));
+        });
+    }
+}
+
+// ====== PRODUCT LOADING FUNCTIONS ======
+// Load Flash Sales (products with offers)
+async function loadFlashSales() {
+    try {
+        const response = await fetch('/api/products?sortBy=newest&limit=8');
+        const data = await response.json();
+
+        document.getElementById('flashSalesLoading').style.display = 'none';
+
+        if (data.success && data.products && data.products.length > 0) {
+            // Filter products with offers for flash sales
+            const flashSaleProducts = data.products.filter(product => 
+                product.productOffer && product.productOffer > 0
+            );
+            
+            if (flashSaleProducts.length > 0) {
+                displayProducts(flashSaleProducts.slice(0, 4), 'flashSalesGrid');
+            } else {
+                // If no products with offers, show regular products
+                displayProducts(data.products.slice(0, 4), 'flashSalesGrid');
+            }
+        } else {
+            document.getElementById('flashSalesEmpty').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading flash sales:', error);
+        document.getElementById('flashSalesLoading').style.display = 'none';
+        document.getElementById('flashSalesEmpty').style.display = 'block';
+    }
+}
+
+// Load New Arrivals (latest products)
+async function loadNewArrivals() {
+    try {
+        const response = await fetch('/api/products/featured?limit=8');
+        const data = await response.json();
+
+        document.getElementById('newArrivalsLoading').style.display = 'none';
+
+        if (data.success && data.products && data.products.length > 0) {
+            displayProducts(data.products.slice(0, 4), 'newArrivalsGrid');
+        } else {
+            document.getElementById('newArrivalsEmpty').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading new arrivals:', error);
+        document.getElementById('newArrivalsLoading').style.display = 'none';
+        document.getElementById('newArrivalsEmpty').style.display = 'block';
+    }
+}
+
+// Display products in grid
+function displayProducts(products, containerId) {
+    const container = document.getElementById(containerId);
+    
+    const productCards = products.map(product => {
+        const hasOffer = product.productOffer && product.productOffer > 0;
+        const finalPrice = hasOffer ? 
+            (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) : 
+            product.salePrice.toFixed(2);
+
+        return `
+            <div class="col-6 col-md-3">
+                <div class="product-card">
+                    <div class="product-image-container">
+                        ${hasOffer ? `<div class="product-badge">${product.productOffer}% OFF</div>` : ''}
+                        
+                        <!-- Wishlist Icon -->
+                        <button class="wishlist-icon" onclick="toggleWishlist('${product._id}', this)" title="Add to Wishlist">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        
+                        <img src="/uploads/products/${product.mainImage}" 
+                             class="product-image" 
+                             alt="${product.productName}"
+                             onerror="this.src='/assets/placeholder.jpg'"
+                             onclick="viewProduct('${product._id}')">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand">${product.brand}</div>
+                        <h5 class="product-title">${product.productName}</h5>
+                        <div class="product-price">
+                            <div class="price-section">
+                                <span class="current-price">₹${finalPrice}</span>
+                                ${hasOffer ? `<span class="original-price">₹${product.salePrice.toFixed(2)}</span>` : ''}
+                            </div>
+                            <button class="add-to-cart" 
+                                    onclick="addToCart('${product._id}')"
+                                    ${product.quantity === 0 ? 'disabled' : ''}
+                                    title="Add to Cart">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = productCards;
+    container.style.display = 'flex';
+
+    // Add animation
+    setTimeout(() => {
+        container.classList.add('products-loaded');
+    }, 100);
+}
+
+// ====== WISHLIST FUNCTIONALITY ======
+// Toggle wishlist function (for FontAwesome icons)
+function toggleWishlist(productId, buttonElement) {
+    const heartIcon = buttonElement.querySelector('i');
+    const isActive = buttonElement.classList.contains('active');
+    
+    if (isActive) {
+        // Remove from wishlist
+        heartIcon.classList.remove('fas');
+        heartIcon.classList.add('far');
+        buttonElement.classList.remove('active');
+        buttonElement.title = 'Add to Wishlist';
+        showWishlistFeedback('Removed from wishlist!', 'removed');
+    } else {
+        // Add to wishlist
+        heartIcon.classList.remove('far');
+        heartIcon.classList.add('fas');
+        buttonElement.classList.add('active');
+        buttonElement.title = 'Remove from Wishlist';
+        showWishlistFeedback('Added to wishlist!', 'added');
+    }
+    
+    // Add your wishlist API call here
+    console.log('Wishlist action for product:', productId);
+}
+
+// Alternative wishlist toggle (for symbol hearts - from your home.js)
+function toggleWishlistAlt(button) {
+    button.classList.toggle('active');
+    if (button.classList.contains('active')) {
+        button.innerHTML = '♥';
+        button.style.transform = 'scale(1.2)';
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 200);
+    } else {
+        button.innerHTML = '♡';
+    }
+}
+
+// Show wishlist feedback
+function showWishlistFeedback(message, type) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'added' ? '#28a745' : '#dc3545'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 9999;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+    toast.innerHTML = `<i class="fas fa-heart me-2"></i>${message}`;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 100);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.parentElement.removeChild(toast);
+            }
+        }, 300);
+    }, 2000);
+}
+
+// ====== NAVIGATION FUNCTIONS ======
+// Hamburger menu toggle (from your home.js)
+function toggleMenu() {
+    const hamburger = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+    if (hamburger) hamburger.classList.toggle('active');
+    if (navLinks) navLinks.classList.toggle('active');
+}
+
+// Smooth scrolling for navigation (from your home.js)
+function initializeSmoothScrolling() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+}
+
+// ====== PRODUCT ACTIONS ======
+// View product function
+function viewProduct(productId) {
+    console.log('View product:', productId);
+    // Example: window.location.href = `/product/${productId}`;
+}
+
+// Add to cart function
+function addToCart(productId) {
+    console.log('Add to cart:', productId);
+    
+    // Show a simple feedback
+    const button = event.target.closest('.add-to-cart');
+    const originalContent = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    button.style.backgroundColor = '#28a745';
+    
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.style.backgroundColor = '#000';
+    }, 1500);
+}
+
+// View all products function
+function viewAllProducts() {
+    console.log('View all products');
+    // Example: window.location.href = '/products';
+}
+
+// ====== SCROLL ANIMATIONS ======
+// Add scroll animation for cards (from your home.js)
+function initializeScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe all product cards and feature cards
+    document.querySelectorAll('.product-card, .feature-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        card.style.transition = 'all 0.6s ease';
+        observer.observe(card);
+    });
+}
+
+// ====== CSS ANIMATIONS ======
+// Add CSS animations dynamically
+const style = document.createElement('style');
+style.textContent = `
+    .products-loaded .col-6 {
+        animation: fadeInUp 0.6s ease forwards;
+    }
+    
+    .products-loaded .col-6:nth-child(1) { animation-delay: 0.1s; }
+    .products-loaded .col-6:nth-child(2) { animation-delay: 0.2s; }
+    .products-loaded .col-6:nth-child(3) { animation-delay: 0.3s; }
+    .products-loaded .col-6:nth-child(4) { animation-delay: 0.4s; }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
 </body>
 </html>
