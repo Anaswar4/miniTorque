@@ -4,6 +4,9 @@ const { validateEmail, validatePassword } = require('../../utils/validator');
 const userModel = require('../../models/user-model');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
+const Product = require('../../models/product-schema');
+const Category = require('../../models/category-schema');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -19,8 +22,8 @@ const showSignup = (req, res) => {
   });
 };
 
-// Load home page
-const loadHome = (req, res) => {
+//  Load home page with proper product filtering
+const loadHome = async (req, res) => {
   try {
     const navLinks = [
       { href: '#home', text: 'Home', active: true },
@@ -28,15 +31,82 @@ const loadHome = (req, res) => {
       { href: '#about', text: 'About', active: false },
       { href: '#contact', text: 'Contact', active: false }
     ];
+
+    //  Get featured products with proper filtering
+    const featuredProducts = await Product.aggregate([
+      // Join with categories
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "categoryData"
+        }
+      },
+      //  CRITICAL: Filter products and categories
+      {
+        $match: {
+          isListed: true,
+          isDeleted: false,        
+          isBlocked: false,
+          status: "Available",
+          //  Only products from active categories
+          "categoryData.isListed": true,
+          "categoryData.isDeleted": false
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      { $limit: 8 }  // Show 8 featured products on home
+    ]);
+
+    // Add price calculations for home page products
+    featuredProducts.forEach(product => {
+      // Convert categoryData array to single object
+      if (product.categoryData && product.categoryData.length > 0) {
+        product.category = product.categoryData[0];
+      }
+      delete product.categoryData;
+      
+      if (product.productOffer && product.productOffer > 0) {
+        product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+        product.hasOffer = true;
+        product.discountAmount = product.salePrice - product.finalPrice;
+      } else {
+        product.finalPrice = product.salePrice;
+        product.hasOffer = false;
+        product.discountAmount = 0;
+      }
+
+      // Check if product is new (created within last 30 days)
+      const now = new Date();
+      const createdAt = new Date(product.createdAt);
+      const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+      product.isNew = diffDays <= 30;
+    });
+
+    //  Get only active categories for any home page category sections
+    const activeCategories = await Category.find({
+      isListed: true,
+      isDeleted: false
+    }).sort({ name: 1 }).limit(6);
+
     res.render('user/home', {
       user: req.user || null,
-      navLinks
+      navLinks,
+      featuredProducts,           //  Filtered featured products
+      activeCategories,           //  Active categories only
+      isAuthenticated: !!req.session.userId,
+      currentPage: 'home'
     });
+
   } catch (error) {
     console.error('Error in loadHome:', error.message);
-    res.status(500).send('Internal Server Error');
+    res.status(500).render('error', {
+      message: 'Error loading home page',
+      user: req.user || null
+    });
   }
- };
+};
 
 // Handle signup
 const signup = async (req, res) => {

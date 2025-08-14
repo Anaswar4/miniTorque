@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 const { uploadDir } = require('../../config/multer-config');
 
-
 const saveBase64Image = async (base64Data, filename) => {
     try {
         const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
@@ -63,15 +62,14 @@ const getProducts = async (req, res) => {
             searchQuery.category = selectedCategory;
         }
 
+        //  Get only active categories for filter dropdown
         const [allProducts, totalProducts, categories] = await Promise.all([
             Product.find(searchQuery)
                 .populate({
                     path: 'category',
                     match: {
-                        $or: [
-                            { isDeleted: false },
-                            { isDeleted: { $exists: false } }
-                        ]
+                        isListed: true,        
+                        isDeleted: false       
                     },
                     select: 'name'
                 })
@@ -80,11 +78,8 @@ const getProducts = async (req, res) => {
                 .limit(limit),
             Product.countDocuments(searchQuery),
             Category.find({
-                isListed: true,
-                $or: [
-                    { isDeleted: false },
-                    { isDeleted: { $exists: false } }
-                ]
+                isListed: true,           
+                isDeleted: false          
             }).sort({ name: 1 })
         ]);
 
@@ -154,15 +149,14 @@ const getProducts = async (req, res) => {
     }
 };
 
+//  Only show active, non-deleted categories in add product dropdown
 const getAddProduct = async (req, res) => {
     try {
         const categories = await Category.find({
-            isListed: true,
-            $or: [
-                { isDeleted: false },
-                { isDeleted: { $exists: false } }
-            ]
-        });
+            isListed: true,           
+            isDeleted: false          
+        }).sort({ name: 1 });
+        
         res.render('admin/new-product', { categories, product: null });
     } catch (error) {
         console.error('Error loading add product page:', error);
@@ -170,17 +164,15 @@ const getAddProduct = async (req, res) => {
     }
 };
 
+//  Only show active, non-deleted categories in edit product dropdown
 const getEditProduct = async (req, res) => {
     try {
         const productId = req.params.id;
         const product = await Product.findById(productId).populate('category');
         const categories = await Category.find({
-            isListed: true,
-            $or: [
-                { isDeleted: false },
-                { isDeleted: { $exists: false } }
-            ]
-        });
+            isListed: true,           //  Only active categories
+            isDeleted: false          //  Only non-deleted categories
+        }).sort({ name: 1 });
         
         if (!product || product.isDeleted) {
             return res.status(404).send('Product not found');

@@ -1,9 +1,8 @@
+const mongoose = require('mongoose');  
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 
-/**
- * Get all products for user
- */
+
 const getProducts = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -12,25 +11,42 @@ const getProducts = async (req, res) => {
         const category = req.query.category || '';
         const sortBy = req.query.sortBy || 'newest';
 
-        // Build filter
-        const filter = {
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true
-        };
+        //  Build aggregation pipeline
+        let pipeline = [
+            // Join with categories
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            // Filter products and categories
+            {
+                $match: {
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    //  Only products from active categories
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            }
+        ];
+
+        // Add category filter
+        if (category) {
+            pipeline[1].$match.category = new mongoose.Types.ObjectId(category);
+        }
 
         // Add search filter
         if (search) {
-            filter.$or = [
+            pipeline[1].$match.$or = [
                 { productName: { $regex: search, $options: 'i' } },
                 { brand: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } }
             ];
-        }
-
-        // Add category filter
-        if (category) {
-            filter.category = category;
         }
 
         // Build sort options
@@ -54,15 +70,56 @@ const getProducts = async (req, res) => {
                 break;
         }
 
-        // Get products
-        const products = await Product.find(filter)
-            .populate('category', 'name')
-            .sort(sortOptions)
-            .skip((page - 1) * limit)
-            .limit(limit);
+        pipeline.push({ $sort: sortOptions });
+        pipeline.push({ $skip: (page - 1) * limit });
+        pipeline.push({ $limit: limit });
+
+        // Execute aggregation
+        const products = await Product.aggregate(pipeline);
+
+        //  Add price calculations
+        products.forEach(product => {
+            // Convert categoryData array to single object
+            if (product.categoryData && product.categoryData.length > 0) {
+                product.category = product.categoryData[0];
+            }
+            delete product.categoryData;
+
+            if (product.productOffer && product.productOffer > 0) {
+                product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+                product.hasOffer = true;
+                product.discountAmount = product.salePrice - product.finalPrice;
+            } else {
+                product.finalPrice = product.salePrice;
+                product.hasOffer = false;
+                product.discountAmount = 0;
+            }
+        });
 
         // Get total count for pagination
-        const totalProducts = await Product.countDocuments(filter);
+        const countPipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            },
+            { $count: "total" }
+        ];
+
+        const countResult = await Product.aggregate(countPipeline);
+        const totalProducts = countResult.length > 0 ? countResult[0].total : 0;
         const totalPages = Math.ceil(totalProducts / limit);
 
         res.json({
@@ -85,25 +142,63 @@ const getProducts = async (req, res) => {
     }
 };
 
-/**
- * Get single product by ID
- */
+
 const getProductById = async (req, res) => {
     try {
         const productId = req.params.id;
 
-        const product = await Product.findOne({
-            _id: productId,
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true
-        }).populate('category', 'name');
+        //  Use aggregation to check category status
+        const productPipeline = [
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(productId),
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            }
+        ];
 
-        if (!product) {
+        const productResult = await Product.aggregate(productPipeline);
+        
+        if (!productResult || productResult.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Product not found'
             });
+        }
+
+        const product = productResult[0];
+        
+        // Convert categoryData array to single object
+        if (product.categoryData && product.categoryData.length > 0) {
+            product.category = product.categoryData[0];
+        }
+        delete product.categoryData;
+
+        //  Add price calculations
+        if (product.productOffer && product.productOffer > 0) {
+            product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+            product.hasOffer = true;
+            product.discountAmount = product.salePrice - product.finalPrice;
+        } else {
+            product.finalPrice = product.salePrice;
+            product.hasOffer = false;
+            product.discountAmount = 0;
         }
 
         res.json({
@@ -119,9 +214,7 @@ const getProductById = async (req, res) => {
     }
 };
 
-/**
- * Get products by category
- */
+
 const getProductsByCategory = async (req, res) => {
     try {
         const categoryId = req.params.categoryId;
@@ -129,29 +222,19 @@ const getProductsByCategory = async (req, res) => {
         const limit = parseInt(req.query.limit) || 12;
         const sortBy = req.query.sortBy || 'newest';
 
-        // Check if category exists and is active
+        //  Check if category exists and is active 
         const category = await Category.findOne({
             _id: categoryId,
             isListed: true,
-            $or: [
-                { isDeleted: false },
-                { isDeleted: { $exists: false } }
-            ]
+            isDeleted: false
         });
 
         if (!category) {
             return res.status(404).json({
                 success: false,
-                message: 'Category not found'
+                message: 'Category not found or not available'
             });
         }
-
-        const filter = {
-            category: categoryId,
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true
-        };
 
         // Build sort options
         let sortOptions = { createdAt: -1 };
@@ -174,15 +257,62 @@ const getProductsByCategory = async (req, res) => {
                 break;
         }
 
-        // Get products
-        const products = await Product.find(filter)
-            .populate('category', 'name')
-            .sort(sortOptions)
-            .skip((page - 1) * limit)
-            .limit(limit);
+        // aggregation for products
+        const pipeline = [
+            {
+                $match: {
+                    category: new mongoose.Types.ObjectId(categoryId),
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            },
+            { $sort: sortOptions },
+            { $skip: (page - 1) * limit },
+            { $limit: limit }
+        ];
+
+        const products = await Product.aggregate(pipeline);
+
+        //  price calculations
+        products.forEach(product => {
+            if (product.categoryData && product.categoryData.length > 0) {
+                product.category = product.categoryData[0];
+            }
+            delete product.categoryData;
+
+            if (product.productOffer && product.productOffer > 0) {
+                product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+                product.hasOffer = true;
+                product.discountAmount = product.salePrice - product.finalPrice;
+            } else {
+                product.finalPrice = product.salePrice;
+                product.hasOffer = false;
+                product.discountAmount = 0;
+            }
+        });
 
         // Get total count for pagination
-        const totalProducts = await Product.countDocuments(filter);
+        const totalProducts = await Product.countDocuments({
+            category: categoryId,
+            isDeleted: false,
+            isBlocked: false,
+            isListed: true
+        });
         const totalPages = Math.ceil(totalProducts / limit);
 
         res.json({
@@ -209,24 +339,52 @@ const getProductsByCategory = async (req, res) => {
     }
 };
 
-/**
- * Get featured products (for homepage)
- */
 const getFeaturedProducts = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 8;
 
-        const filter = {
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true
-        };
+        //  Use aggregation with category filtering
+        const pipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: limit }
+        ];
 
-        // Get featured products
-        const products = await Product.find(filter)
-            .populate('category', 'name')
-            .sort({ createdAt: -1 })
-            .limit(limit);
+        const products = await Product.aggregate(pipeline);
+
+        // Add price calculations
+        products.forEach(product => {
+            if (product.categoryData && product.categoryData.length > 0) {
+                product.category = product.categoryData[0];
+            }
+            delete product.categoryData;
+
+            if (product.productOffer && product.productOffer > 0) {
+                product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+                product.hasOffer = true;
+                product.discountAmount = product.salePrice - product.finalPrice;
+            } else {
+                product.finalPrice = product.salePrice;
+                product.hasOffer = false;
+                product.discountAmount = 0;
+            }
+        });
 
         res.json({
             success: true,
@@ -241,9 +399,6 @@ const getFeaturedProducts = async (req, res) => {
     }
 };
 
-/**
- * Search products
- */
 const searchProducts = async (req, res) => {
     try {
         const query = req.query.q || '';
@@ -264,26 +419,84 @@ const searchProducts = async (req, res) => {
             });
         }
 
-        const filter = {
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true,
-            $or: [
-                { productName: { $regex: query, $options: 'i' } },
-                { brand: { $regex: query, $options: 'i' } },
-                { description: { $regex: query, $options: 'i' } }
-            ]
-        };
+        //  Use aggregation with category filtering
+        const pipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false,
+                    $or: [
+                        { productName: { $regex: query, $options: 'i' } },
+                        { brand: { $regex: query, $options: 'i' } },
+                        { description: { $regex: query, $options: 'i' } }
+                    ]
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: limit }
+        ];
 
-        // Get products
-        const products = await Product.find(filter)
-            .populate('category', 'name')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit);
+        const products = await Product.aggregate(pipeline);
+
+        //  Add price calculations
+        products.forEach(product => {
+            if (product.categoryData && product.categoryData.length > 0) {
+                product.category = product.categoryData[0];
+            }
+            delete product.categoryData;
+
+            if (product.productOffer && product.productOffer > 0) {
+                product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+                product.hasOffer = true;
+                product.discountAmount = product.salePrice - product.finalPrice;
+            } else {
+                product.finalPrice = product.salePrice;
+                product.hasOffer = false;
+                product.discountAmount = 0;
+            }
+        });
 
         // Get total count for pagination
-        const totalProducts = await Product.countDocuments(filter);
+        const countPipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false,
+                    $or: [
+                        { productName: { $regex: query, $options: 'i' } },
+                        { brand: { $regex: query, $options: 'i' } },
+                        { description: { $regex: query, $options: 'i' } }
+                    ]
+                }
+            },
+            { $count: "total" }
+        ];
+
+        const countResult = await Product.aggregate(countPipeline);
+        const totalProducts = countResult.length > 0 ? countResult[0].total : 0;
         const totalPages = Math.ceil(totalProducts / limit);
 
         res.json({
@@ -307,45 +520,58 @@ const searchProducts = async (req, res) => {
     }
 };
 
-/* Get shop page with server-side filtering and pagination*/
 const getShopPage = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
         const skip = (page - 1) * limit;
         
-        // Build filter object
-        let filter = { 
-            isListed: true, 
-            isDeleted: false, 
-            isBlocked: false,
-            status: "Available"
-        };
+        let pipeline = [
+            // Join with categories
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isListed: true, 
+                    isDeleted: false, 
+                    isBlocked: false,
+                    status: "Available",
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            }
+        ];
         
         // Category filter
         if (req.query.category && req.query.category !== 'all') {
             if (Array.isArray(req.query.category)) {
-                filter.category = { $in: req.query.category };
+                pipeline[1].$match.category = { $in: req.query.category.map(id => new mongoose.Types.ObjectId(id)) };
             } else {
-                filter.category = req.query.category;
+                pipeline[1].$match.category = new mongoose.Types.ObjectId(req.query.category);
             }
         }
         
         // Price range filter
         if (req.query.minPrice || req.query.maxPrice) {
-            filter.salePrice = {};
+            pipeline[1].$match.salePrice = {};
             if (req.query.minPrice) {
-                filter.salePrice.$gte = parseFloat(req.query.minPrice);
+                pipeline[1].$match.salePrice.$gte = parseFloat(req.query.minPrice);
             }
             if (req.query.maxPrice) {
-                filter.salePrice.$lte = parseFloat(req.query.maxPrice);
+                pipeline[1].$match.salePrice.$lte = parseFloat(req.query.maxPrice);
             }
         }
         
         // Search filter
         if (req.query.search) {
             const searchRegex = new RegExp(req.query.search, 'i');
-            filter.$or = [
+            pipeline[1].$match.$or = [
                 { productName: searchRegex },
                 { brand: searchRegex },
                 { description: searchRegex }
@@ -355,9 +581,9 @@ const getShopPage = async (req, res) => {
         // Availability filter
         if (req.query.availability) {
             if (req.query.availability === 'in-stock') {
-                filter.quantity = { $gt: 0 };
+                pipeline[1].$match.quantity = { $gt: 0 };
             } else if (req.query.availability === 'on-sale') {
-                filter.productOffer = { $gt: 0 };
+                pipeline[1].$match.productOffer = { $gt: 0 };
             }
         }
         
@@ -385,19 +611,58 @@ const getShopPage = async (req, res) => {
                 break;
         }
         
-        // Get products with pagination
-        const products = await Product.find(filter)
-            .populate('category', 'name')
-            .sort(sort)
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        pipeline.push({ $sort: sort });
+        pipeline.push({ $skip: skip });
+        pipeline.push({ $limit: limit });
+        
+        const products = await Product.aggregate(pipeline);
+
+        //  Add price calculations
+        products.forEach(product => {
+            if (product.categoryData && product.categoryData.length > 0) {
+                product.category = product.categoryData[0];
+            }
+            delete product.categoryData;
+
+            if (product.productOffer && product.productOffer > 0) {
+                product.finalPrice = product.salePrice * (1 - product.productOffer / 100);
+                product.hasOffer = true;
+                product.discountAmount = product.salePrice - product.finalPrice;
+            } else {
+                product.finalPrice = product.salePrice;
+                product.hasOffer = false;
+                product.discountAmount = 0;
+            }
+        });
         
         // Get total count for pagination
-        const totalProducts = await Product.countDocuments(filter);
+        const countPipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    isListed: true, 
+                    isDeleted: false, 
+                    isBlocked: false,
+                    status: "Available",
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            },
+            { $count: "total" }
+        ];
+
+        const countResult = await Product.aggregate(countPipeline);
+        const totalProducts = countResult.length > 0 ? countResult[0].total : 0;
         const totalPages = Math.ceil(totalProducts / limit);
         
-        // Get all categories for filter dropdown
+        //  only active categories for filter dropdown
         const categories = await Category.find({ 
             isListed: true, 
             isDeleted: false 
@@ -455,44 +720,93 @@ const getShopPage = async (req, res) => {
         });
     }
 };
+
 const getProductDetails = async (req, res) => {
     try {
         const userId = req.session.user_id || null;
         const productId = req.params.id;
 
-        // Find product and populate category
-        const product = await Product.findOne({
-            _id: productId,
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true
-        }).populate('category', 'name description');
+        //  Use aggregation to check category status
+        const productPipeline = [
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(productId),
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            }
+        ];
 
-        // Check if product exists and is available
-        if (!product) {
+        const productResult = await Product.aggregate(productPipeline);
+        
+        if (!productResult || productResult.length === 0) {
             return res.status(404).render('pageNotFound', {
-                message: 'Product not found',
+                message: 'Product not found or not available',
                 user: userId ? { id: userId } : null
             });
         }
 
-        // Get related products from same category (excluding current product)
-        const relatedProducts = await Product.find({
-            _id: { $ne: product._id },
-            category: product.category._id,
-            isDeleted: false,
-            isBlocked: false,
-            isListed: true,
-            status: "Available"
-        })
-        .populate('category', 'name')
-        .sort({ createdAt: -1 })
-        .limit(4)
-        .lean();
+        const product = productResult[0];
+        
+        // Convert categoryData array to single object
+        if (product.categoryData && product.categoryData.length > 0) {
+            product.category = product.categoryData[0];
+        }
+        delete product.categoryData;
+
+        // Get related products from same category (only active categories)
+        const relatedProducts = await Product.aggregate([
+            {
+                $match: {
+                    _id: { $ne: new mongoose.Types.ObjectId(productId) },
+                    category: product.category._id,
+                    isDeleted: false,
+                    isBlocked: false,
+                    isListed: true,
+                    status: "Available"
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $match: {
+                    "categoryData.isListed": true,
+                    "categoryData.isDeleted": false
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 4 }
+        ]);
 
         // Add calculated fields for related products
         relatedProducts.forEach(relatedProduct => {
-            // Calculate final price (with productOffer if any)
+            // Convert categoryData array to single object
+            if (relatedProduct.categoryData && relatedProduct.categoryData.length > 0) {
+                relatedProduct.category = relatedProduct.categoryData[0];
+            }
+            delete relatedProduct.categoryData;
+            
             if (relatedProduct.productOffer && relatedProduct.productOffer > 0) {
                 relatedProduct.finalPrice = relatedProduct.salePrice * (1 - relatedProduct.productOffer / 100);
                 relatedProduct.hasOffer = true;
@@ -501,7 +815,6 @@ const getProductDetails = async (req, res) => {
                 relatedProduct.hasOffer = false;
             }
 
-            // Check if product is new (created within last 30 days)
             const now = new Date();
             const createdAt = new Date(relatedProduct.createdAt);
             const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
@@ -519,7 +832,6 @@ const getProductDetails = async (req, res) => {
             discountAmount = product.salePrice - finalPrice;
         }
 
-        // Add calculated fields to product
         product.finalPrice = finalPrice;
         product.hasOffer = hasOffer;
         product.discountAmount = discountAmount;
@@ -537,7 +849,6 @@ const getProductDetails = async (req, res) => {
             relatedProductsCount: relatedProducts.length
         });
 
-        // Render the product details page
         res.render('user/product-details', {
             product,
             relatedProducts,
@@ -554,8 +865,6 @@ const getProductDetails = async (req, res) => {
         });
     }
 };
-
-
 
 module.exports = {
     getProducts,
