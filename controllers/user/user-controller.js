@@ -43,7 +43,7 @@ const loadHome = async (req, res) => {
           as: "categoryData"
         }
       },
-      //  CRITICAL: Filter products and categories
+      //   Filter products and categories
       {
         $match: {
           isListed: true,
@@ -93,8 +93,8 @@ const loadHome = async (req, res) => {
     res.render('user/home', {
       user: req.user || null,
       navLinks,
-      featuredProducts,           //  Filtered featured products
-      activeCategories,           //  Active categories only
+      featuredProducts,           
+      activeCategories,          
       isAuthenticated: !!req.session.userId,
       currentPage: 'home'
     });
