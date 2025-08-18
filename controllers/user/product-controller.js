@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');  
+const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 
@@ -174,7 +174,7 @@ const getProductById = async (req, res) => {
         ];
 
         const productResult = await Product.aggregate(productPipeline);
-        
+
         if (!productResult || productResult.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -183,7 +183,7 @@ const getProductById = async (req, res) => {
         }
 
         const product = productResult[0];
-        
+
         // Convert categoryData array to single object
         if (product.categoryData && product.categoryData.length > 0) {
             product.category = product.categoryData[0];
@@ -617,7 +617,7 @@ const getShopPage = async (req, res) => {
         
         const products = await Product.aggregate(pipeline);
 
-        //  Add price calculations
+        // Add price calculations
         products.forEach(product => {
             if (product.categoryData && product.categoryData.length > 0) {
                 product.category = product.categoryData[0];
@@ -662,11 +662,21 @@ const getShopPage = async (req, res) => {
         const totalProducts = countResult.length > 0 ? countResult[0].total : 0;
         const totalPages = Math.ceil(totalProducts / limit);
         
-        //  only active categories for filter dropdown
+        // Get only active categories for filter dropdown
         const categories = await Category.find({ 
             isListed: true, 
             isDeleted: false 
         }).lean();
+
+        // **🔥 NEW: Get user's wishlist data**
+        let userWishlistIds = [];
+        if (req.user && req.user._id) {
+            const Wishlist = require('../../models/wishlist-schema');
+            const wishlist = await Wishlist.findOne({ userId: req.user._id }).lean();
+            if (wishlist && wishlist.products) {
+                userWishlistIds = wishlist.products.map(item => item.productId.toString());
+            }
+        }
         
         // Create pagination object
         const pagination = {
@@ -700,6 +710,7 @@ const getShopPage = async (req, res) => {
             pagination,
             totalProducts,
             queryString,
+            userWishlistIds, // **🔥 NEW: Pass wishlist data to template**
             filters: {
                 category: req.query.category || '',
                 minPrice: req.query.minPrice || '',
@@ -720,6 +731,7 @@ const getShopPage = async (req, res) => {
         });
     }
 };
+
 
 const getProductDetails = async (req, res) => {
     try {
@@ -753,7 +765,7 @@ const getProductDetails = async (req, res) => {
         ];
 
         const productResult = await Product.aggregate(productPipeline);
-        
+
         if (!productResult || productResult.length === 0) {
             return res.status(404).render('pageNotFound', {
                 message: 'Product not found or not available',
@@ -762,7 +774,7 @@ const getProductDetails = async (req, res) => {
         }
 
         const product = productResult[0];
-        
+
         // Convert categoryData array to single object
         if (product.categoryData && product.categoryData.length > 0) {
             product.category = product.categoryData[0];
@@ -806,7 +818,7 @@ const getProductDetails = async (req, res) => {
                 relatedProduct.category = relatedProduct.categoryData[0];
             }
             delete relatedProduct.categoryData;
-            
+
             if (relatedProduct.productOffer && relatedProduct.productOffer > 0) {
                 relatedProduct.finalPrice = relatedProduct.salePrice * (1 - relatedProduct.productOffer / 100);
                 relatedProduct.hasOffer = true;

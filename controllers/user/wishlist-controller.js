@@ -65,7 +65,7 @@ const addToWishlist = async (req, res) => {
         success: false,
         message: 'Product ID is required',
         code: 'MISSING_PRODUCT_ID'
-      });
+      }); 
     }
     // Find or create user's wishlist
     let wishlist = await Wishlist.findOne({ userId });
