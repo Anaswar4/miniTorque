@@ -22,6 +22,7 @@ const showSignup = (req, res) => {
   });
 };
 
+
 //  Load home page with proper product filtering
 const loadHome = async (req, res) => {
   try {
@@ -90,11 +91,22 @@ const loadHome = async (req, res) => {
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
+    // **🔥 NEW: Get user's wishlist data**
+    let userWishlistIds = [];
+    if (req.user && req.user._id) {
+      const Wishlist = require('../../models/wishlist-schema');
+      const wishlist = await Wishlist.findOne({ userId: req.user._id }).lean();
+      if (wishlist && wishlist.products) {
+        userWishlistIds = wishlist.products.map(item => item.productId.toString());
+      }
+    }
+
     res.render('user/home', {
       user: req.user || null,
       navLinks,
       featuredProducts,           
       activeCategories,          
+      userWishlistIds, //  Pass wishlist data to template**
       isAuthenticated: !!req.session.userId,
       currentPage: 'home'
     });
@@ -107,6 +119,7 @@ const loadHome = async (req, res) => {
     });
   }
 };
+
 
 // Handle signup
 const signup = async (req, res) => {

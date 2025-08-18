@@ -509,6 +509,9 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// 🔥 SAFETY CHECK: Initialize userWishlistIds safely
+const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+
 // ====== PAGE INITIALIZATION ======
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all functionality
@@ -602,7 +605,23 @@ async function loadNewArrivals() {
     }
 }
 
-// Display products in grid
+// 🔥 NEW: Synchronize all wishlist icons for the same product
+function synchronizeWishlistIcons(productId, isActive) {
+    const icons = document.querySelectorAll(`button.wishlist-icon[data-product-id="${productId}"]`);
+    icons.forEach(icon => {
+        if (isActive) {
+            icon.classList.add('active');
+            icon.title = 'Remove from Wishlist';
+            icon.innerHTML = '<i class="fas fa-heart text-danger"></i>';
+        } else {
+            icon.classList.remove('active');
+            icon.title = 'Add to Wishlist';
+            icon.innerHTML = '<i class="far fa-heart"></i>';
+        }
+    });
+}
+
+// 🔥 UPDATED: Display products with data-product-id attributes
 function displayProducts(products, containerId) {
     const container = document.getElementById(containerId);
     
@@ -612,15 +631,21 @@ function displayProducts(products, containerId) {
             (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) : 
             product.salePrice.toFixed(2);
 
+        // 🔥 Check if product is in wishlist
+        const isInWishlist = userWishlistIds.includes(product._id);
+
         return `
             <div class="col-6 col-md-3">
                 <div class="product-card">
                     <div class="product-image-container">
                         ${hasOffer ? `<div class="product-badge">${product.productOffer}% OFF</div>` : ''}
                         
-                        <!-- Wishlist Icon -->
-                        <button class="wishlist-icon" onclick="addToWishlist('${product._id}')" title="Add to Wishlist">
-                            <i class="far fa-heart"></i>
+                        <!-- 🔥 UPDATED: Added data-product-id attribute -->
+                        <button class="wishlist-icon ${isInWishlist ? 'active' : ''}" 
+                                data-product-id="${product._id}"
+                                onclick="toggleWishlistFromHome('${product._id}', this)" 
+                                title="${isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+                            <i class="${isInWishlist ? 'fas fa-heart text-danger' : 'far fa-heart'}"></i>
                         </button>
                         
                         <img src="/uploads/products/${product.mainImage}" 
@@ -659,40 +684,58 @@ function displayProducts(products, containerId) {
     }, 100);
 }
 
-// ⭐ REPLACE WITH ACTUAL WISHLIST FUNCTIONALITY
-async function addToWishlist(productId) {
+// 🔥 UPDATED: Wishlist function with synchronization
+async function toggleWishlistFromHome(productId, btn) {
+    const inWishlist = btn.classList.contains('active');
+    const url = inWishlist ? '/wishlist/remove' : '/wishlist/add';
+    
+    // Disable all icons for this product during the request
+    const allProductIcons = document.querySelectorAll(`button.wishlist-icon[data-product-id="${productId}"]`);
+    allProductIcons.forEach(icon => icon.disabled = true);
+    
     try {
-        const response = await fetch('/wishlist/add', {
+        const res = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Update navbar wishlist count
-            updateWishlistCounter(result.wishlistCount);
+        const out = await res.json();
+        
+        if (out.success) {
+            updateWishlistCounter(out.wishlistCount || 0);
             
-            // Update wishlist icon to show added state
-            const wishlistBtn = document.querySelector(`[onclick="addToWishlist('${productId}')"]`);
-            if (wishlistBtn) {
-                wishlistBtn.innerHTML = '<i class="fas fa-heart text-danger"></i>';
-                wishlistBtn.disabled = true;
-                wishlistBtn.title = 'Already in wishlist';
-                wishlistBtn.onclick = null; // Disable further clicks
+            // 🔥 Update ALL icons for this product across ALL sections
+            const isNowActive = !inWishlist;
+            synchronizeWishlistIcons(productId, isNowActive);
+            
+            // 🔥 Update the userWishlistIds array
+            if (isNowActive) {
+                if (!userWishlistIds.includes(productId)) {
+                    userWishlistIds.push(productId);
+                }
+            } else {
+                const index = userWishlistIds.indexOf(productId);
+                if (index > -1) userWishlistIds.splice(index, 1);
             }
             
-            // Show success message
-            showToast('Product added to wishlist successfully!', 'success');
+            showToast(out.message || (inWishlist ? 'Removed from wishlist' : 'Added to wishlist'), 'success');
         } else {
-            showToast(result.message || 'Failed to add to wishlist', 'error');
+            showToast(out.message || 'Failed', 'error');
         }
-    } catch (error) {
-        console.error('Error adding to wishlist:', error);
-        showToast('Please login to add items to wishlist', 'error');
+    } catch (err) {
+        console.error(err);
+        showToast('Please login first', 'error');
+    } finally {
+        // Re-enable all icons for this product
+        allProductIcons.forEach(icon => icon.disabled = false);
+    }
+}
+
+// 🔥 Legacy function for backward compatibility
+async function addToWishlist(productId) {
+    const wishlistBtn = document.querySelector(`[data-product-id="${productId}"]`);
+    if (wishlistBtn) {
+        toggleWishlistFromHome(productId, wishlistBtn);
     }
 }
 
@@ -916,7 +959,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 </script>
-
 
 </body>
 </html>
