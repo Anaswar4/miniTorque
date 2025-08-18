@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Shared Breadcrumb CSS -->
+   <link rel="stylesheet" href="/css/breadcrumb.css">
+   <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+     <%- include("../partials/user-sidebar") %>
+    <link rel="stylesheet" href="/css/user/order-list.css">
+    </head>
+<body>
+    <!-- Main Content -->
+    <div class="main-content fade-in">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">My Orders</li>
+                </ol>
+            </nav>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header fade-in">
+            <h1><i class="fas fa-shopping-bag"></i> My Orders</h1>
+            <p>Track and manage your purchases</p>
+        </div>
+
+        <!-- Orders Container -->
+        <div class="orders-container fade-in">
+            <div class="orders-header">
+                <h2><i class="fas fa-list"></i> Order History</h2>
+            </div>
+
+            <% if (orders && orders.length > 0) { %>
+                <div class="orders-grid">
+                    <% orders.forEach(order => { %>
+                        <div class="order-card<%= highlightOrderId === order.orderId ? ' highlighted' : '' %>"
+                             data-order-id="<%= order.orderId %>">
+                            <% if (highlightOrderId === order.orderId) { %>
+                            <% } %>
+                            <div class="order-header">
+                                <div class="order-id">
+                                    <strong><%= order.orderId %></strong>
+                                </div>
+                                <div class="order-status status-<%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
+                                    <%= order.status %>
+                                </div>
+                            </div>
+
+                            <div class="order-info">
+                                <div class="order-date">
+                                    <i class="fas fa-calendar"></i>
+                                    <%= new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    }) %>
+                                </div>
+                                
+                                <div class="order-amount">
+                                    <i class="fas fa-rupee-sign"></i>
+                                    ₹<%= order.finalAmount.toFixed(2) %>
+                                    <% if (order.couponApplied && order.couponDiscount > 0) { %>
+                                        <span style="color: #10b981; font-weight: 600; font-size: 0.75rem;">• ₹<%= order.couponDiscount.toFixed(2) %> saved</span>
+                                    <% } %>
+                                </div>
+                                
+                                <div class="order-payment">
+                                    <i class="fas fa-credit-card"></i>
+                                    <%= order.paymentMethod %>
+                                    <% if (order.paymentStatus === 'Failed') { %>
+                                        <span class="payment-status-failed">• Payment Failed</span>
+                                    <% } else if (order.paymentStatus === 'Pending') { %>
+                                        <span class="payment-status-pending">• Payment Pending</span>
+                                    <% } else if (order.paymentStatus === 'Completed') { %>
+                                        <span style="color: #10b981; font-weight: 600; font-size: 0.75rem;">• Payment Completed</span>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <div class="order-items">
+                                <h6><i class="fas fa-box"></i> Items (<%= order.orderedItems.length %>)</h6>
+                                <div class="items-preview">
+                                    <% order.orderedItems.slice(0, 3).forEach(item => { %>
+                                        <div class="item-preview">
+                                            <img src="/uploads/products/<%= item.product.mainImage %>"
+                                                 alt="<%= item.product.productName %>"
+                                                 class="item-image">
+                                            <div class="item-details">
+                                                <div class="item-name"><%= item.product.productName %></div>
+                                                <div class="item-qty">Qty: <%= item.quantity %></div>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                    <% if (order.orderedItems.length > 3) { %>
+                                        <div class="more-items">
+                                            +<%= order.orderedItems.length - 3 %> more
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <div class="order-actions">
+                                <a href="/order-details/<%= order.orderId %>" class="btn-view-details">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                <% if (order.paymentStatus === 'Failed') { %>
+                                    <a href="/checkout/retry-payment/<%= order.orderId %>" class="btn-retry-payment">
+                                        <i class="fas fa-redo"></i> Retry Payment
+                                    </a>
+                                <% } else if (
+                                    order.status !== 'Cancelled' &&
+                                    (
+                                        (order.paymentMethod === 'Cash on Delivery') ||
+                                        (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed')
+                                    )
+                                ) { %>
+                                    <button class="btn-download-invoice" onclick="downloadInvoice('<%= order.orderId %>')">
+                                        <i class="fas fa-download"></i> Invoice
+                                    </button>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <i class="fas fa-shopping-bag"></i>
+                    <h3>No Orders Found</h3>
+                    <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                    <a href="/shop" class="browse-btn">
+                        <i class="fas fa-shopping-cart"></i> Browse Products
+                    </a>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+    
+    <style>
+        .toast {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            padding: 16px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            border-left-color: #10b981;
+        }
+        
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+        
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .toast.info {
+            border-left-color: #3b82f6;
+        }
+        
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .toast.success .toast-icon {
+            color: #10b981;
+        }
+        
+        .toast.error .toast-icon {
+            color: #ef4444;
+        }
+        
+        .toast.warning .toast-icon {
+            color: #f59e0b;
+        }
+        
+        .toast.info .toast-icon {
+            color: #3b82f6;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #111827;
+        }
+        
+        .toast-message {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toast-close:hover {
+            color: #6b7280;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toast notification system
+        function showToast(title, message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="${icons[type]}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="removeToast(this.parentElement)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Auto remove
+            setTimeout(() => removeToast(toast), duration);
+        }
+        
+        function removeToast(toast) {
+            if (toast && toast.parentElement) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.parentElement.removeChild(toast);
+                    }
+                }, 300);
+            }
+        }
+        
+        // Download PDF invoice
+        async function downloadInvoice(orderId) {
+            // Get the button that was clicked
+            const downloadBtn = event.target.closest('.btn-download-invoice');
+            const originalText = downloadBtn.innerHTML;
+
+            try {
+                // Show loading state
+                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+                downloadBtn.disabled = true;
+
+                // Make request to download invoice
+                const response = await fetch(`/orders/${orderId}/download-invoice`);
+
+                if (response.ok) {
+                    // Get the PDF blob
+                    const blob = await response.blob();
+
+                    // Create download link
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Invoice-${orderId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // Cleanup
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    // Show success toast
+                    showToast('Success!', 'Invoice downloaded successfully', 'success');
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to download invoice');
+                }
+            } catch (error) {
+                console.error('Error downloading invoice:', error);
+                showToast('Download Failed', error.message || 'Failed to download invoice. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            }
+        }
+
+        // Handle highlighted order functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const highlightOrderId = urlParams.get('highlight');
+
+            if (highlightOrderId) {
+                // Find the highlighted order card
+                const highlightedCard = document.querySelector(`[data-order-id="${highlightOrderId}"]`);
+
+                if (highlightedCard) {
+                    // Smooth scroll to the highlighted order with offset for header
+                    setTimeout(() => {
+                        const headerOffset = 120; // Account for fixed header and padding
+                        const elementPosition = highlightedCard.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+                    }, 300); // Small delay to ensure page is fully loaded
+
+                    // Add a temporary focus ring effect
+                    setTimeout(() => {
+                        highlightedCard.style.outline = '3px solid rgba(16, 185, 129, 0.5)';
+                        highlightedCard.style.outlineOffset = '4px';
+
+                        // Remove the focus ring after animation
+                        setTimeout(() => {
+                            highlightedCard.style.outline = 'none';
+                            highlightedCard.style.outlineOffset = '0';
+                        }, 3000);
+                    }, 800);
+
+                    // Show a subtle toast notification
+                    setTimeout(() => {
+                        showToast('Order Found', 'Your latest order is highlighted below. Click "View Details" to see complete order information.', 'success', 5000);
+                    }, 1200);
+
+                    // Clean up URL after highlighting (optional)
+                    setTimeout(() => {
+                        const newUrl = window.location.pathname;
+                        window.history.replaceState({}, document.title, newUrl);
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

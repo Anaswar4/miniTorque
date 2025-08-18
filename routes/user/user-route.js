@@ -3,8 +3,13 @@ const router = express.Router();
 const passport = require("passport");
 const userController = require("../../controllers/user/user-controller");
 const userProductController = require("../../controllers/user/product-controller");
+const userProfileController = require("../../controllers/user/user-profile-controller");
+const addressController = require("../../controllers/user/address-controller");
+const wishlistController = require("../../controllers/user/wishlist-controller");
+const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession } = require("../../middlewares/user-middleware");
 const { addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
+const { profileUpload, handleMulterError } = require("../../config/multer-config");
 
 
 // Google OAuth Start
@@ -19,27 +24,27 @@ router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/signup" }),
   (req, res, next) => {
-    // 🔹 First, regenerate the session to prevent fixation attacks
+    //  First, regenerate the session to prevent fixation attacks
     req.session.regenerate((err) => {
       if (err) {
         console.error("Session regen error:", err);
         return res.redirect("/login?error=session");
       }
 
-      // 🔹 Now tell Passport to store the logged-in user in the new session
+      //  Now tell Passport to store the logged-in user in the new session
       req.login(req.user, (err) => {
         if (err) {
           console.error("Passport login error:", err);
           return res.redirect("/login?error=login");
         }
 
-        // 🔹 Store your custom session values
+        //  Store your custom session values
         req.session.userId = req.user._id;
         req.session.email = req.user.email;
         req.session.loginTime = new Date();
         req.session.googleUserId = req.user._id;
 
-        // 🔹 Save the updated session and redirect
+        //  Save the updated session and redirect
         req.session.save((err) => {
           if (err) {
             console.error("Session save error:", err);
@@ -74,15 +79,15 @@ router.post("/login", redirectIfAuthenticated, userController.login);
 
 
 // Forgot password routes - redirect authenticated users
-router.get( "/forgot-password",preventCache,redirectIfAuthenticated,validateSession,userController.forgotPasswordPage);
-router.post("/forgot-password",redirectIfAuthenticated,userController.handleForgotPassword);
-router.get("/forgot-verify-otp",preventCache,redirectIfAuthenticated,validateSession,userController.showForgotOtpPage);
-router.post( "/forgot-verify-otp",redirectIfAuthenticated,userController.verifyForgotOtp); 
-router.post("/resend-forgot-verify-otp",redirectIfAuthenticated,userController.resendForgotOtp); 
-router.get("/new-password",preventCache,redirectIfAuthenticated,validateSession,userController.renderResetPasswordPage);
-router.get("/reset-password",preventCache,redirectIfAuthenticated,validateSession,userController.renderResetPasswordPage);
-router.post("/new-password",redirectIfAuthenticated,userController.handleNewPassword);
-router.post("/reset-password",redirectIfAuthenticated,userController.handleNewPassword);
+router.get("/forgot-password", preventCache, redirectIfAuthenticated, validateSession, userController.forgotPasswordPage);
+router.post("/forgot-password", redirectIfAuthenticated, userController.handleForgotPassword);
+router.get("/forgot-verify-otp", preventCache, redirectIfAuthenticated, validateSession, userController.showForgotOtpPage);
+router.post("/forgot-verify-otp", redirectIfAuthenticated, userController.verifyForgotOtp);
+router.post("/resend-forgot-verify-otp", redirectIfAuthenticated, userController.resendForgotOtp);
+router.get("/new-password", preventCache, redirectIfAuthenticated, validateSession, userController.renderResetPasswordPage);
+router.get("/reset-password", preventCache, redirectIfAuthenticated, validateSession, userController.renderResetPasswordPage);
+router.post("/new-password", redirectIfAuthenticated, userController.handleNewPassword);
+router.post("/reset-password", redirectIfAuthenticated, userController.handleNewPassword);
 
 
 // Authenticated routes
@@ -101,5 +106,34 @@ router.get("/api/category/:categoryId/products", validateSession, addUserContext
 // Shop Page
 router.get("/shopPage", validateSession, addUserContext, checkUserBlocked, userProductController.getShopPage);
 router.get("/product/:id", validateSession, addUserContext, checkUserBlocked, userProductController.getProductDetails);
+
+// Profile
+router.get("/profile", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadProfile);
+router.get("/profile/edit", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadEditProfile);
+router.post("/profile/edit", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.updateProfileData);
+router.post("/profile/verify-current-email", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.verifyCurrentEmail);
+router.get("/profile/email-change-otp", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadEmailChangeOtp);
+router.post("/profile/email-change-otp", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.verifyEmailChangeOtp);
+router.post("/profile/change-email", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.changeEmail);
+router.post("/profile/photo", isUserAuthenticated, preventCache, checkUserBlocked, profileUpload.single('profilePhoto'), handleMulterError, userProfileController.uploadProfilePhoto);
+router.delete("/profile/photo", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.deleteProfilePhoto);
+// Address-related routes
+router.get("/address", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, addressController.loadAddressList);
+router.get("/address/add", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, addressController.loadAddressForm);
+router.get("/address/edit/:id", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, addressController.loadAddressForm);
+router.post("/address", isUserAuthenticated, preventCache, checkUserBlocked, addressController.saveAddress);
+router.put("/address/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.updateAddress);
+router.put("/address/set-default/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.setAsDefault);
+router.delete("/address/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.deleteAddress);
+// Change password route
+router.get("/change-password", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadChangePassword);
+router.post("/change-password", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.updatePassword);
+// Wishlist-related routes
+router.get("/wishlist", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, wishlistController.loadWishlist);
+router.post("/wishlist/add", isUserAuthenticated, preventCache, checkUserBlocked, checkProductAvailabilityForWishlist, wishlistController.addToWishlist);
+router.post("/wishlist/remove", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.removeFromWishlist);
+router.get("/wishlist/count", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.getWishlistCount);
+router.post("/wishlist/bulk-transfer-to-cart", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.bulkTransferToCart);
+
 
 module.exports = router;

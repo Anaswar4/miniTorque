@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <%- include("../partials/head") %>
+        <!-- Shared Breadcrumb CSS -->
+        <link rel="stylesheet" href="/css/breadcrumb.css">
+        <!--sidebar-->
+        <%- include("../partials/user-sidebar") %>
+            <link href="/css/user/profile.css" rel="stylesheet" />
+</head>
+
+<body>
+    <!-- Main Content -->
+    <div class="main-content fade-in">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Profile</li>
+                </ol>
+            </nav>
+        </div>
+        <!-- Page Header -->
+        <div class="page-header fade-in">
+            <h1><i class="fas fa-user"></i> My Profile</h1>
+            <p>Manage your personal information and account settings</p>
+        </div>
+        <div class="row g-3">
+            <!-- Profile Details Section -->
+            <div class="col-12">
+                <div class="card-light p-3"> <!-- Reduced padding from p-4 to p-3 -->
+                    <div class="text-center mb-4">
+                        <h2 class="section-title mb-0">
+                            <i class="fas fa-user"></i>
+                            Profile Details
+                        </h2>
+                    </div>
+                    <!-- Profile Photo Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex flex-column align-items-center text-center profile-photo-section">
+                                <div class="profile-photo-container mb-3">
+                                    <% if (user.profilePhoto) { %>
+                                        <img src="/uploads/profiles/<%= user.profilePhoto %>" alt="Profile Photo"
+                                            class="main-profile-img" id="mainProfileImg">
+                                        <% } else { %>
+                                            <div class="main-profile-avatar" id="mainProfileAvatar">
+                                                <%= user.fullname ? user.fullname.charAt(0).toUpperCase() : '👤' %>
+                                            </div>
+                                            <% } %>
+                                                <div class="profile-photo-overlay" onclick="triggerMainPhotoUpload()">
+                                                    <i class="fas fa-camera"></i>
+                                                </div>
+                                </div>
+                                <div class="profile-photo-actions">
+                                    <button type="button" class="btn btn-sm btn-primary-custom me-2"
+                                        onclick="triggerMainPhotoUpload()">
+                                        <i class="fas fa-camera me-1"></i>
+                                        Change Photo
+                                    </button>
+                                    <% if (user.profilePhoto) { %>
+                                        <button type="button" class="btn btn-sm btn-secondary-custom"
+                                            onclick="deleteMainProfilePhoto()">
+                                            <i class="fas fa-trash me-1"></i>
+                                            Remove
+                                        </button>
+                                        <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Profile Form -->
+                    <form id="profileForm">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label class="label-text">Full Name</label>
+                                <input type="text" id="fullname" name="fullname" class="form-control form-control-light"
+                                    value="<%= user.fullName || user.name || user.displayName || user.googleName || '' %>"
+                                    readonly>
+                                <div class="error-message" id="fullname-error"></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="label-text">Email Address</label>
+                                <input type="email" id="email" name="email" class="form-control form-control-light"
+                                    value="<%= user.email || '' %>" readonly>
+                                <div class="error-message" id="email-error"></div>
+                            </div>
+                            <!-- Phone Number Field Removed -->
+                            <div class="col-12">
+                                <label class="label-text">Member Since</label>
+                                <input type="text" class="form-control form-control-light"
+                                    value="<%= new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>"
+                                    readonly>
+                            </div>
+                        </div>
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 mt-4 flex-wrap">
+                            <a href="/profile/edit" class="btn btn-primary-custom">
+                                <i class="fas fa-edit me-2"></i>
+                                Edit Profile
+                            </a>
+                            <button type="button" class="btn btn-secondary-custom" onclick="showSection('address')">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                Manage Addresses
+                            </button>
+                            <button type="button" class="btn btn-secondary-custom" onclick="showSection('password')">
+                                <i class="fas fa-lock me-2"></i>
+                                Change Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Hidden file input for profile photo upload -->
+    <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+    <!-- Toast Container -->
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+    <style>
+        .toast {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            padding: 16px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: #10b981;
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .toast.info {
+            border-left-color: #3b82f6;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast.success .toast-icon {
+            color: #10b981;
+        }
+
+        .toast.error .toast-icon {
+            color: #ef4444;
+        }
+
+        .toast.warning .toast-icon {
+            color: #f59e0b;
+        }
+
+        .toast.info .toast-icon {
+            color: #3b82f6;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #111827;
+        }
+
+        .toast-message {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast-close:hover {
+            color: #6b7280;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        // Toast notification system
+        function showToast(title, message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="${icons[type]}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="removeToast(this.parentElement)">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            // Auto remove
+            setTimeout(() => removeToast(toast), duration);
+        }
+
+        function removeToast(toast) {
+            if (toast && toast.parentElement) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.parentElement.removeChild(toast);
+                    }
+                }, 300);
+            }
+        }
+        // Sidebar navigation functionality
+        function showSection(section) {
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // Add active class to clicked item
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                if (item.onclick && item.onclick.toString().includes(`'${section}'`)) {
+                    item.classList.add('active');
+                }
+            });
+            // Handle section navigation
+            switch (section) {
+                case 'profile':
+                    // Already on profile page, just ensure it's active
+                    break;
+                case 'address':
+                    // Navigate to address management
+                    window.location.href = '/address';
+                    break;
+                case 'orders':
+                    // Navigate to orders
+                    window.location.href = '/orders';
+                    break;
+                case 'wishlist':
+                    // Navigate to wishlist
+                    window.location.href = '/wishlist';
+                    break;
+                case 'wallet':
+                    // Navigate to wallet
+                    window.location.href = '/wallet';
+                    break;
+
+                case 'referrals':
+                    // Navigate to referrals (to be implemented)
+                    showToast('Coming Soon', 'Referrals feature will be available soon.', 'info');
+                    break;
+
+                case 'password':
+                    // Navigate to change password
+                    window.location.href = '/change-password';
+                    break;
+                default:
+                    console.log('Unknown section:', section);
+            }
+        }
+        // Main profile photo functions
+        function triggerMainPhotoUpload() {
+            document.getElementById('profilePhotoInput').click();
+        }
+        async function deleteMainProfilePhoto() {
+            const result = await Swal.fire({
+                title: 'Delete Profile Photo?',
+                text: 'Are you sure you want to remove your profile photo?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            });
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch('/profile/photo', {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        // Update main profile photo
+                        const photoContainer = document.querySelector('.profile-photo-container');
+                        const userName = '<%= user.fullname ? user.fullname.charAt(0).toUpperCase() : "👤" %>';
+                        photoContainer.innerHTML = `
+                            <div class="main-profile-avatar" id="mainProfileAvatar">
+                                ${userName}
+                            </div>
+                            <div class="profile-photo-overlay" onclick="triggerMainPhotoUpload()">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        `;
+                        // Update sidebar photo
+                        const sidebarContainer = document.querySelector('.profile-avatar-container');
+                        if (sidebarContainer) {
+                            sidebarContainer.innerHTML = `
+                                <div class="profile-avatar" id="sidebarProfileAvatar">${userName}</div>
+                                <div class="profile-avatar-overlay" onclick="triggerPhotoUpload()">
+                                    <i class="bi bi-camera"></i>
+                                </div>
+                            `;
+                        }
+                        // Remove the delete button
+                        const deleteBtn = document.querySelector('.profile-photo-actions .btn-secondary-custom');
+                        if (deleteBtn) {
+                            deleteBtn.remove();
+                        }
+                        showToast('Photo Deleted!', data.message, 'success');
+                    } else {
+                        showToast('Delete Failed', data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting photo:', error);
+                    showToast('Delete Error', 'Something went wrong. Please try again.', 'error');
+                }
+            }
+        }
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ensure profile section is active on page load
+            showSection('profile');
+        });
+    </script>
+</body>
+
+</html>
