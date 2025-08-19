@@ -29,6 +29,9 @@ const loadProfile = async (req, res) => {
     res.render("user/profile", {
       title: "My Profile",
       user,
+      wishlistCount,          // 🔥 Add wishlistCount here
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'profile', // 🔥 Add currentPage
       stats: {
         totalOrders,
         wishlistCount,
@@ -38,7 +41,15 @@ const loadProfile = async (req, res) => {
     });
   } catch (err) {
     console.error("Error loading profile:", err);
-    res.status(500).send("Server Error");
+    res.status(500).render("error", {
+      error: {
+        status: 500,
+        message: "Error loading profile: " + err.message
+      },
+      message: err.message,
+      user: req.user || null,
+      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+    });
   }
 };
 
@@ -50,10 +61,28 @@ const loadEditProfile = async (req, res) => {
     const user = await User.findById(userId).select("-password").lean();
     if (!user) return res.redirect("/login");
 
-    res.render("user/edit-profile", { title: "Edit Profile", user });
+    // 🔥 Add wishlist count for consistency
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    res.render("user/edit-profile", { 
+      title: "Edit Profile", 
+      user,
+      wishlistCount,          // 🔥 Add wishlistCount
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'edit-profile'
+    });
   } catch (err) {
     console.error("Error loading edit profile:", err);
-    res.status(500).send("Server Error");
+    res.status(500).render("error", {
+      error: {
+        status: 500,
+        message: "Error loading edit profile: " + err.message
+      },
+      message: err.message,
+      user: req.user || null,
+      wishlistCount: 0
+    });
   }
 };
 
@@ -65,10 +94,28 @@ const loadChangePassword = async (req, res) => {
     const user = await User.findById(userId).select("fullName email profilePhoto");
     if (!user) return res.redirect("/login");
 
-    res.render("user/change-password", { user, title: "Change Password" });
+    // 🔥 Add wishlist count
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    res.render("user/change-password", { 
+      user, 
+      title: "Change Password",
+      wishlistCount,          // 🔥 Add wishlistCount
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'change-password'
+    });
   } catch (err) {
     console.error("Error loading change password page:", err);
-    res.status(500).render("error", { message: "Error loading change password page" });
+    res.status(500).render("error", { 
+      error: {
+        status: 500,
+        message: "Error loading change password page: " + err.message
+      },
+      message: err.message,
+      user: req.user || null,
+      wishlistCount: 0
+    });
   }
 };
 
@@ -77,7 +124,7 @@ const loadWallet = async (req, res) => {
     const userId = req.session.userId;
     if (!userId) return res.redirect("/login");
 
-    const user = await User.findById(userId).select("fullname email profilePhoto");
+    const user = await User.findById(userId).select("fullName email profilePhoto");
     if (!user) return res.redirect("/login");
 
     const wallet = await Wallet.getOrCreateWallet(userId);
@@ -88,9 +135,16 @@ const loadWallet = async (req, res) => {
       .filter(t => t.type === "debit")
       .reduce((sum, t) => sum + t.amount, 0);
 
+    // 🔥 Add wishlist count
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
     res.render("wallet", {
       user,
       title: "My Wallet",
+      wishlistCount,          // 🔥 Add wishlistCount
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'wallet',
       wallet: {
         balance: wallet.balance,
         totalAdded,
@@ -102,7 +156,15 @@ const loadWallet = async (req, res) => {
     });
   } catch (err) {
     console.error("Error loading wallet page:", err);
-    res.status(500).render("error", { message: "Error loading wallet page" });
+    res.status(500).render("error", { 
+      error: {
+        status: 500,
+        message: "Error loading wallet page: " + err.message
+      },
+      message: err.message,
+      user: req.user || null,
+      wishlistCount: 0
+    });
   }
 };
 
@@ -198,14 +260,29 @@ const loadEmailChangeOtp = async (req, res) => {
     const user = await User.findById(userId).select("-password").lean();
     if (!user) return res.redirect("/login");
 
+    // 🔥 Add wishlist count
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
     res.render("email-change-otp", {
       title: "Verify Email Change",
       user,
-      email: req.session.emailChangeOtp.email
+      email: req.session.emailChangeOtp.email,
+      wishlistCount,          // 🔥 Add wishlistCount
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'email-change-otp'
     });
   } catch (err) {
     console.error("Error loading email change OTP page:", err);
-    res.status(500).send("Server Error");
+    res.status(500).render("error", {
+      error: {
+        status: 500,
+        message: "Error loading email change OTP page: " + err.message
+      },
+      message: err.message,
+      user: req.user || null,
+      wishlistCount: 0
+    });
   }
 };
 

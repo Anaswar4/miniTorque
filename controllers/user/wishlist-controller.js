@@ -5,11 +5,13 @@ const User = require('../../models/user-model');
 const loadWishlist = async (req, res) => {
   try {
     const userId = req.session.userId;
+    
     // Get user data for sidebar
     const user = await User.findById(userId).select('fullName email profilePhoto');
     if (!user) {
       return res.redirect('/login');
     }
+    
     // Get user's wishlist with populated product data
     const wishlist = await Wishlist.findOne({ userId })
       .populate({
@@ -20,6 +22,7 @@ const loadWishlist = async (req, res) => {
         }
       })
       .sort({ 'products.addedOn': -1 });
+    
     // Filter out products that are no longer available
     let wishlistProducts = [];
     if (wishlist && wishlist.products) {
@@ -35,22 +38,40 @@ const loadWishlist = async (req, res) => {
         return isValid;
       });
     }
+
+    // Calculate wishlist count
+    const wishlistCount = wishlistProducts.length;
+
     res.render('user/wishlist', {
       user,
       wishlist: { products: wishlistProducts },
-      title: 'My Wishlist'
+      wishlistCount,          // 🔥 Add wishlistCount here
+      title: 'My Wishlist',
+      isAuthenticated: true,
+      currentPage: 'wishlist'
     });
+    
   } catch (error) {
     console.error('Error loading wishlist:', error);
-    res.status(500).render('error', { message: 'Error loading wishlist' });
+    res.status(500).render('error', { 
+      error: {
+        status: 500,
+        message: 'Error loading wishlist: ' + error.message
+      },
+      message: error.message,
+      user: req.user || null,
+      wishlistCount: 0        //  Add wishlistCount for error page
+    });
   }
 };
 
-// Add product to wishlist
+
+//  Add product to wishlist with toggle support
 const addToWishlist = async (req, res) => {
   try {
     const userId = req.session.userId;
     const { productId } = req.body;
+
     // Check if user is authenticated
     if (!userId) {
       return res.status(401).json({
@@ -59,6 +80,7 @@ const addToWishlist = async (req, res) => {
         code: 'NOT_AUTHENTICATED'
       });
     }
+
     // Check if productId is provided
     if (!productId) {
       return res.status(400).json({
@@ -67,6 +89,7 @@ const addToWishlist = async (req, res) => {
         code: 'MISSING_PRODUCT_ID'
       }); 
     }
+
     // Find or create user's wishlist
     let wishlist = await Wishlist.findOne({ userId });
     if (!wishlist) {
@@ -75,34 +98,46 @@ const addToWishlist = async (req, res) => {
         products: []
       });
     }
+
     // Check if product is already in wishlist
-    const existingProduct = wishlist.products.find(
+    const existingProductIndex = wishlist.products.findIndex(
       item => item.productId.toString() === productId
     );
-    if (existingProduct) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product is already in your wishlist',
-        code: 'ALREADY_IN_WISHLIST'
+
+    if (existingProductIndex > -1) {
+      // 🔥 FIXED: If product exists, remove it (toggle behavior)
+      wishlist.products.splice(existingProductIndex, 1);
+      await wishlist.save();
+
+      return res.json({
+        success: true,
+        message: 'Product removed from wishlist successfully',
+        wishlistCount: wishlist.products.length,
+        action: 'removed' // 🔥 NEW: Indicate what action was taken
+      });
+    } else {
+      // 🔥 Add product to wishlist (existing logic)
+      wishlist.products.push({
+        productId: productId,
+        addedOn: new Date()
+      });
+
+      const savedWishlist = await wishlist.save();
+
+      return res.json({
+        success: true,
+        message: 'Product added to wishlist successfully',
+        wishlistCount: savedWishlist.products.length,
+        action: 'added' // 🔥 NEW: Indicate what action was taken
       });
     }
-    // Add product to wishlist
-    wishlist.products.push({
-      productId: productId,
-      addedOn: new Date()
-    });
-    const savedWishlist = await wishlist.save();
-    res.json({
-      success: true,
-      message: 'Product added to wishlist successfully',
-      wishlistCount: savedWishlist.products.length
-    });
+
   } catch (error) {
-    console.error('Error adding to wishlist:', error);
+    console.error('Error managing wishlist:', error);
     console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to add product to wishlist',
+      message: 'Failed to manage wishlist',
       code: 'SERVER_ERROR'
     });
   }

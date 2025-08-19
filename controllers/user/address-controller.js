@@ -1,6 +1,7 @@
 // User address management controller
 const Address = require('../../models/address-schema');
 const User = require('../../models/user-model');
+const Wishlist = require('../../models/wishlist-schema'); // 🔥 Add Wishlist import
 const { 
     validateAddAddressForm, 
     validateUpdateAddressForm 
@@ -19,14 +20,29 @@ const loadAddressList = async (req, res) => {
     const addressDoc = await Address.findOne({ userId }).populate('userId');
     const addresses = addressDoc ? addressDoc.address : [];
 
+    // 🔥 Fetch wishlist count
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
     res.render('user/address-list', {
       user,
       addresses,
+      wishlistCount,          // 🔥 Add wishlistCount here
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'address-list', // 🔥 Add currentPage
       title: 'Address Book'
     });
   } catch (error) {
     console.error('Error loading address list:', error);
-    res.status(500).render('error', { message: 'Error loading addresses' });
+    res.status(500).render('error', { 
+      error: {
+        status: 500,
+        message: 'Error loading addresses: ' + error.message
+      },
+      message: error.message,
+      user: req.user || null,
+      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+    });
   }
 };
 
@@ -52,16 +68,31 @@ const loadAddressForm = async (req, res) => {
       }
     }
 
+    // 🔥 Fetch wishlist count
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
     res.render('user/address', {
       user,
       address,
       isEdit,
       returnTo,
+      wishlistCount,          // 🔥 Add wishlistCount here
+      isAuthenticated: true,  // 🔥 Add isAuthenticated
+      currentPage: 'address-form', // 🔥 Add currentPage
       title: isEdit ? 'Edit Address' : 'Add New Address'
     });
   } catch (error) {
     console.error('Error loading address form:', error);
-    res.status(500).render('error', { message: 'Error loading address form' });
+    res.status(500).render('error', { 
+      error: {
+        status: 500,
+        message: 'Error loading address form: ' + error.message
+      },
+      message: error.message,
+      user: req.user || null,
+      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+    });
   }
 };
 

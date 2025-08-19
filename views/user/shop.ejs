@@ -709,7 +709,7 @@
                 });
                 const out = await res.json();
                 if (out.success) {
-                    updateWishlistCounter(out.wishlistCount || 0);
+                   window.updateWishlistCount();
                     btn.classList.toggle('active');
                     btn.innerHTML = btn.classList.contains('active')
                         ? '<i class="fas fa-heart text-danger"></i>'
@@ -730,10 +730,6 @@
         function toggleWishlist(id, el) { toggleWishlistFromShop(id, el); }
 
         /* counters */
-        function updateWishlistCounter(c) {
-            const el = document.getElementById('wishlistCount');
-            if (el) { el.textContent = c; el.style.display = c > 0 ? 'flex' : 'none'; }
-        }
         function updateCartCounter(c) {
             const el = document.getElementById('cartCount');
             if (el) { el.textContent = c; el.style.display = c > 0 ? 'flex' : 'none'; }

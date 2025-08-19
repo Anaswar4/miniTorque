@@ -702,7 +702,7 @@ async function toggleWishlistFromHome(productId, btn) {
         const out = await res.json();
         
         if (out.success) {
-            updateWishlistCounter(out.wishlistCount || 0);
+            window.updateWishlistCount();
             
             // 🔥 Update ALL icons for this product across ALL sections
             const isNowActive = !inWishlist;
@@ -731,7 +731,7 @@ async function toggleWishlistFromHome(productId, btn) {
     }
 }
 
-// 🔥 Legacy function for backward compatibility
+//  Legacy function for backward compatibility
 async function addToWishlist(productId) {
     const wishlistBtn = document.querySelector(`[data-product-id="${productId}"]`);
     if (wishlistBtn) {
@@ -739,16 +739,9 @@ async function addToWishlist(productId) {
     }
 }
 
-// ⭐ ADD WISHLIST COUNTER UPDATE FUNCTION
-function updateWishlistCounter(count) {
-    const wishlistCounter = document.querySelector('#wishlistCount');
-    if (wishlistCounter) {
-        wishlistCounter.textContent = count || '0';
-        wishlistCounter.style.display = count > 0 ? 'flex' : 'none';
-    }
-}
 
-// ⭐ REPLACE WITH ACTUAL ADD TO CART FUNCTIONALITY
+
+//  REPLACE WITH ACTUAL ADD TO CART FUNCTIONALITY
 async function addToCart(productId) {
     const button = event.target.closest('.add-to-cart');
     const originalContent = button.innerHTML;

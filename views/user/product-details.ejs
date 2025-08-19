@@ -13,9 +13,7 @@
 </head>
 <body>
 
-
 <%- include("../partials/head") %>
-
 
 <!-- Breadcrumb -->
 <section class="py-3 bg-light">
@@ -166,8 +164,15 @@
                 <i class="fas fa-shopping-cart"></i>
                 <span>Add to Cart</span>
               </button>
-              <button class="btn-wishlist" data-product-id="<%= product._id %>">
-                <i class="far fa-heart"></i>
+              
+              <!-- 🔥 UPDATED: Wishlist button with correct state -->
+              <% 
+                const isInWishlist = userWishlistIds && userWishlistIds.includes(product._id.toString());
+              %>
+              <button class="btn-wishlist <%= isInWishlist ? 'active' : '' %>" 
+                      data-product-id="<%= product._id %>"
+                      title="<%= isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
+                <i class="<%= isInWishlist ? 'fas fa-heart' : 'far fa-heart' %>"></i>
               </button>
             </div>
           </div>
@@ -379,8 +384,14 @@
                       <% } %>
                     </div>
                     <div class="d-flex gap-2 align-items-center">
-                      <button class="btn-wishlist-home" data-product-id="<%= relatedProduct._id %>">
-                        <i class="far fa-heart"></i>
+                      <!-- 🔥 UPDATED: Related products wishlist button with correct state -->
+                      <% 
+                        const isRelatedInWishlist = userWishlistIds && userWishlistIds.includes(relatedProduct._id.toString());
+                      %>
+                      <button class="btn-wishlist-home <%= isRelatedInWishlist ? 'active' : '' %>" 
+                              data-product-id="<%= relatedProduct._id %>"
+                              title="<%= isRelatedInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
+                        <i class="<%= isRelatedInWishlist ? 'fas fa-heart' : 'far fa-heart' %>"></i>
                       </button>
                       <button class="add-to-cart" data-product-id="<%= relatedProduct._id %>" <%= relatedProduct.quantity === 0 ? 'disabled' : '' %>>
                         <i class="fas fa-plus"></i>
@@ -583,6 +594,13 @@
   border-color: #dc3545;
 }
 
+/* 🔥 NEW: Active wishlist button styling */
+.btn-wishlist.active {
+  background-color: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
+
 .social-icon {
   width: 40px;
   height: 40px;
@@ -716,6 +734,13 @@
   color: #fff;
 }
 
+/* 🔥 NEW: Active state for related products wishlist */
+.btn-wishlist-home.active {
+  background-color: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
+
 .add-to-cart {
   width: 35px;
   height: 35px;
@@ -821,6 +846,15 @@
 <script src="/js/product-zoomer.js"></script>
 
 <script>
+// 🔥 SAFETY CHECK: Initialize userWishlistIds safely
+const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+
+// 🔥 DEBUG: Check initial data
+console.log('=== WISHLIST ICON DEBUG ===');
+console.log('userWishlistIds:', userWishlistIds);
+console.log('Product ID:', '<%= product._id %>');
+console.log('Is in wishlist:', userWishlistIds.includes('<%= product._id %>'));
+
 document.addEventListener('DOMContentLoaded', function () {
     const addToCartBtn = document.querySelector('.btn-add-to-cart');
     const wishlistBtn = document.querySelector('.btn-wishlist');
@@ -828,7 +862,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const cartCountElement = document.querySelector('.cart-count');
     const wishlistCountElement = document.querySelector('.wishlist-count');
 
-    // Quantity controls
+    // Quantity controls (keep existing code)
     window.decrementQuantity = function () {
       let value = parseInt(quantityInput.value);
       if (value > 1) {
@@ -843,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     };
 
-    // Validate quantity input
+    // Validate quantity input (keep existing code)
     quantityInput.addEventListener('change', function () {
       let value = parseInt(this.value);
       if (isNaN(value) || value < 1) {
@@ -856,7 +890,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    // Add to cart functionality
+    // Add to cart functionality (keep existing code)
     if (addToCartBtn) {
       addToCartBtn.addEventListener('click', async function () {
         if (addToCartBtn.disabled) return;
@@ -914,13 +948,110 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
-    // Wishlist functionality
+    // 🔥 FIXED: Wishlist functionality with correct toggle handling
     if (wishlistBtn) {
       wishlistBtn.addEventListener('click', async function () {
         const productId = this.dataset.productId;
+        
+        // 🔥 FIXED: Always use /wishlist/add since backend handles toggle
+        const url = '/wishlist/add';
+
+        // Disable button during request
+        this.disabled = true;
 
         try {
-          const response = await fetch('/wishlist/toggle', {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId })
+          });
+          const result = await response.json();
+
+          console.log('Wishlist API response:', result); // Debug log
+
+          if (result.success) {
+            // 🔥 FIXED: Update icon based on action returned from backend
+            if (result.action === 'added') {
+              // Product was added - make icon active
+              this.classList.add('active');
+              this.querySelector('i').className = 'fas fa-heart';
+              this.title = 'Remove from Wishlist';
+              
+              // Update local array
+              if (!userWishlistIds.includes(productId)) {
+                userWishlistIds.push(productId);
+              }
+            } else if (result.action === 'removed') {
+              // Product was removed - make icon inactive
+              this.classList.remove('active');
+              this.querySelector('i').className = 'far fa-heart';
+              this.title = 'Add to Wishlist';
+              
+              // Update local array
+              const index = userWishlistIds.indexOf(productId);
+              if (index > -1) {
+                userWishlistIds.splice(index, 1);
+              }
+            }
+            
+            // Update wishlist counter
+            if (wishlistCountElement) {
+              wishlistCountElement.textContent = result.wishlistCount;
+              wishlistCountElement.dataset.count = result.wishlistCount;
+            }
+
+            console.log('Icon updated - Active:', this.classList.contains('active')); // Debug log
+
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: result.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          } else {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: result.message || 'Failed to manage wishlist',
+              showConfirmButton: false,
+              timer: 1500
+            });
+          }
+        } catch (error) {
+          console.error('Wishlist error:', error);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Error managing wishlist',
+            showConfirmButton: false,
+            timer: 1500
+          });
+        } finally {
+          this.disabled = false;
+        }
+      });
+    }
+
+    // 🔥 UPDATED: Related products functionality
+    const relatedWishlistButtons = document.querySelectorAll('.related-products .btn-wishlist-home');
+
+    relatedWishlistButtons.forEach(button => {
+      button.addEventListener('click', async function (e) {
+        e.preventDefault();
+        const productId = this.dataset.productId;
+        
+        // 🔥 FIXED: Always use /wishlist/add for related products too
+        const url = '/wishlist/add';
+
+        // Disable button during request
+        this.disabled = true;
+
+        try {
+          const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
@@ -928,8 +1059,26 @@ document.addEventListener('DOMContentLoaded', function () {
           const result = await response.json();
 
           if (result.success) {
-            const isWishlisted = result.isWishlisted;
-            this.querySelector('i').className = isWishlisted ? 'fas fa-heart' : 'far fa-heart';
+            // Update button state based on action
+            if (result.action === 'added') {
+              this.classList.add('active');
+              this.querySelector('i').className = 'fas fa-heart';
+              this.title = 'Remove from Wishlist';
+              
+              if (!userWishlistIds.includes(productId)) {
+                userWishlistIds.push(productId);
+              }
+            } else if (result.action === 'removed') {
+              this.classList.remove('active');
+              this.querySelector('i').className = 'far fa-heart';
+              this.title = 'Add to Wishlist';
+              
+              const index = userWishlistIds.indexOf(productId);
+              if (index > -1) {
+                userWishlistIds.splice(index, 1);
+              }
+            }
+            
             if (wishlistCountElement) {
               wishlistCountElement.textContent = result.wishlistCount;
               wishlistCountElement.dataset.count = result.wishlistCount;
@@ -943,19 +1092,6 @@ document.addEventListener('DOMContentLoaded', function () {
               showConfirmButton: false,
               timer: 1500
             });
-          } else {
-            if (result.message === 'Please log in to manage your wishlist' || result.requiresAuth) {
-              Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'error',
-                title: result.message,
-                showConfirmButton: false,
-                timer: 2000
-              }).then(() => {
-                window.location.href = '/login';
-              });
-            }
           }
         } catch (error) {
           Swal.fire({
@@ -966,14 +1102,14 @@ document.addEventListener('DOMContentLoaded', function () {
             showConfirmButton: false,
             timer: 1500
           });
+        } finally {
+          this.disabled = false;
         }
       });
-    }
+    });
 
-    // Related products functionality
+    // Keep existing add to cart for related products (unchanged)
     const relatedAddToCartButtons = document.querySelectorAll('.related-products .add-to-cart');
-    const relatedWishlistButtons = document.querySelectorAll('.related-products .btn-wishlist-home');
-
     relatedAddToCartButtons.forEach(button => {
       button.addEventListener('click', async function (e) {
         e.preventDefault();
@@ -1016,54 +1152,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     });
-
-    relatedWishlistButtons.forEach(button => {
-      button.addEventListener('click', async function (e) {
-        e.preventDefault();
-        const productId = this.dataset.productId;
-
-        try {
-          const response = await fetch('/wishlist/toggle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId })
-          });
-          const result = await response.json();
-
-          if (result.success) {
-            const isWishlisted = result.isWishlisted;
-            const icon = this.querySelector('i');
-            icon.className = isWishlisted ? 'fas fa-heart' : 'far fa-heart';
-            
-            if (wishlistCountElement) {
-              wishlistCountElement.textContent = result.wishlistCount;
-              wishlistCountElement.dataset.count = result.wishlistCount;
-            }
-
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-          }
-        } catch (error) {
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error managing wishlist',
-            showConfirmButton: false,
-            timer: 1500
-          });
-        }
-      });
-    });
 });
 
-// Image change function
+// Image change function (keep unchanged)
 window.changeImage = function(element, imageUrl) {
     document.querySelectorAll('.thumbnail').forEach(thumb => {
         thumb.classList.remove('active');
@@ -1073,3 +1164,6 @@ window.changeImage = function(element, imageUrl) {
 };
 </script>
 
+
+</body>
+</html>

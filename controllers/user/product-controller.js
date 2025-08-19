@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 
-
 const getProducts = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -142,7 +141,6 @@ const getProducts = async (req, res) => {
     }
 };
 
-
 const getProductById = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -213,7 +211,6 @@ const getProductById = async (req, res) => {
         });
     }
 };
-
 
 const getProductsByCategory = async (req, res) => {
     try {
@@ -668,13 +665,15 @@ const getShopPage = async (req, res) => {
             isDeleted: false 
         }).lean();
 
-        // **🔥 NEW: Get user's wishlist data**
+        // 🔥 Get user's wishlist data and count
         let userWishlistIds = [];
+        let wishlistCount = 0;
         if (req.user && req.user._id) {
             const Wishlist = require('../../models/wishlist-schema');
             const wishlist = await Wishlist.findOne({ userId: req.user._id }).lean();
             if (wishlist && wishlist.products) {
                 userWishlistIds = wishlist.products.map(item => item.productId.toString());
+                wishlistCount = wishlist.products.length;
             }
         }
         
@@ -710,7 +709,8 @@ const getShopPage = async (req, res) => {
             pagination,
             totalProducts,
             queryString,
-            userWishlistIds, // **🔥 NEW: Pass wishlist data to template**
+            userWishlistIds,
+            wishlistCount,        // 🔥 Add wishlistCount here
             filters: {
                 category: req.query.category || '',
                 minPrice: req.query.minPrice || '',
@@ -720,25 +720,30 @@ const getShopPage = async (req, res) => {
                 sort: req.query.sort || 'newest'
             },
             user: req.user || null,
+            isAuthenticated: !!req.session.userId,
             currentPage: 'shop'
         });
         
     } catch (error) {
         console.error('Error loading shop page:', error);
         res.status(500).render('error', { 
-            message: 'Error loading shop page',
+            error: {
+                status: 500,
+                message: 'Error loading shop page: ' + error.message
+            },
+            message: error.message,
             user: req.user || null 
         });
     }
 };
 
-
+// 🔥 UPDATED: Product Details function with wishlist data
 const getProductDetails = async (req, res) => {
     try {
-        const userId = req.session.user_id || null;
+        const userId = req.session.userId || null;
         const productId = req.params.id;
 
-        //  Use aggregation to check category status
+        // Use aggregation to check category status
         const productPipeline = [
             {
                 $match: {
@@ -769,7 +774,8 @@ const getProductDetails = async (req, res) => {
         if (!productResult || productResult.length === 0) {
             return res.status(404).render('pageNotFound', {
                 message: 'Product not found or not available',
-                user: userId ? { id: userId } : null
+                user: userId ? { id: userId } : null,
+                wishlistCount: 0  // Add wishlistCount for error page
             });
         }
 
@@ -848,6 +854,18 @@ const getProductDetails = async (req, res) => {
         product.hasOffer = hasOffer;
         product.discountAmount = discountAmount;
 
+        // 🔥 Get user's wishlist data and count
+        let userWishlistIds = [];
+        let wishlistCount = 0;
+        if (userId) {
+            const Wishlist = require('../../models/wishlist-schema');
+            const wishlist = await Wishlist.findOne({ userId: userId }).lean();
+            if (wishlist && wishlist.products) {
+                userWishlistIds = wishlist.products.map(item => item.productId.toString());
+                wishlistCount = wishlist.products.length;  // Calculate wishlist count
+            }
+        }
+
         // Debug logging
         console.log('Product details loaded:', {
             productName: product.productName,
@@ -858,12 +876,15 @@ const getProductDetails = async (req, res) => {
             hasOffer: hasOffer,
             quantity: product.quantity,
             status: product.status,
-            relatedProductsCount: relatedProducts.length
+            relatedProductsCount: relatedProducts.length,
+            userWishlistCount: userWishlistIds.length
         });
 
-        res.render('user/product-details', {
+        res.render('user/product-details', { 
             product,
             relatedProducts,
+            userWishlistIds,
+            wishlistCount,        // 🔥 Add wishlistCount here
             user: userId ? { id: userId } : null,
             isAuthenticated: !!userId,
             currentPage: 'product-details'
@@ -871,12 +892,18 @@ const getProductDetails = async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching product details:', error);
-        res.status(500).render('pageNotFound', {
-            message: 'Error loading product details',
-            user: req.session.user_id ? { id: req.session.user_id } : null
+        res.status(500).render('error', {
+            error: {
+                status: 500,
+                message: 'Error loading product details: ' + error.message
+            },
+            message: error.message,
+            user: req.session.userId ? { id: req.session.userId } : null,
+            wishlistCount: 0  // Add wishlistCount for error page
         });
     }
 };
+
 
 module.exports = {
     getProducts,

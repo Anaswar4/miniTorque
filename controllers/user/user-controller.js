@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
+const Wishlist = require('../../models/wishlist-schema'); // Import Wishlist model
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -22,8 +23,7 @@ const showSignup = (req, res) => {
   });
 };
 
-
-//  Load home page with proper product filtering
+// Load home page with proper product filtering and wishlist count
 const loadHome = async (req, res) => {
   try {
     const navLinks = [
@@ -33,9 +33,8 @@ const loadHome = async (req, res) => {
       { href: '#contact', text: 'Contact', active: false }
     ];
 
-    //  Get featured products with proper filtering
+    // Get featured products with proper filtering
     const featuredProducts = await Product.aggregate([
-      // Join with categories
       {
         $lookup: {
           from: "categories",
@@ -44,14 +43,12 @@ const loadHome = async (req, res) => {
           as: "categoryData"
         }
       },
-      //   Filter products and categories
       {
         $match: {
           isListed: true,
           isDeleted: false,        
           isBlocked: false,
           status: "Available",
-          //  Only products from active categories
           "categoryData.isListed": true,
           "categoryData.isDeleted": false
         }
@@ -62,7 +59,6 @@ const loadHome = async (req, res) => {
 
     // Add price calculations for home page products
     featuredProducts.forEach(product => {
-      // Convert categoryData array to single object
       if (product.categoryData && product.categoryData.length > 0) {
         product.category = product.categoryData[0];
       }
@@ -78,35 +74,36 @@ const loadHome = async (req, res) => {
         product.discountAmount = 0;
       }
 
-      // Check if product is new (created within last 30 days)
       const now = new Date();
       const createdAt = new Date(product.createdAt);
       const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
       product.isNew = diffDays <= 30;
     });
 
-    //  Get only active categories for any home page category sections
+    // Get only active categories for any home page category sections
     const activeCategories = await Category.find({
       isListed: true,
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
-    // **🔥 NEW: Get user's wishlist data**
+    // Get user's wishlist ids and count for navbar
     let userWishlistIds = [];
+    let wishlistCount = 0;
     if (req.user && req.user._id) {
-      const Wishlist = require('../../models/wishlist-schema');
       const wishlist = await Wishlist.findOne({ userId: req.user._id }).lean();
       if (wishlist && wishlist.products) {
         userWishlistIds = wishlist.products.map(item => item.productId.toString());
+        wishlistCount = wishlist.products.length;
       }
     }
 
     res.render('user/home', {
       user: req.user || null,
       navLinks,
-      featuredProducts,           
-      activeCategories,          
-      userWishlistIds, //  Pass wishlist data to template**
+      featuredProducts,
+      activeCategories,
+      userWishlistIds,
+      wishlistCount,
       isAuthenticated: !!req.session.userId,
       currentPage: 'home'
     });
@@ -114,12 +111,15 @@ const loadHome = async (req, res) => {
   } catch (error) {
     console.error('Error in loadHome:', error.message);
     res.status(500).render('error', {
-      message: 'Error loading home page',
+      error: {
+        status: 500,
+        message: 'Error loading home page: ' + error.message
+      },
+      message: error.message,
       user: req.user || null
     });
   }
 };
-
 
 // Handle signup
 const signup = async (req, res) => {
