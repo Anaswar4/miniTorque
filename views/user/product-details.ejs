@@ -341,9 +341,9 @@
       </div>
     </div>
 
-    <!-- Related Products Section -->
+    <!-- ✅ CORRECTED: Related Products Section -->
     <div class="related-products mt-5">
-      <h3 class="fs-3 fw-bold mb-4">Related Products</h3>
+      <h3 class="fs-3 fw-bold mb-4">You May Also Like</h3>
       <div class="row g-4">
         <% if (relatedProducts && relatedProducts.length > 0) { %>
           <% relatedProducts.forEach(relatedProduct => { %>
@@ -384,7 +384,6 @@
                       <% } %>
                     </div>
                     <div class="d-flex gap-2 align-items-center">
-                      <!-- 🔥 UPDATED: Related products wishlist button with correct state -->
                       <% 
                         const isRelatedInWishlist = userWishlistIds && userWishlistIds.includes(relatedProduct._id.toString());
                       %>
@@ -594,7 +593,6 @@
   border-color: #dc3545;
 }
 
-/* 🔥 NEW: Active wishlist button styling */
 .btn-wishlist.active {
   background-color: #dc3545;
   color: #fff;
@@ -734,7 +732,6 @@
   color: #fff;
 }
 
-/* 🔥 NEW: Active state for related products wishlist */
 .btn-wishlist-home.active {
   background-color: #dc3545;
   color: #fff;
@@ -764,43 +761,6 @@
   background-color: #6c757d;
   cursor: not-allowed;
   transform: none;
-}
-
-/* Magnifier Glass Styles */
-.img-magnifier-glass {
-  position: absolute;
-  border: 3px solid #000;
-  border-radius: 50%;
-  cursor: none;
-  width: 100px;
-  height: 100px;
-  background-repeat: no-repeat;
-  display: none;
-  z-index: 99;
-}
-
-.img-zoom-result {
-  position: absolute;
-  top: 0;
-  right: -220px;
-  width: 200px;
-  height: 200px;
-  border: 1px solid #ddd;
-  background-repeat: no-repeat;
-  display: none;
-  z-index: 99;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-@media (max-width: 991.98px) {
-  .img-zoom-result {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 150px;
-    height: 150px;
-  }
 }
 
 @media (max-width: 767.98px) {
@@ -846,323 +806,481 @@
 <script src="/js/product-zoomer.js"></script>
 
 <script>
-// 🔥 SAFETY CHECK: Initialize userWishlistIds safely
-const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+console.log('🚀 Product Details Script Loading...');
 
-// 🔥 DEBUG: Check initial data
-console.log('=== WISHLIST ICON DEBUG ===');
-console.log('userWishlistIds:', userWishlistIds);
-console.log('Product ID:', '<%= product._id %>');
-console.log('Is in wishlist:', userWishlistIds.includes('<%= product._id %>'));
+// Pass server data to client
+const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+const currentProductId = '<%= product._id %>';
+
+console.log('User wishlist IDs:', userWishlistIds);
+console.log('Current product ID:', currentProductId);
 
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('✅ DOM Content Loaded');
+    
+    // Get all elements
     const addToCartBtn = document.querySelector('.btn-add-to-cart');
     const wishlistBtn = document.querySelector('.btn-wishlist');
     const quantityInput = document.querySelector('#quantity');
     const cartCountElement = document.querySelector('.cart-count');
     const wishlistCountElement = document.querySelector('.wishlist-count');
 
-    // Quantity controls (keep existing code)
+    console.log('Elements found:', {
+        addToCartBtn: !!addToCartBtn,
+        wishlistBtn: !!wishlistBtn,
+        quantityInput: !!quantityInput,
+        cartCountElement: !!cartCountElement,
+        wishlistCountElement: !!wishlistCountElement
+    });
+
+    // ================================
+    // QUANTITY CONTROLS
+    // ================================
     window.decrementQuantity = function () {
-      let value = parseInt(quantityInput.value);
-      if (value > 1) {
-        quantityInput.value = value - 1;
-      }
+        let value = parseInt(quantityInput.value);
+        if (value > 1) {
+            quantityInput.value = value - 1;
+        }
     };
 
     window.incrementQuantity = function () {
-      let value = parseInt(quantityInput.value);
-      if (value < parseInt(quantityInput.max)) {
-        quantityInput.value = value + 1;
-      }
+        let value = parseInt(quantityInput.value);
+        if (value < parseInt(quantityInput.max)) {
+            quantityInput.value = value + 1;
+        }
     };
 
-    // Validate quantity input (keep existing code)
-    quantityInput.addEventListener('change', function () {
-      let value = parseInt(this.value);
-      if (isNaN(value) || value < 1) {
-        value = 1;
-        this.value = 1;
-      }
-      if (value > parseInt(this.max)) {
-        value = parseInt(this.max);
-        this.value = value;
-      }
-    });
+    // Validate quantity input
+    if (quantityInput) {
+        quantityInput.addEventListener('change', function () {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) {
+                value = 1;
+                this.value = 1;
+            }
+            if (value > parseInt(this.max)) {
+                value = parseInt(this.max);
+                this.value = value;
+            }
+        });
+    }
 
-    // Add to cart functionality (keep existing code)
+    // ================================
+    // ADD TO CART FUNCTIONALITY
+    // ================================
     if (addToCartBtn) {
-      addToCartBtn.addEventListener('click', async function () {
-        if (addToCartBtn.disabled) return;
-
-        const productId = this.dataset.productId;
-        const quantity = parseInt(quantityInput.value);
-
-        try {
-          const response = await fetch('/cart/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId, quantity })
-          });
-          const result = await response.json();
-
-          if (response.status === 401 || !result.success) {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message || 'Please log in to add items to your cart',
-              showConfirmButton: false,
-              timer: 2000
-            }).then(() => {
-              window.location.href = '/login';
-            });
-          } else if (result.success) {
-            this.querySelector('span').textContent = 'Added to Cart';
-            this.classList.add('btn-success');
-            this.classList.remove('btn-primary');
-            if (cartCountElement) {
-              cartCountElement.textContent = result.cartCount;
-              cartCountElement.dataset.count = result.cartCount;
+        addToCartBtn.addEventListener('click', async function () {
+            console.log('🛒 Add to Cart clicked');
+            
+            if (this.disabled) {
+                console.log('❌ Button is disabled');
+                return;
             }
 
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-          }
-        } catch (error) {
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error adding to cart',
-            showConfirmButton: false,
-            timer: 1500
-          });
-        }
-      });
+            const productId = this.dataset.productId;
+            const quantity = parseInt(quantityInput.value);
+
+            console.log('Adding to cart:', { productId, quantity });
+
+            // Disable button temporarily
+            this.disabled = true;
+            const originalText = this.querySelector('span').textContent;
+            this.querySelector('span').textContent = 'Adding...';
+
+            try {
+                const response = await fetch('/add-to-cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId, quantity })
+                });
+
+                console.log('Cart response status:', response.status);
+                const result = await response.json();
+                console.log('Cart response:', result);
+
+                if (response.ok && result.success) {
+                    // Update button appearance
+                    this.querySelector('span').textContent = 'Added!';
+                    this.classList.add('btn-success');
+                    this.classList.remove('btn-dark');
+                    
+                    // Update navbar cart count
+                    updateNavbarCount('.cart-count', result.cartCount);
+                    
+                    // Show success notification
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: result.message || 'Added to cart successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(() => {
+                        this.querySelector('span').textContent = originalText;
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-dark');
+                        this.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Failed to add to cart');
+                }
+            } catch (error) {
+                console.error('❌ Cart error:', error);
+                
+                // Reset button
+                this.querySelector('span').textContent = originalText;
+                this.disabled = false;
+                
+                // Show error notification
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: error.message || 'Error adding to cart',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                
+                // If unauthorized, redirect to login
+                if (error.message && error.message.includes('log')) {
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                }
+            }
+        });
     }
 
-    // 🔥 FIXED: Wishlist functionality with correct toggle handling
+    // ================================
+    // WISHLIST FUNCTIONALITY
+    // ================================
     if (wishlistBtn) {
-      wishlistBtn.addEventListener('click', async function () {
-        const productId = this.dataset.productId;
-        
-        // 🔥 FIXED: Always use /wishlist/add since backend handles toggle
-        const url = '/wishlist/add';
-
-        // Disable button during request
-        this.disabled = true;
-
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId })
-          });
-          const result = await response.json();
-
-          console.log('Wishlist API response:', result); // Debug log
-
-          if (result.success) {
-            // 🔥 FIXED: Update icon based on action returned from backend
-            if (result.action === 'added') {
-              // Product was added - make icon active
-              this.classList.add('active');
-              this.querySelector('i').className = 'fas fa-heart';
-              this.title = 'Remove from Wishlist';
-              
-              // Update local array
-              if (!userWishlistIds.includes(productId)) {
-                userWishlistIds.push(productId);
-              }
-            } else if (result.action === 'removed') {
-              // Product was removed - make icon inactive
-              this.classList.remove('active');
-              this.querySelector('i').className = 'far fa-heart';
-              this.title = 'Add to Wishlist';
-              
-              // Update local array
-              const index = userWishlistIds.indexOf(productId);
-              if (index > -1) {
-                userWishlistIds.splice(index, 1);
-              }
-            }
+        wishlistBtn.addEventListener('click', async function () {
+            console.log('❤️ Wishlist clicked');
             
-            // Update wishlist counter
-            if (wishlistCountElement) {
-              wishlistCountElement.textContent = result.wishlistCount;
-              wishlistCountElement.dataset.count = result.wishlistCount;
+            const productId = this.dataset.productId;
+            console.log('Toggling wishlist for product:', productId);
+
+            // Disable button temporarily
+            this.disabled = true;
+
+            try {
+                const response = await fetch('/wishlist/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId })
+                });
+
+                console.log('Wishlist response status:', response.status);
+                const result = await response.json();
+                console.log('Wishlist response:', result);
+
+                if (response.ok && result.success) {
+                    // Update button appearance based on action
+                    if (result.action === 'added') {
+                        this.classList.add('active');
+                        this.querySelector('i').className = 'fas fa-heart';
+                        this.title = 'Remove from Wishlist';
+                        
+                        // Update userWishlistIds array
+                        if (!userWishlistIds.includes(productId)) {
+                            userWishlistIds.push(productId);
+                        }
+                    } else if (result.action === 'removed') {
+                        this.classList.remove('active');
+                        this.querySelector('i').className = 'far fa-heart';
+                        this.title = 'Add to Wishlist';
+                        
+                        // Update userWishlistIds array
+                        const index = userWishlistIds.indexOf(productId);
+                        if (index > -1) {
+                            userWishlistIds.splice(index, 1);
+                        }
+                    }
+                    
+                    // Update navbar wishlist count
+                    updateNavbarCount('.wishlist-count', result.wishlistCount);
+                    
+                    // Show success notification
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: result.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } else {
+                    throw new Error(result.message || 'Failed to update wishlist');
+                }
+            } catch (error) {
+                console.error('❌ Wishlist error:', error);
+                
+                // Show error notification
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: error.message || 'Error updating wishlist',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                
+                // If unauthorized, redirect to login
+                if (error.message && error.message.includes('log')) {
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                }
+            } finally {
+                this.disabled = false;
             }
-
-            console.log('Icon updated - Active:', this.classList.contains('active')); // Debug log
-
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-          } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              title: result.message || 'Failed to manage wishlist',
-              showConfirmButton: false,
-              timer: 1500
-            });
-          }
-        } catch (error) {
-          console.error('Wishlist error:', error);
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error managing wishlist',
-            showConfirmButton: false,
-            timer: 1500
-          });
-        } finally {
-          this.disabled = false;
-        }
-      });
+        });
     }
 
-    // 🔥 UPDATED: Related products functionality
-    const relatedWishlistButtons = document.querySelectorAll('.related-products .btn-wishlist-home');
-
-    relatedWishlistButtons.forEach(button => {
-      button.addEventListener('click', async function (e) {
-        e.preventDefault();
-        const productId = this.dataset.productId;
-        
-        // 🔥 FIXED: Always use /wishlist/add for related products too
-        const url = '/wishlist/add';
-
-        // Disable button during request
-        this.disabled = true;
-
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId })
-          });
-          const result = await response.json();
-
-          if (result.success) {
-            // Update button state based on action
-            if (result.action === 'added') {
-              this.classList.add('active');
-              this.querySelector('i').className = 'fas fa-heart';
-              this.title = 'Remove from Wishlist';
-              
-              if (!userWishlistIds.includes(productId)) {
-                userWishlistIds.push(productId);
-              }
-            } else if (result.action === 'removed') {
-              this.classList.remove('active');
-              this.querySelector('i').className = 'far fa-heart';
-              this.title = 'Add to Wishlist';
-              
-              const index = userWishlistIds.indexOf(productId);
-              if (index > -1) {
-                userWishlistIds.splice(index, 1);
-              }
-            }
-            
-            if (wishlistCountElement) {
-              wishlistCountElement.textContent = result.wishlistCount;
-              wishlistCountElement.dataset.count = result.wishlistCount;
-            }
-
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-          }
-        } catch (error) {
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error managing wishlist',
-            showConfirmButton: false,
-            timer: 1500
-          });
-        } finally {
-          this.disabled = false;
-        }
-      });
-    });
-
-    // Keep existing add to cart for related products (unchanged)
+    // ================================
+    // RELATED PRODUCTS FUNCTIONALITY
+    // ================================
+    
+    // Related products - Add to Cart
     const relatedAddToCartButtons = document.querySelectorAll('.related-products .add-to-cart');
-    relatedAddToCartButtons.forEach(button => {
-      button.addEventListener('click', async function (e) {
-        e.preventDefault();
-        if (button.disabled) return;
+    console.log('Found related cart buttons:', relatedAddToCartButtons.length);
+    
+    relatedAddToCartButtons.forEach((button, index) => {
+        button.addEventListener('click', async function (e) {
+            e.preventDefault();
+            console.log(`🛒 Related product ${index + 1} add to cart clicked`);
+            
+            if (this.disabled) return;
 
-        const productId = this.dataset.productId;
+            const productId = this.dataset.productId;
+            console.log('Adding related product to cart:', productId);
 
-        try {
-          const response = await fetch('/cart/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId, quantity: 1 })
-          });
-          const result = await response.json();
+            // Disable button temporarily
+            this.disabled = true;
+            const originalHTML = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-          if (result.success) {
-            if (cartCountElement) {
-              cartCountElement.textContent = result.cartCount;
-              cartCountElement.dataset.count = result.cartCount;
+            try {
+                const response = await fetch('/add-to-cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId, quantity: 1 })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update navbar cart count
+                    updateNavbarCount('.cart-count', result.cartCount);
+                    
+                    // Show success notification
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: result.message || 'Added to cart!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    // Reset button
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || 'Failed to add to cart');
+                }
+            } catch (error) {
+                console.error('❌ Related cart error:', error);
+                
+                // Reset button
+                this.innerHTML = originalHTML;
+                this.disabled = false;
+                
+                // Show error notification
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: error.message || 'Error adding to cart',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
             }
-
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: result.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-          }
-        } catch (error) {
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: 'Error adding to cart',
-            showConfirmButton: false,
-            timer: 1500
-          });
-        }
-      });
+        });
     });
+
+    // Related products - Wishlist
+    const relatedWishlistButtons = document.querySelectorAll('.related-products .btn-wishlist-home');
+    console.log('Found related wishlist buttons:', relatedWishlistButtons.length);
+    
+    relatedWishlistButtons.forEach((button, index) => {
+        button.addEventListener('click', async function (e) {
+            e.preventDefault();
+            console.log(`❤️ Related product ${index + 1} wishlist clicked`);
+            
+            const productId = this.dataset.productId;
+            console.log('Toggling related product wishlist:', productId);
+
+            // Disable button temporarily
+            this.disabled = true;
+
+            try {
+                const response = await fetch('/wishlist/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ productId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    // Update button appearance
+                    if (result.action === 'added') {
+                        this.classList.add('active');
+                        this.querySelector('i').className = 'fas fa-heart';
+                        this.title = 'Remove from Wishlist';
+                        
+                        // Update userWishlistIds array
+                        if (!userWishlistIds.includes(productId)) {
+                            userWishlistIds.push(productId);
+                        }
+                    } else if (result.action === 'removed') {
+                        this.classList.remove('active');
+                        this.querySelector('i').className = 'far fa-heart';
+                        this.title = 'Add to Wishlist';
+                        
+                        // Update userWishlistIds array
+                        const index = userWishlistIds.indexOf(productId);
+                        if (index > -1) {
+                            userWishlistIds.splice(index, 1);
+                        }
+                    }
+                    
+                    // Update navbar wishlist count
+                    updateNavbarCount('.wishlist-count', result.wishlistCount);
+                    
+                    // Show success notification
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: result.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } else {
+                    throw new Error(result.message || 'Failed to update wishlist');
+                }
+            } catch (error) {
+                console.error('❌ Related wishlist error:', error);
+                
+                // Show error notification
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: error.message || 'Error updating wishlist',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+
+    // ================================
+    // IMAGE ZOOMER INITIALIZATION
+    // ================================
+    setTimeout(() => {
+        console.log('🔍 Initializing image zoomer...');
+        
+        const mainImage = document.getElementById('mainImage');
+        const zoomContainer = document.getElementById('zoomContainer');
+        
+        if (mainImage && zoomContainer) {
+            console.log('✅ Found zoom elements');
+            
+            // Try different zoomer function names (check your product-zoomer.js file)
+            if (typeof magnify === 'function') {
+                console.log('Using magnify function');
+                magnify("mainImage", 3);
+            } else if (typeof initImageZoom === 'function') {
+                console.log('Using initImageZoom function');
+                initImageZoom();
+            } else if (typeof imageZoom === 'function') {
+                console.log('Using imageZoom function');
+                imageZoom("mainImage", "result");
+            } else {
+                console.log('⚠️ No zoomer function found');
+                console.log('Available functions:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
+            }
+        } else {
+            console.log('❌ Zoom elements not found');
+        }
+    }, 1000);
 });
 
-// Image change function (keep unchanged)
+// ================================
+// HELPER FUNCTIONS
+// ================================
+
+// Update navbar counts with animation
+function updateNavbarCount(selector, count) {
+    const element = document.querySelector(selector);
+    if (element) {
+        console.log(`Updating ${selector} to ${count}`);
+        element.textContent = count || 0;
+        element.dataset.count = count || 0;
+        
+        // Add bounce animation
+        element.style.transform = 'scale(1.3)';
+        element.style.transition = 'transform 0.2s ease';
+        setTimeout(() => {
+            element.style.transform = 'scale(1)';
+        }, 200);
+    } else {
+        console.log(`❌ Element ${selector} not found in navbar`);
+    }
+}
+
+// Image change function for thumbnails
 window.changeImage = function(element, imageUrl) {
+    console.log('🖼️ Changing image to:', imageUrl);
+    
+    // Remove active class from all thumbnails
     document.querySelectorAll('.thumbnail').forEach(thumb => {
         thumb.classList.remove('active');
     });
+    
+    // Add active class to clicked thumbnail
     element.classList.add('active');
-    document.getElementById('mainImage').src = imageUrl;
+    
+    // Change main image
+    const mainImage = document.getElementById('mainImage');
+    if (mainImage) {
+        mainImage.src = imageUrl;
+    }
 };
+
+console.log('🎉 Product Details Script Loaded Successfully!');
 </script>
+
 
 
 </body>

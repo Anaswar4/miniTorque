@@ -709,7 +709,7 @@
                 });
                 const out = await res.json();
                 if (out.success) {
-                   window.updateWishlistCount();
+                    window.updateWishlistCount();
                     btn.classList.toggle('active');
                     btn.innerHTML = btn.classList.contains('active')
                         ? '<i class="fas fa-heart text-danger"></i>'
@@ -735,9 +735,7 @@
             if (el) { el.textContent = c; el.style.display = c > 0 ? 'flex' : 'none'; }
         }
 
-        /* ------------------------------------------------------------------
-           FILTER FORM / PRICE VALIDATION
-        ------------------------------------------------------------------ */
+        /*  FILTER FORM / PRICE VALIDATION */
         document.addEventListener('DOMContentLoaded', () => {
             const filterForm = document.getElementById('filterForm');
             const minPriceInput = document.getElementById('minPriceInput');
@@ -800,6 +798,66 @@
            SIMPLE VIEW PRODUCT NAV
         ------------------------------------------------------------------ */
         function viewProduct(id) { window.location.href = `/product/${id}`; }
+
+        /* ADD TO CART (Missing Function)*/
+        async function addToCart(productId) {
+            const button = event.target.closest('.add-to-cart');
+            const originalContent = button.innerHTML;
+
+            try {
+                // Show loading state
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                button.disabled = true;
+
+                const response = await fetch('/add-to-cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ productId, quantity: 1 })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show success state
+                    button.innerHTML = '<i class="fas fa-check"></i>';
+                    button.style.backgroundColor = '#28a745';
+
+                    // Update cart counter
+                    updateCartCounter(result.cartCount);
+
+                    setTimeout(() => {
+                        button.innerHTML = originalContent;
+                        button.style.backgroundColor = '';
+                        button.disabled = false;
+                    }, 1500);
+
+                    showToast('Added to cart successfully!', 'success');
+                } else {
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                    showToast(result.message || 'Failed to add to cart', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                button.innerHTML = originalContent;
+                button.disabled = false;
+                showToast('Please login to add items to cart', 'error');
+            }
+        }
+
+        /* ------------------------------------------------------------------
+           UPDATE CART COUNTER (Helper Function)
+        ------------------------------------------------------------------ */
+        function updateCartCounter(count) {
+            const cartCounter = document.querySelector('#cartCount');
+            if (cartCounter) {
+                cartCounter.textContent = count || '0';
+                cartCounter.style.display = count > 0 ? 'flex' : 'none';
+            }
+        }
+
     </script>
 
     <%- include("../partials/footer") %>

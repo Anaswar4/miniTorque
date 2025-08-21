@@ -86,11 +86,24 @@ const loadHome = async (req, res) => {
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
-    // Get user's wishlist ids and count for navbar
+    // ✅ ADD: Get user's cart and wishlist data
     let userWishlistIds = [];
     let wishlistCount = 0;
-    if (req.user && req.user._id) {
-      const wishlist = await Wishlist.findOne({ userId: req.user._id }).lean();
+    let cartCount = 0; // ✅ ADD THIS LINE
+
+    const userId = req.session.userId; // ✅ USE SESSION CONSISTENTLY
+
+    if (userId) {
+      // ✅ ADD: Get cart count
+      const Cart = require('../../models/cart-schema');
+      const cart = await Cart.findOne({ userId: userId }).lean();
+      if (cart && cart.items) {
+        cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      }
+
+      // ✅ UPDATED: Get wishlist count (use consistent userId)
+      const Wishlist = require('../../models/wishlist-schema');
+      const wishlist = await Wishlist.findOne({ userId: userId }).lean();
       if (wishlist && wishlist.products) {
         userWishlistIds = wishlist.products.map(item => item.productId.toString());
         wishlistCount = wishlist.products.length;
@@ -98,12 +111,13 @@ const loadHome = async (req, res) => {
     }
 
     res.render('user/home', {
-      user: req.user || null,
+      user: req.session.user || null, // ✅ USE SESSION CONSISTENTLY
       navLinks,
       featuredProducts,
       activeCategories,
       userWishlistIds,
       wishlistCount,
+      cartCount, // ✅ ADD THIS LINE
       isAuthenticated: !!req.session.userId,
       currentPage: 'home'
     });
@@ -116,10 +130,13 @@ const loadHome = async (req, res) => {
         message: 'Error loading home page: ' + error.message
       },
       message: error.message,
-      user: req.user || null
+      user: req.session.user || null,
+      cartCount: 0,        // ✅ ADD THIS LINE
+      wishlistCount: 0     // ✅ ADD THIS LINE
     });
   }
 };
+
 
 // Handle signup
 const signup = async (req, res) => {

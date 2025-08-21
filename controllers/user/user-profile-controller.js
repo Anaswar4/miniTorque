@@ -421,7 +421,7 @@ const uploadProfilePhoto = async (req, res) => {
 
     await User.findByIdAndUpdate(userId, { profilePhoto: filename });
 
-    res.json({ success: true, message: "Profile photo updated", filename });
+   res.json({ success: true, message: "Profile photo updated", filename: filename });
   } catch (err) {
     console.error("Error uploading photo:", err);
     res.status(500).json({ success: false, message: "Failed to upload profile photo" });

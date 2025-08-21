@@ -45,7 +45,7 @@ const loadWishlist = async (req, res) => {
     res.render('user/wishlist', {
       user,
       wishlist: { products: wishlistProducts },
-      wishlistCount,          // 🔥 Add wishlistCount here
+      wishlistCount,          //  Add wishlistCount here
       title: 'My Wishlist',
       isAuthenticated: true,
       currentPage: 'wishlist'
@@ -105,7 +105,7 @@ const addToWishlist = async (req, res) => {
     );
 
     if (existingProductIndex > -1) {
-      // 🔥 FIXED: If product exists, remove it (toggle behavior)
+      //  If product exists, remove it (toggle behavior)
       wishlist.products.splice(existingProductIndex, 1);
       await wishlist.save();
 
@@ -113,10 +113,10 @@ const addToWishlist = async (req, res) => {
         success: true,
         message: 'Product removed from wishlist successfully',
         wishlistCount: wishlist.products.length,
-        action: 'removed' // 🔥 NEW: Indicate what action was taken
+        action: 'removed' //  Indicate what action was taken
       });
     } else {
-      // 🔥 Add product to wishlist (existing logic)
+      //  Add product to wishlist (existing logic)
       wishlist.products.push({
         productId: productId,
         addedOn: new Date()
@@ -128,7 +128,7 @@ const addToWishlist = async (req, res) => {
         success: true,
         message: 'Product added to wishlist successfully',
         wishlistCount: savedWishlist.products.length,
-        action: 'added' // 🔥 NEW: Indicate what action was taken
+        action: 'added' //  Indicate what action was taken
       });
     }
 

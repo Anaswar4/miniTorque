@@ -222,163 +222,240 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script>
-        // Toast notification system
-        function showToast(title, message, type = 'info', duration = 4000) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+    // Toast notification system
+    function showToast(title, message, type = 'info', duration = 4000) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
 
-            const icons = {
-                success: 'fas fa-check-circle',
-                error: 'fas fa-exclamation-circle',
-                warning: 'fas fa-exclamation-triangle',
-                info: 'fas fa-info-circle'
-            };
+        const icons = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-exclamation-circle',
+            warning: 'fas fa-exclamation-triangle',
+            info: 'fas fa-info-circle'
+        };
 
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    <i class="${icons[type]}"></i>
-                </div>
-                <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-                <button class="toast-close" onclick="removeToast(this.parentElement)">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
+        toast.innerHTML = `
+            <div class="toast-icon">
+                <i class="${icons[type]}"></i>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">${title}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close" onclick="removeToast(this.parentElement)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
 
-            container.appendChild(toast);
+        container.appendChild(toast);
 
-            // Trigger animation
-            setTimeout(() => toast.classList.add('show'), 100);
+        // Trigger animation
+        setTimeout(() => toast.classList.add('show'), 100);
 
-            // Auto remove
-            setTimeout(() => removeToast(toast), duration);
-        }
+        // Auto remove
+        setTimeout(() => removeToast(toast), duration);
+    }
 
-        function removeToast(toast) {
-            if (toast && toast.parentElement) {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentElement) {
-                        toast.parentElement.removeChild(toast);
-                    }
-                }, 300);
-            }
-        }
-        // Sidebar navigation functionality
-        function showSection(section) {
-            // Remove active class from all menu items
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            // Add active class to clicked item
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => {
-                if (item.onclick && item.onclick.toString().includes(`'${section}'`)) {
-                    item.classList.add('active');
+    function removeToast(toast) {
+        if (toast && toast.parentElement) {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
                 }
-            });
-            // Handle section navigation
-            switch (section) {
-                case 'profile':
-                    // Already on profile page, just ensure it's active
-                    break;
-                case 'address':
-                    // Navigate to address management
-                    window.location.href = '/address';
-                    break;
-                case 'orders':
-                    // Navigate to orders
-                    window.location.href = '/orders';
-                    break;
-                case 'wishlist':
-                    // Navigate to wishlist
-                    window.location.href = '/wishlist';
-                    break;
-                case 'wallet':
-                    // Navigate to wallet
-                    window.location.href = '/wallet';
-                    break;
+            }, 300);
+        }
+    }
 
-                case 'referrals':
-                    // Navigate to referrals (to be implemented)
-                    showToast('Coming Soon', 'Referrals feature will be available soon.', 'info');
-                    break;
+    // Sidebar navigation functionality
+    function showSection(section) {
+        // Remove active class from all menu items
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        // Add active class to clicked item
+        const menuItems = document.querySelectorAll('.menu-item');
+        menuItems.forEach(item => {
+            if (item.onclick && item.onclick.toString().includes(`'${section}'`)) {
+                item.classList.add('active');
+            }
+        });
+        // Handle section navigation
+        switch (section) {
+            case 'profile':
+                // Already on profile page, just ensure it's active
+                break;
+            case 'address':
+                // Navigate to address management
+                window.location.href = '/address';
+                break;
+            case 'orders':
+                // Navigate to orders
+                window.location.href = '/orders';
+                break;
+            case 'wishlist':
+                // Navigate to wishlist
+                window.location.href = '/wishlist';
+                break;
+            case 'wallet':
+                // Navigate to wallet
+                window.location.href = '/wallet';
+                break;
+            case 'referrals':
+                // Navigate to referrals (to be implemented)
+                showToast('Coming Soon', 'Referrals feature will be available soon.', 'info');
+                break;
+            case 'password':
+                // Navigate to change password
+                window.location.href = '/change-password';
+                break;
+            default:
+                console.log('Unknown section:', section);
+        }
+    }
 
-                case 'password':
-                    // Navigate to change password
-                    window.location.href = '/change-password';
-                    break;
-                default:
-                    console.log('Unknown section:', section);
+    // 🔥 FIXED: Main profile photo functions
+    function triggerMainPhotoUpload() {
+        document.getElementById('profilePhotoInput').click();
+    }
+
+    // 🔥 FIXED: Delete profile photo with real-time updates
+    async function deleteMainProfilePhoto() {
+        const result = await Swal.fire({
+            title: 'Delete Profile Photo?',
+            text: 'Are you sure you want to remove your profile photo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch('/profile/photo', {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update main profile photo
+                    const photoContainer = document.querySelector('.profile-photo-container');
+                    const userName = '<%= user.fullName ? user.fullName.charAt(0).toUpperCase() : (user.name ? user.name.charAt(0).toUpperCase() : "👤") %>';
+                    photoContainer.innerHTML = `
+                        <div class="main-profile-avatar" id="mainProfileAvatar">
+                            ${userName}
+                        </div>
+                        <div class="profile-photo-overlay" onclick="triggerMainPhotoUpload()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    `;
+
+                    // 🔥 FIX: Update sidebar photo
+                    const sidebarContainer = document.querySelector('.profile-avatar-container');
+                    if (sidebarContainer) {
+                        sidebarContainer.innerHTML = `
+                            <div class="profile-avatar" id="sidebarProfileAvatar">${userName}</div>
+                            <div class="profile-avatar-overlay" onclick="triggerMainPhotoUpload()">
+                                <i class="bi bi-camera"></i>
+                            </div>
+                        `;
+                    }
+
+                    // 🔥 FIX: Remove the delete button
+                    const deleteBtn = document.querySelector('.profile-photo-actions .btn-secondary-custom');
+                    if (deleteBtn) {
+                        deleteBtn.remove();
+                    }
+
+                    showToast('Photo Deleted!', data.message, 'success');
+                } else {
+                    showToast('Delete Failed', data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting photo:', error);
+                showToast('Delete Error', 'Something went wrong. Please try again.', 'error');
             }
         }
-        // Main profile photo functions
-        function triggerMainPhotoUpload() {
-            document.getElementById('profilePhotoInput').click();
-        }
-        async function deleteMainProfilePhoto() {
-            const result = await Swal.fire({
-                title: 'Delete Profile Photo?',
-                text: 'Are you sure you want to remove your profile photo?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel'
-            });
-            if (result.isConfirmed) {
+    }
+
+    // 🔥 NEW: Photo upload handler with real-time updates
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure profile section is active on page load
+        showSection('profile');
+
+        // 🔥 ADD: Photo upload handler
+        const profilePhotoInput = document.getElementById('profilePhotoInput');
+        if (profilePhotoInput) {
+            profilePhotoInput.addEventListener('change', async function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('profilePhoto', file);
+
                 try {
                     const response = await fetch('/profile/photo', {
-                        method: 'DELETE'
+                        method: 'POST',
+                        body: formData
                     });
                     const data = await response.json();
-                    if (data.success) {
-                        // Update main profile photo
+
+                    if (data.success && data.filename) {
+                        const newPhotoUrl = `/uploads/profiles/${data.filename}?t=${Date.now()}`;
+                        
+                        // 🔥 FIX: Update main profile photo immediately
                         const photoContainer = document.querySelector('.profile-photo-container');
-                        const userName = '<%= user.fullname ? user.fullname.charAt(0).toUpperCase() : "👤" %>';
                         photoContainer.innerHTML = `
-                            <div class="main-profile-avatar" id="mainProfileAvatar">
-                                ${userName}
-                            </div>
+                            <img src="${newPhotoUrl}" alt="Profile Photo" class="main-profile-img" id="mainProfileImg">
                             <div class="profile-photo-overlay" onclick="triggerMainPhotoUpload()">
                                 <i class="fas fa-camera"></i>
                             </div>
                         `;
-                        // Update sidebar photo
+
+                        // 🔥 FIX: Update sidebar photo immediately
                         const sidebarContainer = document.querySelector('.profile-avatar-container');
                         if (sidebarContainer) {
                             sidebarContainer.innerHTML = `
-                                <div class="profile-avatar" id="sidebarProfileAvatar">${userName}</div>
-                                <div class="profile-avatar-overlay" onclick="triggerPhotoUpload()">
+                                <img src="${newPhotoUrl}" alt="Profile Photo" class="profile-avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                <div class="profile-avatar-overlay" onclick="triggerMainPhotoUpload()">
                                     <i class="bi bi-camera"></i>
                                 </div>
                             `;
                         }
-                        // Remove the delete button
-                        const deleteBtn = document.querySelector('.profile-photo-actions .btn-secondary-custom');
-                        if (deleteBtn) {
-                            deleteBtn.remove();
+
+                        // 🔥 FIX: Show remove button immediately
+                        const actionsContainer = document.querySelector('.profile-photo-actions');
+                        let removeBtn = actionsContainer.querySelector('.btn-secondary-custom');
+                        if (!removeBtn) {
+                            removeBtn = document.createElement('button');
+                            removeBtn.type = 'button';
+                            removeBtn.className = 'btn btn-sm btn-secondary-custom';
+                            removeBtn.onclick = deleteMainProfilePhoto;
+                            removeBtn.innerHTML = '<i class="fas fa-trash me-1"></i>Remove';
+                            actionsContainer.appendChild(removeBtn);
+                        } else {
+                            removeBtn.style.display = 'inline-block';
                         }
-                        showToast('Photo Deleted!', data.message, 'success');
+
+                        showToast('Upload Success!', data.message || 'Profile photo updated successfully', 'success');
                     } else {
-                        showToast('Delete Failed', data.message, 'error');
+                        showToast('Upload Failed', data.message || 'Failed to upload photo', 'error');
                     }
                 } catch (error) {
-                    console.error('Error deleting photo:', error);
-                    showToast('Delete Error', 'Something went wrong. Please try again.', 'error');
+                    console.error('Error uploading photo:', error);
+                    showToast('Upload Error', 'Something went wrong. Please try again.', 'error');
                 }
-            }
+
+                // Clear the file input so the same file can be selected again
+                event.target.value = '';
+            });
         }
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function () {
-            // Ensure profile section is active on page load
-            showSection('profile');
-        });
-    </script>
+    });
+</script>
+
 </body>
 
 </html>
