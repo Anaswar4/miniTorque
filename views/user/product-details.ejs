@@ -417,7 +417,57 @@
   position: relative;
   cursor: crosshair;
   overflow: hidden;
+}
+
+/* Image Magnifier Glass */
+.img-magnifier-glass {
+  position: absolute;
+  border: 3px solid #000;
+  border-radius: 50%;
+  cursor: none;
+  width: 100px;
+  height: 100px;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
+  display: none;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Zoom Result Container */
+.img-zoom-result {
+  position: absolute;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 300px;
+  border: 1px solid #d4d4d4;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  display: none;
+  z-index: 20;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .img-zoom-result {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    right: auto;
+    width: 250px;
+    height: 250px;
+    z-index: 1000;
+  }
+
+  .img-magnifier-glass {
+    width: 80px;
+    height: 80px;
+  }
 }
 
 .main-image {
@@ -809,13 +859,24 @@
 console.log('🚀 Product Details Script Loading...');
 
 // Pass server data to client
-const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
 const currentProductId = '<%= product._id %>';
 
-console.log('User wishlist IDs:', userWishlistIds);
+console.log('Server wishlist IDs:', serverWishlistIds);
 console.log('Current product ID:', currentProductId);
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    // Initialize cart state first
+    if (window.cartState) {
+        await window.cartState.init();
+    }
+
+    // Initialize global wishlist state
+    if (window.globalState) {
+        await window.globalState.init(serverWishlistIds);
+        // Sync all wishlist buttons on page load
+        window.globalState.syncAllWishlistButtons();
+    }
     console.log('✅ DOM Content Loaded');
     
     // Get all elements
@@ -909,6 +970,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Update navbar cart count
                     updateNavbarCount('.cart-count', result.cartCount);
                     
+                    // Update cart count using unified cart state system
+                    if (window.cartState) {
+                        window.cartState.updateCount();
+                    } else if (typeof updateCartCount === 'function') {
+                        updateCartCount();
+                    }
+
                     // Show success notification
                     Swal.fire({
                         toast: true,
@@ -918,7 +986,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         showConfirmButton: false,
                         timer: 1500
                     });
-                    
+
                     // Reset button after 2 seconds
                     setTimeout(() => {
                         this.querySelector('span').textContent = originalText;
@@ -983,30 +1051,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Wishlist response:', result);
 
                 if (response.ok && result.success) {
-                    // Update button appearance based on action
+                    // Update global wishlist state and sync all buttons across pages
                     if (result.action === 'added') {
-                        this.classList.add('active');
-                        this.querySelector('i').className = 'fas fa-heart';
-                        this.title = 'Remove from Wishlist';
-                        
-                        // Update userWishlistIds array
-                        if (!userWishlistIds.includes(productId)) {
-                            userWishlistIds.push(productId);
-                        }
+                        window.globalState.addToWishlist(productId);
                     } else if (result.action === 'removed') {
-                        this.classList.remove('active');
-                        this.querySelector('i').className = 'far fa-heart';
-                        this.title = 'Add to Wishlist';
-                        
-                        // Update userWishlistIds array
-                        const index = userWishlistIds.indexOf(productId);
-                        if (index > -1) {
-                            userWishlistIds.splice(index, 1);
-                        }
+                        window.globalState.removeFromWishlist(productId);
                     }
-                    
+
                     // Update navbar wishlist count
-                    updateNavbarCount('.wishlist-count', result.wishlistCount);
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount();
+                    }
                     
                     // Show success notification
                     Swal.fire({
@@ -1080,8 +1135,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // Update navbar cart count
-                    updateNavbarCount('.cart-count', result.cartCount);
+                    // Update cart count using unified cart state system
+                    if (window.cartState) {
+                        window.cartState.updateCount();
+                    } else if (typeof updateCartCount === 'function') {
+                        updateCartCount();
+                    }
                     
                     // Show success notification
                     Swal.fire({
@@ -1149,30 +1208,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // Update button appearance
+                    // Update global wishlist state and sync all buttons across pages
                     if (result.action === 'added') {
-                        this.classList.add('active');
-                        this.querySelector('i').className = 'fas fa-heart';
-                        this.title = 'Remove from Wishlist';
-                        
-                        // Update userWishlistIds array
-                        if (!userWishlistIds.includes(productId)) {
-                            userWishlistIds.push(productId);
-                        }
+                        window.globalState.addToWishlist(productId);
                     } else if (result.action === 'removed') {
-                        this.classList.remove('active');
-                        this.querySelector('i').className = 'far fa-heart';
-                        this.title = 'Add to Wishlist';
-                        
-                        // Update userWishlistIds array
-                        const index = userWishlistIds.indexOf(productId);
-                        if (index > -1) {
-                            userWishlistIds.splice(index, 1);
-                        }
+                        window.globalState.removeFromWishlist(productId);
                     }
-                    
+
                     // Update navbar wishlist count
-                    updateNavbarCount('.wishlist-count', result.wishlistCount);
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount();
+                    }
                     
                     // Show success notification
                     Swal.fire({

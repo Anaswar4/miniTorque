@@ -510,10 +510,22 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // 🔥 SAFETY CHECK: Initialize userWishlistIds safely
-const userWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
 
 // ====== PAGE INITIALIZATION ======
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize cart state first
+    if (window.cartState) {
+        await window.cartState.init();
+    }
+
+    // Initialize global wishlist state
+    if (window.globalState) {
+        await window.globalState.init(serverWishlistIds);
+        // Sync all wishlist buttons on page load
+        window.globalState.syncAllWishlistButtons();
+    }
+
     // Initialize all functionality
     loadFlashSales();
     loadNewArrivals();
@@ -631,8 +643,8 @@ function displayProducts(products, containerId) {
             (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) : 
             product.salePrice.toFixed(2);
 
-        // 🔥 Check if product is in wishlist
-        const isInWishlist = userWishlistIds.includes(product._id);
+        // 🔥 Check if product is in wishlist using global state
+        const isInWishlist = window.globalState.isInWishlist(product._id);
 
         return `
             <div class="col-6 col-md-3">
@@ -702,20 +714,16 @@ async function toggleWishlistFromHome(productId, btn) {
         const out = await res.json();
         
         if (out.success) {
-            window.updateWishlistCount();
-            
-            // 🔥 Update ALL icons for this product across ALL sections
-            const isNowActive = !inWishlist;
-            synchronizeWishlistIcons(productId, isNowActive);
-            
-            // 🔥 Update the userWishlistIds array
-            if (isNowActive) {
-                if (!userWishlistIds.includes(productId)) {
-                    userWishlistIds.push(productId);
-                }
-            } else {
-                const index = userWishlistIds.indexOf(productId);
-                if (index > -1) userWishlistIds.splice(index, 1);
+            // Update global wishlist state and sync all buttons across pages
+            if (out.action === 'added') {
+                window.globalState.addToWishlist(productId);
+            } else if (out.action === 'removed') {
+                window.globalState.removeFromWishlist(productId);
+            }
+
+            // Update navbar wishlist count
+            if (typeof updateWishlistCount === 'function') {
+                updateWishlistCount();
             }
             
             showToast(out.message || (inWishlist ? 'Removed from wishlist' : 'Added to wishlist'), 'success');
@@ -765,16 +773,20 @@ async function addToCart(productId) {
             // Show success state
             button.innerHTML = '<i class="fas fa-check"></i>';
             button.style.backgroundColor = '#28a745';
-            
-            // Update cart counter
-            updateCartCounter(result.cartCount);
-            
+
+            // Update cart counter using unified cart state system
+            if (window.cartState) {
+                window.cartState.updateCount();
+            } else if (typeof updateCartCount === 'function') {
+                updateCartCount();
+            }
+
             setTimeout(() => {
                 button.innerHTML = originalContent;
                 button.style.backgroundColor = '';
                 button.disabled = false;
             }, 1500);
-            
+
             showToast('Added to cart successfully!', 'success');
         } else {
             button.innerHTML = originalContent;
@@ -789,12 +801,25 @@ async function addToCart(productId) {
     }
 }
 
-// ⭐ ADD CART COUNTER UPDATE FUNCTION
+// ⭐ UNIFIED CART COUNTER UPDATE FUNCTION (LEGACY COMPATIBILITY)
 function updateCartCounter(count) {
-    const cartCounter = document.querySelector('#cartCount');
-    if (cartCounter) {
-        cartCounter.textContent = count || '0';
-        cartCounter.style.display = count > 0 ? 'flex' : 'none';
+    // Use unified cart state system
+    if (window.cartState) {
+        window.cartState.updateCount(count);
+    } else {
+        // Fallback for legacy support
+        const cartCounter = document.querySelector('#cartCount');
+        if (cartCounter) {
+            cartCounter.textContent = count || '0';
+            cartCounter.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        // Also update navbar cart counters
+        const cartCountElements = document.querySelectorAll('.cart-count');
+        cartCountElements.forEach(elem => {
+            elem.textContent = count || '0';
+            elem.style.display = count > 0 ? 'flex' : 'none';
+        });
     }
 }
 

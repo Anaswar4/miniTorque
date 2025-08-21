@@ -1,15 +1,24 @@
 const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model');
+git const Cart = require('../../models/cart-schema');
 
+// Load wishlist listing page
 // Load wishlist listing page
 const loadWishlist = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     
     // Get user data for sidebar
     const user = await User.findById(userId).select('fullName email profilePhoto');
     if (!user) {
       return res.redirect('/login');
+    }
+    
+    // ✅ ADD: Get cart count first
+    let cartCount = 0;
+    const cart = await Cart.findOne({ userId }).lean();
+    if (cart && cart.items) {
+      cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     }
     
     // Get user's wishlist with populated product data
@@ -45,7 +54,8 @@ const loadWishlist = async (req, res) => {
     res.render('user/wishlist', {
       user,
       wishlist: { products: wishlistProducts },
-      wishlistCount,          //  Add wishlistCount here
+      cartCount,              // ✅ ADD: Pass cartCount to template
+      wishlistCount,          // Add wishlistCount here
       title: 'My Wishlist',
       isAuthenticated: true,
       currentPage: 'wishlist'
@@ -60,16 +70,18 @@ const loadWishlist = async (req, res) => {
       },
       message: error.message,
       user: req.user || null,
-      wishlistCount: 0        //  Add wishlistCount for error page
+      cartCount: 0,           // ✅ ADD: Pass cartCount to error page
+      wishlistCount: 0        // Add wishlistCount for error page
     });
   }
 };
 
 
+
 //  Add product to wishlist with toggle support
 const addToWishlist = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { productId } = req.body;
 
     // Check if user is authenticated
@@ -146,7 +158,7 @@ const addToWishlist = async (req, res) => {
 // Remove product from wishlist
 const removeFromWishlist = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { productId } = req.body;
     const wishlist = await Wishlist.findOne({ userId });
     if (!wishlist) {
@@ -179,7 +191,7 @@ const removeFromWishlist = async (req, res) => {
 // Get wishlist count for navbar
 const getWishlistCount = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) {
       return res.json({ count: 0 });
     }
@@ -192,10 +204,30 @@ const getWishlistCount = async (req, res) => {
   }
 };
 
+// Get wishlist product IDs for state synchronization
+const getWishlistIds = async (req, res) => {
+  try {
+    const userId = req.session.userId || req.session.googleUserId;
+    if (!userId) {
+      return res.json({ wishlistIds: [] });
+    }
+
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistIds = wishlist && wishlist.products
+      ? wishlist.products.map(item => item.productId.toString())
+      : [];
+
+    res.json({ wishlistIds });
+  } catch (error) {
+    console.error('Error getting wishlist IDs:', error);
+    res.json({ wishlistIds: [] });
+  }
+};
+
 // Bulk transfer all wishlist items to cart
 const bulkTransferToCart = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const Cart = require('../../models/cart-schema');
     const Product = require('../../models/product-schema');
     // Get user's wishlist with populated product data
@@ -344,5 +376,6 @@ module.exports = {
   addToWishlist,
   removeFromWishlist,
   getWishlistCount,
+  getWishlistIds,
   bulkTransferToCart
 };

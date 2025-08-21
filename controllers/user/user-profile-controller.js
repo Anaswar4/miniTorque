@@ -1,22 +1,23 @@
 // User profile controller – handles profile management, email changes, password updates, and photo uploads
 const User = require("../../models/user-model");
 const generateOtp = require("../../utils/generate-otp");
-const sendEmail = require("../../utils/mailer");
+const { sendOTP } = require("../../utils/mailer");
 const bcrypt = require("bcrypt");
 const Order = require("../../models/order-schema");
 const Wishlist = require("../../models/wishlist-schema");
 const Wallet = require("../../models/wallet-schema");
+const Cart = require("../../models/cart-schema");
 const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
-const { validateEmailFormat } = require("../../validator/addressValidator"); 
+const { validateEmailFormat } = require("../../validator/addressValidator");
 
 /* ------------------------------------------------------------------
    1. PROFILE PAGES
 -------------------------------------------------------------------*/
 const loadProfile = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.redirect("/login");
 
     const user = await User.findById(userId).select("-password").lean();
@@ -26,12 +27,20 @@ const loadProfile = async (req, res) => {
     const wishlistCount = await Wishlist.countDocuments({ userId });
     const wallet = await Wallet.getOrCreateWallet(userId);
 
+    // Get cart count
+    const cart = await Cart.findOne({ userId: userId }).lean();
+    let cartCount = 0;
+    if (cart && cart.items) {
+      cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
     res.render("user/profile", {
       title: "My Profile",
       user,
-      wishlistCount,          // 🔥 Add wishlistCount here
-      isAuthenticated: true,  // 🔥 Add isAuthenticated
-      currentPage: 'profile', // 🔥 Add currentPage
+      wishlistCount,
+      cartCount,
+      isAuthenticated: true,
+      currentPage: 'profile',
       stats: {
         totalOrders,
         wishlistCount,
@@ -48,14 +57,15 @@ const loadProfile = async (req, res) => {
       },
       message: err.message,
       user: req.user || null,
-      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+      wishlistCount: 0,
+      cartCount: 0
     });
   }
 };
 
 const loadEditProfile = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.redirect("/login");
 
     const user = await User.findById(userId).select("-password").lean();
@@ -88,7 +98,7 @@ const loadEditProfile = async (req, res) => {
 
 const loadChangePassword = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.redirect("/login");
 
     const user = await User.findById(userId).select("fullName email profilePhoto");
@@ -121,7 +131,7 @@ const loadChangePassword = async (req, res) => {
 
 const loadWallet = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.redirect("/login");
 
     const user = await User.findById(userId).select("fullName email profilePhoto");
@@ -173,7 +183,7 @@ const loadWallet = async (req, res) => {
 -------------------------------------------------------------------*/
 const updateProfileData = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) {
       return res.status(401).json({ success: false, message: "Please login to update profile" });
     }
@@ -220,7 +230,7 @@ const updateProfileData = async (req, res) => {
 -------------------------------------------------------------------*/
 const verifyCurrentEmail = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { currentEmail } = req.body;
     if (!userId) return res.status(401).json({ success: false, message: "Please login" });
 
@@ -239,8 +249,10 @@ const verifyCurrentEmail = async (req, res) => {
       expiresAt: Date.now() + 45 * 1000
     };
 
-    const mailSent = await sendEmail(user.email, otp, "change email");
-    if (!mailSent) {
+    try {
+      await sendOTP(user.email, otp);
+    } catch (error) {
+      console.error('Error sending OTP:', error);
       return res.status(500).json({ success: false, message: "Failed to send OTP" });
     }
 
@@ -253,7 +265,7 @@ const verifyCurrentEmail = async (req, res) => {
 
 const loadEmailChangeOtp = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.redirect("/login");
     if (!req.session.emailChangeOtp) return res.redirect("/profile/edit");
 
@@ -351,7 +363,7 @@ const changeEmail = async (req, res) => {
 -------------------------------------------------------------------*/
 const updatePassword = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { currentPassword, newPassword, confirmPassword } = req.body;
     if (!userId) return res.status(401).json({ success: false, message: "Please login" });
 
@@ -395,7 +407,7 @@ const updatePassword = async (req, res) => {
 -------------------------------------------------------------------*/
 const uploadProfilePhoto = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.status(401).json({ success: false, message: "Please login" });
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No image file provided" });
@@ -430,7 +442,7 @@ const uploadProfilePhoto = async (req, res) => {
 
 const deleteProfilePhoto = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) return res.status(401).json({ success: false, message: "Please login" });
 
     const currentUser = await User.findById(userId);

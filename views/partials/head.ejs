@@ -892,7 +892,271 @@
       });
     });
     document.addEventListener("DOMContentLoaded", function () {
-      // 🔥 GLOBAL WISHLIST COUNT UPDATE FUNCTION - ACCESSIBLE FROM ALL PAGES
+      // 🔥 GLOBAL STATE MANAGEMENT SYSTEM FOR REAL-TIME SYNCHRONIZATION
+      window.globalState = {
+        wishlist: {
+          userWishlistIds: [],
+          initialized: false
+        },
+        cart: {
+          count: 0,
+          initialized: false
+        },
+
+        // Initialize all states
+        async init(serverWishlistIds = []) {
+          await this.initWishlist(serverWishlistIds);
+          await this.initCart();
+          this.setupCrossPageCommunication();
+        },
+
+        // Initialize wishlist state
+        async initWishlist(serverWishlistIds = []) {
+          if (this.wishlist.initialized) return;
+
+          if (serverWishlistIds.length > 0) {
+            this.wishlist.userWishlistIds = [...serverWishlistIds];
+            this.wishlist.initialized = true;
+            console.log('Wishlist state initialized from server:', this.wishlist.userWishlistIds);
+          } else {
+            await this.fetchWishlistIds();
+          }
+        },
+
+        // Initialize cart state
+        async initCart() {
+          if (this.cart.initialized) return;
+
+          try {
+            const response = await fetch('/cart/count');
+            if (response.ok) {
+              const data = await response.json();
+              this.cart.count = data.count || 0;
+              this.cart.initialized = true;
+              console.log('Cart state initialized:', this.cart.count);
+            }
+          } catch (error) {
+            console.error('Failed to initialize cart state:', error);
+            this.cart.count = 0;
+            this.cart.initialized = true;
+          }
+        },
+
+        // Setup cross-page communication using localStorage events
+        setupCrossPageCommunication() {
+          // Listen for storage events (cross-page communication)
+          window.addEventListener('storage', (e) => {
+            if (e.key === 'miniTorque_wishlist_update') {
+              const data = JSON.parse(e.newValue || '{}');
+              this.handleWishlistUpdate(data.productId, data.action);
+            } else if (e.key === 'miniTorque_cart_update') {
+              const data = JSON.parse(e.newValue || '{}');
+              this.handleCartUpdate(data.count);
+            }
+          });
+
+          console.log('Cross-page communication setup complete');
+        },
+
+        // Broadcast wishlist update to other pages
+        broadcastWishlistUpdate(productId, action) {
+          const data = { productId, action, timestamp: Date.now() };
+          localStorage.setItem('miniTorque_wishlist_update', JSON.stringify(data));
+          // Remove after a short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_wishlist_update');
+          }, 100);
+        },
+
+        // Broadcast cart update to other pages
+        broadcastCartUpdate(count) {
+          const data = { count, timestamp: Date.now() };
+          localStorage.setItem('miniTorque_cart_update', JSON.stringify(data));
+          // Remove after a short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_cart_update');
+          }, 100);
+        },
+
+        // Handle wishlist update from other pages
+        handleWishlistUpdate(productId, action) {
+          if (action === 'added') {
+            this.addToWishlist(productId, false); // false = don't broadcast again
+          } else if (action === 'removed') {
+            this.removeFromWishlist(productId, false); // false = don't broadcast again
+          }
+        },
+
+        // Handle cart update from other pages
+        handleCartUpdate(count) {
+          this.cart.count = count;
+          this.updateCartCounters();
+        },
+
+        // Fetch current wishlist IDs from server
+        async fetchWishlistIds() {
+          try {
+            const response = await fetch('/wishlist/ids');
+            if (response.ok) {
+              const data = await response.json();
+              this.wishlist.userWishlistIds = data.wishlistIds || [];
+              this.wishlist.initialized = true;
+              console.log('Wishlist IDs fetched:', this.wishlist.userWishlistIds);
+            }
+          } catch (error) {
+            console.error('Failed to fetch wishlist IDs:', error);
+            this.wishlist.userWishlistIds = [];
+            this.wishlist.initialized = true;
+          }
+        },
+
+        // Check if product is in wishlist
+        isInWishlist(productId) {
+          return this.wishlist.userWishlistIds.includes(productId.toString());
+        },
+
+        // Add product to wishlist state
+        addToWishlist(productId, broadcast = true) {
+          const id = productId.toString();
+          if (!this.wishlist.userWishlistIds.includes(id)) {
+            this.wishlist.userWishlistIds.push(id);
+            this.syncWishlistButtons(id, true);
+            console.log('Added to wishlist state:', id);
+
+            // Broadcast to other pages
+            if (broadcast) {
+              this.broadcastWishlistUpdate(id, 'added');
+            }
+          }
+        },
+
+        // Remove product from wishlist state
+        removeFromWishlist(productId, broadcast = true) {
+          const id = productId.toString();
+          const index = this.wishlist.userWishlistIds.indexOf(id);
+          if (index > -1) {
+            this.wishlist.userWishlistIds.splice(index, 1);
+            this.syncWishlistButtons(id, false);
+            console.log('Removed from wishlist state:', id);
+
+            // Broadcast to other pages
+            if (broadcast) {
+              this.broadcastWishlistUpdate(id, 'removed');
+            }
+          }
+        },
+
+        // Broadcast wishlist update to other pages
+        broadcastWishlistUpdate(productId, action) {
+          const data = {
+            type: 'wishlist_update',
+            productId: productId.toString(),
+            action: action,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('miniTorque_wishlist_sync', JSON.stringify(data));
+
+          // Remove after short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_wishlist_sync');
+          }, 100);
+        },
+
+        // Handle wishlist update from other pages
+        handleWishlistUpdate(productId, action) {
+          if (action === 'added') {
+            this.addToWishlist(productId, false); // false = don't broadcast again
+          } else if (action === 'removed') {
+            this.removeFromWishlist(productId, false); // false = don't broadcast again
+          }
+        },
+
+        // Update cart count and broadcast
+        updateCartCount(count, broadcast = true) {
+          this.cart.count = count;
+          this.updateCartCounters();
+
+          // Broadcast to other pages
+          if (broadcast) {
+            this.broadcastCartUpdate(count);
+          }
+        },
+
+        // Update all cart counter elements
+        updateCartCounters() {
+          const cartCountElements = document.querySelectorAll('.cart-count');
+          cartCountElements.forEach(elem => {
+            elem.textContent = this.cart.count;
+            elem.dataset.count = this.cart.count;
+            elem.style.display = this.cart.count > 0 ? 'flex' : 'none';
+          });
+
+          // Also update any legacy cart counter elements
+          const legacyCounters = document.querySelectorAll('#cartCount');
+          legacyCounters.forEach(elem => {
+            elem.textContent = this.cart.count;
+            elem.style.display = this.cart.count > 0 ? 'flex' : 'none';
+          });
+
+          console.log('Cart counters updated:', this.cart.count);
+        },
+
+        // Sync all wishlist buttons for a specific product across all pages
+        syncWishlistButtons(productId, isActive) {
+          const selectors = [
+            `button.wishlist-icon[data-product-id="${productId}"]`,
+            `button.btn-wishlist[data-product-id="${productId}"]`,
+            `button.btn-wishlist-home[data-product-id="${productId}"]`
+          ];
+
+          selectors.forEach(selector => {
+            const buttons = document.querySelectorAll(selector);
+            buttons.forEach(button => {
+              if (isActive) {
+                button.classList.add('active');
+                button.title = 'Remove from Wishlist';
+                const icon = button.querySelector('i');
+                if (icon) {
+                  icon.className = 'fas fa-heart';
+                  if (button.classList.contains('wishlist-icon')) {
+                    icon.classList.add('text-danger');
+                  }
+                }
+              } else {
+                button.classList.remove('active');
+                button.title = 'Add to Wishlist';
+                const icon = button.querySelector('i');
+                if (icon) {
+                  icon.className = 'far fa-heart';
+                  icon.classList.remove('text-danger');
+                }
+              }
+            });
+          });
+
+          console.log(`Synced ${document.querySelectorAll(selectors.join(', ')).length} wishlist buttons for product ${productId}`);
+        },
+
+        // Sync all wishlist buttons on page load
+        syncAllWishlistButtons() {
+          this.wishlist.userWishlistIds.forEach(productId => {
+            this.syncWishlistButtons(productId, true);
+          });
+          console.log('Synced all wishlist buttons on page load');
+        }
+      };
+
+      // Legacy compatibility - maintain old wishlistState reference
+      window.wishlistState = {
+        init: (serverWishlistIds) => window.globalState.initWishlist(serverWishlistIds),
+        isInWishlist: (productId) => window.globalState.isInWishlist(productId),
+        addToWishlist: (productId) => window.globalState.addToWishlist(productId),
+        removeFromWishlist: (productId) => window.globalState.removeFromWishlist(productId),
+        syncWishlistButtons: (productId, isActive) => window.globalState.syncWishlistButtons(productId, isActive),
+        syncAllWishlistButtons: () => window.globalState.syncAllWishlistButtons()
+      };
+
+      // 🔥 ENHANCED GLOBAL UPDATE FUNCTIONS WITH REAL-TIME SYNC
       window.updateWishlistCount = async function () {
         try {
           const response = await fetch('/wishlist/count');
@@ -910,6 +1174,113 @@
         } catch (error) {
           console.error('Failed to update wishlist count:', error);
         }
+      };
+
+      // 🔥 UNIFIED CART STATE MANAGEMENT SYSTEM
+      window.cartState = {
+        count: 0,
+        initialized: false,
+
+        // Initialize cart state
+        async init() {
+          if (this.initialized) return;
+
+          try {
+            const response = await fetch('/cart/count');
+            if (response.ok) {
+              const data = await response.json();
+              this.count = data.count || 0;
+              this.initialized = true;
+              this.updateAllCounters();
+              console.log('Cart state initialized:', this.count);
+            }
+          } catch (error) {
+            console.error('Failed to initialize cart state:', error);
+            this.count = 0;
+            this.initialized = true;
+          }
+        },
+
+        // Update cart count and broadcast to other pages
+        async updateCount(newCount = null) {
+          if (newCount !== null) {
+            this.count = newCount;
+          } else {
+            // Fetch latest count from server
+            try {
+              const response = await fetch('/cart/count');
+              if (response.ok) {
+                const data = await response.json();
+                this.count = data.count || 0;
+              }
+            } catch (error) {
+              console.error('Failed to fetch cart count:', error);
+              return;
+            }
+          }
+
+          // Update all counter elements on current page
+          this.updateAllCounters();
+
+          // Broadcast to other pages
+          this.broadcastUpdate();
+
+          console.log('Cart count updated and synced:', this.count);
+        },
+
+        // Update all cart counter elements on current page
+        updateAllCounters() {
+          // Update navbar cart counters
+          const cartCountElements = document.querySelectorAll('.cart-count');
+          cartCountElements.forEach(elem => {
+            elem.textContent = this.count;
+            elem.dataset.count = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+
+          // Update legacy cart counter elements
+          const legacyCounters = document.querySelectorAll('#cartCount');
+          legacyCounters.forEach(elem => {
+            elem.textContent = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+
+          // Update any other cart counter selectors
+          const otherCounters = document.querySelectorAll('[data-cart-counter]');
+          otherCounters.forEach(elem => {
+            elem.textContent = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+        },
+
+        // Broadcast cart update to other pages
+        broadcastUpdate() {
+          const data = {
+            type: 'cart_update',
+            count: this.count,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('miniTorque_cart_sync', JSON.stringify(data));
+
+          // Remove after short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_cart_sync');
+          }, 100);
+        },
+
+        // Handle cart update from other pages
+        handleExternalUpdate(data) {
+          if (data.count !== this.count) {
+            this.count = data.count;
+            this.updateAllCounters();
+            console.log('Cart count synced from other page:', this.count);
+          }
+        }
+      };
+
+      // 🔥 ENHANCED GLOBAL CART COUNT UPDATE FUNCTION WITH REAL-TIME SYNC
+      window.updateCartCount = async function () {
+        await window.cartState.updateCount();
       };
 
       // 🔥 UNIVERSAL TOAST FUNCTION - ACCESSIBLE FROM ALL PAGES
@@ -944,8 +1315,63 @@
         }, type === 'success' ? 3000 : 5000);
       };
 
-      // Update wishlist count on page load
-      updateWishlistCount();
+      // 🔥 SETUP CROSS-PAGE COMMUNICATION FOR CART AND WISHLIST UPDATES
+      window.addEventListener('storage', function(e) {
+        console.log('🔄 Storage event received:', e.key, e.newValue);
+
+        if (e.key === 'miniTorque_cart_sync') {
+          try {
+            const data = JSON.parse(e.newValue || '{}');
+            if (data.type === 'cart_update' && window.cartState) {
+              console.log('📦 Syncing cart from other page:', data.count);
+              window.cartState.handleExternalUpdate(data);
+            }
+          } catch (error) {
+            console.error('Error handling cart sync:', error);
+          }
+        } else if (e.key === 'miniTorque_wishlist_sync') {
+          try {
+            const data = JSON.parse(e.newValue || '{}');
+            if (data.type === 'wishlist_update' && window.globalState) {
+              console.log('❤️ Syncing wishlist from other page:', data.productId, data.action);
+              window.globalState.handleWishlistUpdate(data.productId, data.action);
+            }
+          } catch (error) {
+            console.error('Error handling wishlist sync:', error);
+          }
+        }
+      });
+
+      // 🔥 DEBUG FUNCTION FOR TESTING CROSS-PAGE SYNC
+      window.testSync = function() {
+        console.log('🧪 Testing cross-page synchronization...');
+        console.log('Cart State:', window.cartState ? window.cartState.count : 'Not initialized');
+        console.log('Wishlist State:', window.globalState ? window.globalState.wishlist.userWishlistIds : 'Not initialized');
+
+        // Test cart sync
+        if (window.cartState) {
+          window.cartState.broadcastUpdate();
+          console.log('📦 Cart sync test broadcast sent');
+        }
+
+        // Test wishlist sync
+        if (window.globalState) {
+          window.globalState.broadcastWishlistUpdate('test-product-id', 'added');
+          console.log('❤️ Wishlist sync test broadcast sent');
+        }
+      };
+
+      // Initialize cart state and update counts on page load
+      window.cartState.init().then(() => {
+        // Initialize global state for wishlist
+        if (window.globalState) {
+          window.globalState.init().then(() => {
+            updateWishlistCount();
+          });
+        } else {
+          updateWishlistCount();
+        }
+      });
     });
   </script>
 
@@ -954,4 +1380,3 @@
 </html>
 
 
-//test

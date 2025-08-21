@@ -300,6 +300,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Initialize cart state management on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize cart state for real-time synchronization
+        if (window.cartState) {
+            await window.cartState.init();
+            console.log('🛒 Cart state initialized on cart page');
+        }
+    });
+
     // Update cart item quantity
     async function updateQuantity(productId, newQuantity) {
         if (newQuantity < 1) {
@@ -365,8 +374,12 @@
                 qtyInput.value = newQuantity;
                 itemTotal.textContent = `₹${Math.round(result.itemTotal)}`;
 
-                // Update cart counter
-                updateCartCounter(result.cartCount);
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(result.cartCount);
+                } else {
+                    updateCartCounter(result.cartCount);
+                }
 
                 // Update button states immediately after successful update
                 updateButtonStates(productId);
@@ -442,14 +455,19 @@
                     // Check if cart is empty
                     const remainingItems = document.querySelectorAll('.cart-item');
                     if (remainingItems.length === 0) {
-                        location.reload(); // Reload to show empty cart state
+                        // Use real-time UI update instead of page reload
+                        updateCartUIToEmpty();
                     } else {
                         updateCartTotals();
                     }
                 }, 300);
 
-                // Update cart counter
-                updateCartCounter(data.cartCount);
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(data.cartCount);
+                } else {
+                    updateCartCounter(data.cartCount);
+                }
 
                 showSweetAlert('Item removed from cart', 'success');
             } else {
@@ -461,9 +479,38 @@
         }
     }
 
-    // Clear entire cart
+    // Clear entire cart with real-time UI updates
     async function clearCart() {
         try {
+            // Show confirmation dialog first
+            const result = await Swal.fire({
+                title: 'Clear Cart?',
+                text: 'Are you sure you want to remove all items from your cart? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, clear cart',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return; // User cancelled
+            }
+
+            // Show loading state
+            Swal.fire({
+                title: 'Clearing Cart...',
+                text: 'Please wait while we clear your cart.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const response = await fetch('/cart/clear', {
                 method: 'POST',
                 headers: {
@@ -474,19 +521,103 @@
             const data = await response.json();
 
             if (data.success) {
-                // Update cart counter
-                updateCartCounter(0);
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(0);
+                } else {
+                    updateCartCounter(0);
+                }
 
-                showSweetAlert('Cart cleared successfully', 'success');
-                setTimeout(() => {
-                    location.reload(); // Reload to show empty cart state
-                }, 1000);
+                // Update UI to show empty cart state in real-time
+                updateCartUIToEmpty();
+
+                // Show success message
+                Swal.fire({
+                    title: 'Cart Cleared!',
+                    text: 'All items have been removed from your cart.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                console.log('✅ Cart cleared successfully with real-time UI update');
             } else {
-                showSweetAlert(data.message || 'Failed to clear cart', 'error');
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to clear cart. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
             console.error('Error clearing cart:', error);
-            showSweetAlert('Failed to clear cart. Please try again.', 'error');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to clear cart. Please check your connection and try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Update cart UI to show empty state in real-time
+    function updateCartUIToEmpty() {
+        try {
+            // Find the main cart container
+            const cartContainer = document.querySelector('.container');
+            if (!cartContainer) {
+                console.error('Cart container not found');
+                return;
+            }
+
+            // Create empty cart HTML
+            const emptyCartHTML = `
+                <div class="breadcrumb-container">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/">Home</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Cart</li>
+                        </ol>
+                    </nav>
+                </div>
+
+                <!-- Cart Header -->
+                <div class="cart-header">
+                    <h1 class="cart-title">Shopping Cart</h1>
+                    <p class="cart-subtitle">Review your items and proceed to checkout when ready</p>
+                </div>
+
+                <!-- Empty Cart -->
+                <div class="empty-cart">
+                    <div class="empty-icon">
+                        <i class="bi bi-cart-x"></i>
+                    </div>
+                    <h2 class="empty-title">Your Cart is Empty</h2>
+                    <p class="empty-text">Looks like you haven't added any items to your cart yet. Start shopping to fill it up!</p>
+                    <a href="/shopPage" class="btn-cart btn-primary">
+                        <i class="bi bi-bag"></i>
+                        Start Shopping
+                    </a>
+                </div>
+            `;
+
+            // Replace the entire cart content with empty state
+            cartContainer.innerHTML = emptyCartHTML;
+
+            // Add smooth transition effect
+            cartContainer.style.opacity = '0';
+            setTimeout(() => {
+                cartContainer.style.transition = 'opacity 0.3s ease-in-out';
+                cartContainer.style.opacity = '1';
+            }, 100);
+
+            console.log('✅ Cart UI updated to empty state');
+        } catch (error) {
+            console.error('Error updating cart UI to empty state:', error);
+            // Fallback to page reload if UI update fails
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         }
     }
 
@@ -667,8 +798,12 @@
                     }, 300);
                 });
 
-                // Update cart counter
-                updateCartCounter(data.cartCount);
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(data.cartCount);
+                } else {
+                    updateCartCounter(data.cartCount);
+                }
 
                 // Update cart totals and UI
                 setTimeout(() => {
@@ -688,8 +823,9 @@
                     // Check if cart is now empty
                     const remainingItems = document.querySelectorAll('.cart-item');
                     if (remainingItems.length === 0) {
+                        // Use real-time UI update instead of page reload
                         setTimeout(() => {
-                            location.reload(); // Reload to show empty cart state
+                            updateCartUIToEmpty();
                         }, 500);
                     }
                 }, 500);
@@ -1095,15 +1231,23 @@
     
     // Helper function to update cart counter
     function updateCartCounter(count) {
-    const cartCounter = document.querySelector('#cartCount');
-    if (cartCounter) {
-    if (count > 0) {
-    cartCounter.textContent = count;
-    cartCounter.style.display = 'flex';
-    } else {
-    cartCounter.style.display = 'none';
-    }
-    }
+        // Use unified cart state system
+        if (window.cartState) {
+            window.cartState.updateCount(count);
+        } else if (typeof updateCartCount === 'function') {
+            updateCartCount();
+        } else {
+            // Fallback to local update
+            const cartCounters = document.querySelectorAll('.cart-count');
+            cartCounters.forEach(counter => {
+                if (count > 0) {
+                    counter.textContent = count;
+                    counter.style.display = 'flex';
+                } else {
+                    counter.style.display = 'none';
+                }
+            });
+        }
     }
 
     // Enhanced function to validate and update stock information for all cart items

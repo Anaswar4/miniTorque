@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 const User = require('../../models/user-model');
+const Wishlist = require('../../models/wishlist-schema');
 
 const getProducts = async (req, res) => {
     try {
@@ -600,7 +601,7 @@ const getShopPage = async (req, res) => {
         if (req.query.minPrice || req.query.maxPrice) {
             pipeline[2].$match.salePrice = {};
             if (req.query.minPrice) {
-                pipeline.$match.salePrice.$gte = parseFloat(req.query.minPrice);
+                pipeline[2].$match.salePrice.$gte = parseFloat(req.query.minPrice);
             }
             if (req.query.maxPrice) {
                 pipeline[2].$match.salePrice.$lte = parseFloat(req.query.maxPrice);
@@ -710,15 +711,24 @@ const getShopPage = async (req, res) => {
             isDeleted: false
         }).lean();
 
-        // ✅ FIX: Get user's wishlist data and count
+        // Get user's wishlist and cart data
         let userWishlistIds = [];
         let wishlistCount = 0;
-        if (req.session.userId) { // ✅ FIX: Use session.userId consistently
-            const Wishlist = require('../../models/wishlist-schema');
-            const wishlist = await Wishlist.findOne({ userId: req.session.userId }).lean();
+        let cartCount = 0;
+        const userId = req.session.userId || req.session.googleUserId;
+        if (userId) {
+            // Get wishlist data
+            const wishlist = await Wishlist.findOne({ userId: userId }).lean();
             if (wishlist && wishlist.products) {
                 userWishlistIds = wishlist.products.map(item => item.productId.toString());
                 wishlistCount = wishlist.products.length;
+            }
+
+            // Get cart count
+            const Cart = require('../../models/cart-schema');
+            const cart = await Cart.findOne({ userId: userId }).lean();
+            if (cart && cart.items) {
+                cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
             }
         }
 
@@ -756,6 +766,7 @@ const getShopPage = async (req, res) => {
             queryString,
             userWishlistIds,
             wishlistCount,
+            cartCount,
             filters: {
                 category: req.query.category || '',
                 minPrice: req.query.minPrice || '',
@@ -764,8 +775,8 @@ const getShopPage = async (req, res) => {
                 availability: req.query.availability || '',
                 sort: req.query.sort || 'newest'
             },
-            user: req.session.user || null, // ✅ FIX: Use session.user consistently
-            isAuthenticated: !!req.session.userId,
+            user: req.session.user || null,
+            isAuthenticated: !!(req.session.userId || req.session.googleUserId),
             currentPage: 'shop'
         });
 

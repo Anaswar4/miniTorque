@@ -7,7 +7,8 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
-const Wishlist = require('../../models/wishlist-schema'); // Import Wishlist model
+const Wishlist = require('../../models/wishlist-schema');
+const Cart = require('../../models/cart-schema');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -94,15 +95,13 @@ const loadHome = async (req, res) => {
     const userId = req.session.userId; // ✅ USE SESSION CONSISTENTLY
 
     if (userId) {
-      // ✅ ADD: Get cart count
-      const Cart = require('../../models/cart-schema');
+      // Get cart count
       const cart = await Cart.findOne({ userId: userId }).lean();
       if (cart && cart.items) {
         cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
       }
 
-      // ✅ UPDATED: Get wishlist count (use consistent userId)
-      const Wishlist = require('../../models/wishlist-schema');
+      // Get wishlist count
       const wishlist = await Wishlist.findOne({ userId: userId }).lean();
       if (wishlist && wishlist.products) {
         userWishlistIds = wishlist.products.map(item => item.productId.toString());
@@ -331,6 +330,7 @@ const login = async (req, res) => {
 
         req.session.userId = user._id;
         req.session.email = user.email;
+        req.session.user = user;
         req.session.loginTime = new Date();
 
         req.session.save((err) => {

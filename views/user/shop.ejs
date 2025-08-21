@@ -668,6 +668,20 @@
 
     <!-- ====================  PAGE SCRIPTS  ==================== -->
     <script>
+        // Initialize global state (both wishlist and cart)
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize cart state first
+            if (window.cartState) {
+                await window.cartState.init();
+            }
+
+            // Initialize global wishlist state
+            const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
+            if (window.globalState) {
+                await window.globalState.init(serverWishlistIds);
+                window.globalState.syncAllWishlistButtons();
+            }
+        });
         /* ------------------------------------------------------------------
            TOAST
         ------------------------------------------------------------------ */
@@ -709,12 +723,18 @@
                 });
                 const out = await res.json();
                 if (out.success) {
-                    window.updateWishlistCount();
-                    btn.classList.toggle('active');
-                    btn.innerHTML = btn.classList.contains('active')
-                        ? '<i class="fas fa-heart text-danger"></i>'
-                        : '<i class="far fa-heart"></i>';
-                    btn.title = btn.classList.contains('active') ? 'Remove from Wishlist' : 'Add to Wishlist';
+                    // Update global wishlist state and sync all buttons across pages
+                    if (out.action === 'added') {
+                        window.globalState.addToWishlist(productId);
+                    } else if (out.action === 'removed') {
+                        window.globalState.removeFromWishlist(productId);
+                    }
+
+                    // Update navbar wishlist count
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount();
+                    }
+
                     showToast(out.message || (inWishlist ? 'Removed from wishlist' : 'Added to wishlist'), 'success');
                 } else {
                     showToast(out.message || 'Failed', 'error');
@@ -833,6 +853,13 @@
                         button.disabled = false;
                     }, 1500);
 
+                    // Update cart count using unified cart state system
+                    if (window.cartState) {
+                        window.cartState.updateCount();
+                    } else if (typeof updateCartCount === 'function') {
+                        updateCartCount();
+                    }
+
                     showToast('Added to cart successfully!', 'success');
                 } else {
                     button.innerHTML = originalContent;
@@ -848,13 +875,26 @@
         }
 
         /* ------------------------------------------------------------------
-           UPDATE CART COUNTER (Helper Function)
+           UPDATE CART COUNTER (Unified System)
         ------------------------------------------------------------------ */
         function updateCartCounter(count) {
-            const cartCounter = document.querySelector('#cartCount');
-            if (cartCounter) {
-                cartCounter.textContent = count || '0';
-                cartCounter.style.display = count > 0 ? 'flex' : 'none';
+            // Use unified cart state system
+            if (window.cartState) {
+                window.cartState.updateCount(count);
+            } else {
+                // Fallback for legacy support
+                const cartCounter = document.querySelector('#cartCount');
+                if (cartCounter) {
+                    cartCounter.textContent = count || '0';
+                    cartCounter.style.display = count > 0 ? 'flex' : 'none';
+                }
+
+                // Also update navbar cart counters
+                const cartCountElements = document.querySelectorAll('.cart-count');
+                cartCountElements.forEach(elem => {
+                    elem.textContent = count || '0';
+                    elem.style.display = count > 0 ? 'flex' : 'none';
+                });
             }
         }
 

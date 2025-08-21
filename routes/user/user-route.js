@@ -8,8 +8,7 @@ const addressController = require("../../controllers/user/address-controller");
 const wishlistController = require("../../controllers/user/wishlist-controller");
 const cartController = require("../../controllers/user/cart-controller");
 const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
-const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession } = require("../../middlewares/user-middleware");
-const { addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
+const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 const { profileUpload, handleMulterError } = require("../../config/multer-config");
 
 
@@ -134,6 +133,7 @@ router.get("/wishlist", isUserAuthenticated, preventCache, addUserContext, check
 router.post("/wishlist/add", isUserAuthenticated, preventCache, checkUserBlocked, checkProductAvailabilityForWishlist, wishlistController.addToWishlist);
 router.post("/wishlist/remove", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.removeFromWishlist);
 router.get("/wishlist/count", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.getWishlistCount);
+router.get("/wishlist/ids", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.getWishlistIds);
 router.post("/wishlist/bulk-transfer-to-cart", isUserAuthenticated, preventCache, checkUserBlocked, wishlistController.bulkTransferToCart);
 
 // Cart-related routes

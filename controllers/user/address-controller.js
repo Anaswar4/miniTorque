@@ -1,15 +1,16 @@
 // User address management controller
 const Address = require('../../models/address-schema');
 const User = require('../../models/user-model');
-const Wishlist = require('../../models/wishlist-schema'); // 🔥 Add Wishlist import
-const { 
-    validateAddAddressForm, 
-    validateUpdateAddressForm 
+const Wishlist = require('../../models/wishlist-schema');
+const Cart = require('../../models/cart-schema');
+const {
+    validateAddAddressForm,
+    validateUpdateAddressForm
 } = require('../../validator/addressValidator-simple');
 
 const loadAddressList = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     
     const user = await User.findById(userId).select('fullName email profilePhoto');
     
@@ -20,35 +21,40 @@ const loadAddressList = async (req, res) => {
     const addressDoc = await Address.findOne({ userId }).populate('userId');
     const addresses = addressDoc ? addressDoc.address : [];
 
-    // 🔥 Fetch wishlist count
+    // Fetch wishlist and cart counts
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
     res.render('user/address-list', {
       user,
       addresses,
-      wishlistCount,          // 🔥 Add wishlistCount here
-      isAuthenticated: true,  // 🔥 Add isAuthenticated
-      currentPage: 'address-list', // 🔥 Add currentPage
+      wishlistCount,
+      cartCount,
+      isAuthenticated: true,
+      currentPage: 'address-list',
       title: 'Address Book'
     });
   } catch (error) {
     console.error('Error loading address list:', error);
-    res.status(500).render('error', { 
+    res.status(500).render('error', {
       error: {
         status: 500,
         message: 'Error loading addresses: ' + error.message
       },
       message: error.message,
       user: req.user || null,
-      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+      wishlistCount: 0,
+      cartCount: 0
     });
   }
 };
 
 const loadAddressForm = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const addressId = req.params.id;
     const returnTo = req.query.returnTo;
 
@@ -98,7 +104,7 @@ const loadAddressForm = async (req, res) => {
 
 const saveAddress = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const validation = validateAddAddressForm(req.body);
     
     if (!validation.isValid) {
@@ -158,7 +164,7 @@ const saveAddress = async (req, res) => {
 
 const updateAddress = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const addressId = req.params.id;
     const validation = validateUpdateAddressForm(req.body);
     
@@ -219,7 +225,7 @@ const updateAddress = async (req, res) => {
 
 const deleteAddress = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const addressId = req.params.id;
 
     const addressDoc = await Address.findOne({ userId });
@@ -263,7 +269,7 @@ const deleteAddress = async (req, res) => {
 
 const setAsDefault = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const addressId = req.params.id;
 
     const addressDoc = await Address.findOne({ userId });

@@ -4,12 +4,13 @@ const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model');
 
 // Load cart page
+// Load cart page
 const loadCart = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     
     // Get user data for sidebar
-     user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto').lean();
+    const user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto').lean();
     if (!user) {
       return res.redirect('/login');
     }
@@ -26,6 +27,7 @@ const loadCart = async (req, res) => {
 
     // Filter out items with unavailable products
     let cartItems = [];
+    let cartCount = 0; // ✅ ADD: Initialize cartCount
     
     if (cart && cart.items) {
       cartItems = cart.items.filter(item => 
@@ -36,6 +38,9 @@ const loadCart = async (req, res) => {
         item.productId.isListed &&
         !item.productId.isDeleted
       );
+
+      // ✅ ADD: Calculate cart count (total quantity of items)
+      cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
       // Update prices with current product data
       let priceUpdatesNeeded = false;
@@ -61,6 +66,7 @@ const loadCart = async (req, res) => {
     res.render('user/cart', {
       user,
       cartItems: cartItems || [],
+      cartCount,        // ✅ ADD: Pass cartCount to template
       wishlistCount,
       isAuthenticated: true,
       currentPage: 'cart',
@@ -70,15 +76,18 @@ const loadCart = async (req, res) => {
     console.error('Error loading cart:', error);
     res.status(500).render('error', { 
       message: 'Error loading cart',
-      wishlistCount: 0
+      cartCount: 0,     // ✅ ADD: Pass cartCount to error template
+      wishlistCount: 0,
+      user: req.session.user || null
     });
   }
 };
 
+
 // Add product to cart with comprehensive validation
 const addToCart = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { productId, quantity = 1 } = req.body;
 
     // Validate input
@@ -226,7 +235,7 @@ const addToCart = async (req, res) => {
 // Get cart count for navbar
 const getCartCount = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     if (!userId) {
       return res.json({ count: 0 });
     }
@@ -244,7 +253,7 @@ const getCartCount = async (req, res) => {
 // Update cart item quantity
 const updateCartQuantity = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { productId, quantity } = req.body;
 
     // Validate input
@@ -354,7 +363,7 @@ const updateCartQuantity = async (req, res) => {
 // Remove item from cart
 const removeFromCart = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
     const { productId } = req.body;
 
     if (!productId) {
@@ -408,7 +417,7 @@ const removeFromCart = async (req, res) => {
 // Clear entire cart
 const clearCart = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
 
     // Find and clear user's cart
     const cart = await Cart.findOne({ userId });
@@ -439,7 +448,7 @@ const clearCart = async (req, res) => {
 // Remove all out-of-stock items from cart
 const removeOutOfStockItems = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
 
     // Find user's cart with populated product data
     const cart = await Cart.findOne({ userId })
@@ -510,7 +519,7 @@ const removeOutOfStockItems = async (req, res) => {
 // Validate cart items and return availability status
 const validateCartItems = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;
 
     // Find user's cart with populated product data
     const cart = await Cart.findOne({ userId })

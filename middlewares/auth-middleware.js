@@ -118,15 +118,15 @@ isUserAuthenticated : async (req, res, next) => {
 redirectIfAuthenticated : async (req, res, next) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
-    
+
     if (userId) {
       const user = await User.findById(userId);
-      
-      // If user exists and is not blocked, redirect to dashboard
+
+      // If user exists and is not blocked, redirect to home (consistent with user-middleware)
       if (user && !user.isBlocked) {
-        return res.redirect('/dashboard');
+        return res.redirect('/home');
       }
-      
+
       // If user is blocked or doesn't exist, clear only user session data
       if (req.session.userId) {
         delete req.session.userId;
@@ -140,8 +140,11 @@ redirectIfAuthenticated : async (req, res, next) => {
       if (req.session.loginTime) {
         delete req.session.loginTime;
       }
+      if (req.session.user) {
+        delete req.session.user;
+      }
     }
-    
+
     next();
   } catch (error) {
     console.error('Redirect Auth Middleware Error:', error);

@@ -171,6 +171,21 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
    <script>
+        // Initialize global state (both wishlist and cart)
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize cart state first
+            if (window.cartState) {
+                await window.cartState.init();
+            }
+
+            // Initialize global wishlist state
+            if (window.globalState) {
+                // Wishlist page doesn't have server wishlist IDs, so fetch from API
+                await window.globalState.init();
+                window.globalState.syncAllWishlistButtons();
+            }
+        });
+
         // Add product to wishlist from product pages
         async function addToWishlist(productId) {
             try {
@@ -230,8 +245,13 @@
 
                 if (result.success) {
                     // Update counters
-                    updateCartCounter(result.cartCount);
-                    updateWishlistCounter(result.wishlistCount);
+                    // Update cart and wishlist counts using global state
+                    if (typeof updateCartCount === 'function') {
+                        updateCartCount();
+                    }
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount();
+                    }
 
                     // Remove item from wishlist UI with animation
                     wishlistItem.style.transition = 'all 0.3s ease';
@@ -320,8 +340,10 @@
                         }
                     }, 300);
 
-                    // Update wishlist counter
-                    updateWishlistCounter(data.wishlistCount);
+                    // Update wishlist count in navbar
+                    if (typeof updateWishlistCount === 'function') {
+                        updateWishlistCount();
+                    }
 
                     showToast('Removed from wishlist!', 'success');
                 } else {
