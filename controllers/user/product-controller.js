@@ -775,7 +775,7 @@ const getShopPage = async (req, res) => {
                 availability: req.query.availability || '',
                 sort: req.query.sort || 'newest'
             },
-            user: req.session.user || null,
+            user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user set by addUserContext middleware
             isAuthenticated: !!(req.session.userId || req.session.googleUserId),
             currentPage: 'shop'
         });
@@ -788,7 +788,7 @@ const getShopPage = async (req, res) => {
                 message: 'Error loading shop page: ' + error.message
             },
             message: error.message,
-            user: req.session.user || null
+            user: res.locals.user || null  // ✅ FIXED: Use res.locals.user
         });
     }
 };
@@ -796,9 +796,9 @@ const getShopPage = async (req, res) => {
 // ✅ COMPLETELY FIXED: Product Details function
 const getProductDetails = async (req, res) => {
     try {
-        // ✅ FIX: Define user and userId consistently
+        // ✅ FIXED: Define user and userId consistently for both auth methods
         const user = req.session.user || null;
-        const userId = req.session.userId || null;
+        const userId = req.session.userId || req.session.googleUserId;
         const productId = req.params.id;
 
         // Fetch COMPLETE user profile data if needed
@@ -949,7 +949,7 @@ const getProductDetails = async (req, res) => {
         if (error.name === 'CastError') {
             return res.status(404).render('pageNotFound', {
                 message: 'Invalid product ID format',
-                user: req.session.user || null,
+                user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
                 wishlistCount: 0
             });
         }
@@ -960,7 +960,7 @@ const getProductDetails = async (req, res) => {
                 message: 'Error loading product details: ' + error.message
             },
             message: error.message,
-            user: req.session.user || null,
+            user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
             wishlistCount: 0
         });
     }

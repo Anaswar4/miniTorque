@@ -78,7 +78,7 @@ const loadCart = async (req, res) => {
       message: 'Error loading cart',
       cartCount: 0,     // ✅ ADD: Pass cartCount to error template
       wishlistCount: 0,
-      user: req.session.user || null
+      user: res.locals.user || null  // ✅ FIXED: Use res.locals.user
     });
   }
 };

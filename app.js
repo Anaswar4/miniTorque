@@ -29,7 +29,10 @@ app.use(passport.initialize()); // Initialize Passport
 app.use(passport.session()); // Enable Passport session support
 
 app.use((req, res, next) => {
-  res.locals.user = req.user || null;
+  // Only set user from req.user if res.locals.user hasn't been set by addUserContext middleware
+  if (!res.locals.user) {
+    res.locals.user = req.user || null;
+  }
   next();
 });
 

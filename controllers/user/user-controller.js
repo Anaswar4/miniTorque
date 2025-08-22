@@ -87,12 +87,12 @@ const loadHome = async (req, res) => {
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
-    // ✅ ADD: Get user's cart and wishlist data
+    // ✅ FIXED: Get user's cart and wishlist data for both regular and Google OAuth users
     let userWishlistIds = [];
     let wishlistCount = 0;
-    let cartCount = 0; // ✅ ADD THIS LINE
+    let cartCount = 0;
 
-    const userId = req.session.userId; // ✅ USE SESSION CONSISTENTLY
+    const userId = req.session.userId || req.session.googleUserId; // ✅ FIXED: Support both auth methods
 
     if (userId) {
       // Get cart count
@@ -110,14 +110,14 @@ const loadHome = async (req, res) => {
     }
 
     res.render('user/home', {
-      user: req.session.user || null, // ✅ USE SESSION CONSISTENTLY
+      user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user set by addUserContext middleware
       navLinks,
       featuredProducts,
       activeCategories,
       userWishlistIds,
       wishlistCount,
-      cartCount, // ✅ ADD THIS LINE
-      isAuthenticated: !!req.session.userId,
+      cartCount,
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId), // ✅ FIXED: Support both auth methods
       currentPage: 'home'
     });
 
@@ -129,9 +129,10 @@ const loadHome = async (req, res) => {
         message: 'Error loading home page: ' + error.message
       },
       message: error.message,
-      user: req.session.user || null,
-      cartCount: 0,        // ✅ ADD THIS LINE
-      wishlistCount: 0     // ✅ ADD THIS LINE
+      user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
+      cartCount: 0,
+      wishlistCount: 0,
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId) // ✅ FIXED: Support both auth methods
     });
   }
 };
@@ -288,7 +289,8 @@ const resendOTP = async (req, res) => {
 
 // Show login page
 const showLogin = async (req, res) => {
-  if (req.session.userId) return res.redirect('/home');
+  // ✅ FIXED: Check both regular and Google OAuth authentication
+  if (req.session.userId || req.session.googleUserId) return res.redirect('/home');
   const blocked = req.query.blocked === 'true';
   return res.render('user/login', { error: null, blocked });
 };

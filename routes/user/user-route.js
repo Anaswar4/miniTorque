@@ -7,6 +7,8 @@ const userProfileController = require("../../controllers/user/user-profile-contr
 const addressController = require("../../controllers/user/address-controller");
 const wishlistController = require("../../controllers/user/wishlist-controller");
 const cartController = require("../../controllers/user/cart-controller");
+// const orderController = require("../../controllers/user/order-controller");
+const checkoutController = require("../../controllers/user/checkout-controller");
 const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 const { profileUpload, handleMulterError } = require("../../config/multer-config");
@@ -38,11 +40,11 @@ router.get(
           return res.redirect("/login?error=login");
         }
 
-        //  Store your custom session values
-        req.session.userId = req.user._id;
+        //  Store your custom session values for Google OAuth
+        req.session.googleUserId = req.user._id;  // Only set googleUserId for Google OAuth
         req.session.email = req.user.email;
         req.session.loginTime = new Date();
-        req.session.googleUserId = req.user._id;
+        req.session.user = req.user;  // Store user object for template access
 
         //  Save the updated session and redirect
         req.session.save((err) => {
@@ -146,6 +148,10 @@ router.post("/cart/remove-out-of-stock", isUserAuthenticated, preventCache, chec
 router.get("/cart/validate", isUserAuthenticated, preventCache, checkUserBlocked, cartController.validateCartItems);
 router.get("/cart/count", isUserAuthenticated, preventCache, checkUserBlocked, cartController.getCartCount);
 
+// Checkout-related routes
+router.get("/checkout", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadCheckout);
+router.post("/checkout/place-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.placeOrder);
+router.get("/order-success/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadOrderSuccess);
 
 
 module.exports = router;

@@ -90,10 +90,6 @@ const orderSchema = new Schema({
     type: Number,
     default: 0
   },
-  couponDiscount: {
-    type: Number,
-    default: 0
-  },
   finalAmount: {
     type: Number,
     required: true
@@ -149,10 +145,6 @@ const orderSchema = new Schema({
       required: true
     }
   }],
-  couponApplied: {
-    type: Boolean,
-    default: false
-  },
   estimatedDelivery: {
     type: Date,
     default: function() {
@@ -189,11 +181,6 @@ const orderSchema = new Schema({
     type: Boolean,
     default: false
   },
-  coupon: {
-    type: Schema.Types.ObjectId,
-    ref: 'Coupon',
-    default: null
-  }
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);
