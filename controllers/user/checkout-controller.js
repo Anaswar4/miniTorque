@@ -13,8 +13,8 @@ const { applyBestOffersToProducts } = require('../../utils/offer-utils');
 // Load checkout page
 const loadCheckout = async (req, res) => {
   try {
-    const userId = req.session.userId;
-    
+    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+
     // Get user data and wallet balance
     const user = await User.findById(userId).select('fullName email profilePhoto');
     if (!user) {
@@ -141,7 +141,7 @@ const loadCheckout = async (req, res) => {
 // Process order placement
 const placeOrder = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
     const { selectedAddressId, paymentMethod = 'Cash on Delivery' } = req.body;
 
     // Validate address selection
@@ -346,7 +346,7 @@ const placeOrder = async (req, res) => {
 const loadOrderSuccess = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId;
+    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
 
     const order = await Order.findOne({ orderId, userId })
       .populate('orderedItems.product');
@@ -365,7 +365,7 @@ const loadOrderSuccess = async (req, res) => {
     const cart = await Cart.findOne({ userId }).lean();
     const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
-    res.render('order-success', {
+    res.render('user/order-success', {
       user,
       order,
       wishlistCount,
