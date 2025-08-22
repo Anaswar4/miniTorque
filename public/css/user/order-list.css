@@ -272,7 +272,7 @@ body {
 }
 
 .btn-download-invoice {
-  background: #10b981;
+  background: #cc0707;
   color: white;
   border: none;
   padding: 0.4rem 0.8rem;
@@ -288,7 +288,7 @@ body {
 }
 
 .btn-download-invoice:hover {
-  background: #059669;
+  background: #7d0101;
   transform: translateY(-1px);
 }
 

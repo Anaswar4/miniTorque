@@ -7,7 +7,7 @@ const userProfileController = require("../../controllers/user/user-profile-contr
 const addressController = require("../../controllers/user/address-controller");
 const wishlistController = require("../../controllers/user/wishlist-controller");
 const cartController = require("../../controllers/user/cart-controller");
-// const orderController = require("../../controllers/user/order-controller");
+ const orderController = require("../../controllers/user/order-controller");
 const checkoutController = require("../../controllers/user/checkout-controller");
 const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
@@ -152,6 +152,15 @@ router.get("/cart/count", isUserAuthenticated, preventCache, checkUserBlocked, c
 router.get("/checkout", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadCheckout);
 router.post("/checkout/place-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.placeOrder);
 router.get("/order-success/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadOrderSuccess);
+
+router.get("/orders", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadOrderList);
+router.get("/order-details/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadOrderDetails);
+router.post("/orders/:orderId/items/:itemId/cancel", isUserAuthenticated, preventCache, checkUserBlocked, orderController.cancelOrderItem);
+router.post("/orders/:orderId/cancel-entire", isUserAuthenticated, preventCache, checkUserBlocked, orderController.cancelEntireOrder);
+router.post("/orders/:orderId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestReturn);
+router.post("/orders/:orderId/items/:itemId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestIndividualItemReturn);
+router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCache, checkUserBlocked, orderController.downloadInvoice);
+
 
 
 module.exports = router;
