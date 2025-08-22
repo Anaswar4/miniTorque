@@ -1,6 +1,5 @@
 const Wishlist = require('../../models/wishlist-schema');
-const User = require('../../models/user-model');
-git const Cart = require('../../models/cart-schema');
+const User = require('../../models/user-model'); const Cart = require('../../models/cart-schema');
 
 // Load wishlist listing page
 // Load wishlist listing page

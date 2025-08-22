@@ -696,23 +696,21 @@ function displayProducts(products, containerId) {
     }, 100);
 }
 
-// 🔥 UPDATED: Wishlist function with synchronization
+// 🔥 FIXED: Wishlist function with proper toggle functionality
 async function toggleWishlistFromHome(productId, btn) {
-    const inWishlist = btn.classList.contains('active');
-    const url = inWishlist ? '/wishlist/remove' : '/wishlist/add';
-    
     // Disable all icons for this product during the request
     const allProductIcons = document.querySelectorAll(`button.wishlist-icon[data-product-id="${productId}"]`);
     allProductIcons.forEach(icon => icon.disabled = true);
-    
+
     try {
-        const res = await fetch(url, {
+        // Always use /wishlist/add endpoint - it handles toggle functionality automatically
+        const res = await fetch('/wishlist/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
         });
         const out = await res.json();
-        
+
         if (out.success) {
             // Update global wishlist state and sync all buttons across pages
             if (out.action === 'added') {
@@ -725,13 +723,13 @@ async function toggleWishlistFromHome(productId, btn) {
             if (typeof updateWishlistCount === 'function') {
                 updateWishlistCount();
             }
-            
-            showToast(out.message || (inWishlist ? 'Removed from wishlist' : 'Added to wishlist'), 'success');
+
+            showToast(out.message || (out.action === 'added' ? 'Added to wishlist' : 'Removed from wishlist'), 'success');
         } else {
-            showToast(out.message || 'Failed', 'error');
+            showToast(out.message || 'Failed to update wishlist', 'error');
         }
     } catch (err) {
-        console.error(err);
+        console.error('Error toggling wishlist:', err);
         showToast('Please login first', 'error');
     } finally {
         // Re-enable all icons for this product

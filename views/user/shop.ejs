@@ -530,6 +530,7 @@
                                                     <!-- 🔥 UPDATED WISHLIST BUTTON -->
                                                     <button
                                                         class="wishlist-icon <%= userWishlistIds.includes(product._id.toString()) ? 'active' : '' %>"
+                                                        data-product-id="<%= product._id %>"
                                                         onclick="toggleWishlistFromShop('<%= product._id %>', this)"
                                                         title="<%= userWishlistIds.includes(product._id.toString()) ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
                                                         <i
@@ -712,11 +713,10 @@
            WISHLIST (Shop Page)
         ------------------------------------------------------------------ */
         async function toggleWishlistFromShop(productId, btn) {
-            const inWishlist = btn.classList.contains('active');
-            const url = inWishlist ? '/wishlist/remove' : '/wishlist/add';
             btn.disabled = true;
             try {
-                const res = await fetch(url, {
+                // Always use /wishlist/add endpoint - it handles toggle functionality automatically
+                const res = await fetch('/wishlist/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ productId })
@@ -735,12 +735,12 @@
                         updateWishlistCount();
                     }
 
-                    showToast(out.message || (inWishlist ? 'Removed from wishlist' : 'Added to wishlist'), 'success');
+                    showToast(out.message || (out.action === 'added' ? 'Added to wishlist' : 'Removed from wishlist'), 'success');
                 } else {
-                    showToast(out.message || 'Failed', 'error');
+                    showToast(out.message || 'Failed to update wishlist', 'error');
                 }
             } catch (err) {
-                console.error(err);
+                console.error('Error toggling wishlist:', err);
                 showToast('Please login first', 'error');
             } finally {
                 btn.disabled = false;

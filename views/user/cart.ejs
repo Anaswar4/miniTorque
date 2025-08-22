@@ -563,55 +563,78 @@
     // Update cart UI to show empty state in real-time
     function updateCartUIToEmpty() {
         try {
-            // Find the main cart container
-            const cartContainer = document.querySelector('.container');
+            // Find the specific cart container (not the generic .container)
+            const cartContainer = document.querySelector('.cart-container');
             if (!cartContainer) {
                 console.error('Cart container not found');
                 return;
             }
 
-            // Create empty cart HTML
-            const emptyCartHTML = `
-                <div class="breadcrumb-container">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/">Home</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Cart</li>
-                        </ol>
-                    </nav>
-                </div>
-
-                <!-- Cart Header -->
-                <div class="cart-header">
-                    <h1 class="cart-title">Shopping Cart</h1>
-                    <p class="cart-subtitle">Review your items and proceed to checkout when ready</p>
-                </div>
-
-                <!-- Empty Cart -->
-                <div class="empty-cart">
-                    <div class="empty-icon">
-                        <i class="bi bi-cart-x"></i>
-                    </div>
-                    <h2 class="empty-title">Your Cart is Empty</h2>
-                    <p class="empty-text">Looks like you haven't added any items to your cart yet. Start shopping to fill it up!</p>
-                    <a href="/shopPage" class="btn-cart btn-primary">
-                        <i class="bi bi-bag"></i>
-                        Start Shopping
-                    </a>
-                </div>
-            `;
-
-            // Replace the entire cart content with empty state
-            cartContainer.innerHTML = emptyCartHTML;
-
-            // Add smooth transition effect
+            // Add fade-out effect before clearing content
+            cartContainer.style.transition = 'opacity 0.2s ease-out';
             cartContainer.style.opacity = '0';
-            setTimeout(() => {
-                cartContainer.style.transition = 'opacity 0.3s ease-in-out';
-                cartContainer.style.opacity = '1';
-            }, 100);
 
-            console.log('✅ Cart UI updated to empty state');
+            setTimeout(() => {
+                // Completely clear all existing content first
+                cartContainer.innerHTML = '';
+
+                // Also remove any floating or absolute positioned elements that might remain
+                const cartItems = document.querySelectorAll('.cart-item');
+                const cartContent = document.querySelectorAll('.cart-content');
+                const outOfStockBanner = document.querySelectorAll('#outOfStockBanner');
+                const cartSummary = document.querySelectorAll('.cart-summary');
+
+                // Remove any remaining cart-related elements
+                [...cartItems, ...cartContent, ...outOfStockBanner, ...cartSummary].forEach(element => {
+                    if (element && element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                });
+
+                // Create empty cart HTML
+                const emptyCartHTML = `
+                    <!-- Breadcrumb Navigation -->
+                    <div class="breadcrumb-container">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Cart</li>
+                            </ol>
+                        </nav>
+                    </div>
+
+                    <!-- Cart Header -->
+                    <div class="cart-header">
+                        <h1 class="cart-title">Shopping Cart</h1>
+                        <p class="cart-subtitle">Review your items and proceed to checkout when ready</p>
+                    </div>
+
+                    <!-- Empty Cart -->
+                    <div class="empty-cart">
+                        <div class="empty-icon">
+                            <i class="bi bi-cart-x"></i>
+                        </div>
+                        <h2 class="empty-title">Your Cart is Empty</h2>
+                        <p class="empty-text">Looks like you haven't added any items to your cart yet. Start shopping to fill it up!</p>
+                        <a href="/shopPage" class="btn-cart btn-primary">
+                            <i class="bi bi-bag"></i>
+                            Start Shopping
+                        </a>
+                    </div>
+                `;
+
+                // Insert the new empty cart content
+                cartContainer.innerHTML = emptyCartHTML;
+
+                // Fade back in with the new content
+                setTimeout(() => {
+                    cartContainer.style.transition = 'opacity 0.3s ease-in';
+                    cartContainer.style.opacity = '1';
+                }, 50);
+
+                console.log('✅ Cart UI completely updated to empty state');
+            }, 200);
+
         } catch (error) {
             console.error('Error updating cart UI to empty state:', error);
             // Fallback to page reload if UI update fails

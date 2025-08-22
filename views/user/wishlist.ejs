@@ -318,6 +318,11 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // Update global wishlist state to sync across all pages
+                    if (window.globalState) {
+                        window.globalState.removeFromWishlist(productId);
+                    }
+
                     // Remove item from UI with animation
                     const wishlistItem = document.querySelector(`[data-product-id="${productId}"]`);
                     wishlistItem.style.transition = 'all 0.3s ease';
