@@ -7,6 +7,9 @@ const getCategoryController = require("../../controllers/admin/get-categoryContr
 const dashboardController = require("../../controllers/admin/dashboard-controller");
 const { isAdminAuthenticated, preventCache, redirectIfAdminAuthenticated } = require('../../middlewares/auth-middleware');
 const productController = require('../../controllers/admin/product-controller');
+const orderController = require("../../controllers/admin/order-controller");
+const returnController = require("../../controllers/admin/return-controller");
+
 const { productUpload, handleMulterError } = require('../../config/multer-config');
 
 
@@ -48,6 +51,19 @@ adminRoute.get('/api/products/:id', isAdminAuthenticated, preventCache, productC
 adminRoute.put('/api/products/:id', isAdminAuthenticated, preventCache, productUpload.array('productImages', 10), handleMulterError, productController.updateProduct);
 adminRoute.delete('/api/products/:id', isAdminAuthenticated, preventCache, productController.deleteProduct);
 adminRoute.patch('/api/products/:id/status', isAdminAuthenticated, preventCache, productController.toggleProductStatus);
+
+// Order Management Routes
+adminRoute.get('/get-orders', isAdminAuthenticated, preventCache, orderController.getOrders);
+adminRoute.get('/get-orders/:id/details', isAdminAuthenticated, preventCache, orderController.getOrderDetailsPage);
+adminRoute.get('/get-orders/:id', isAdminAuthenticated, preventCache, orderController.getOrderById);
+adminRoute.patch('/get-orders/:id/status', isAdminAuthenticated, preventCache, orderController.updateOrderStatus);
+
+
+adminRoute.get('/return-requests', isAdminAuthenticated, preventCache, returnController.getReturnRequests);
+adminRoute.get('/get-return-request-count', isAdminAuthenticated, preventCache, orderController.getReturnRequestCount);
+adminRoute.post('/return-requests/:id/approve', isAdminAuthenticated, preventCache, returnController.approveReturnRequest);
+adminRoute.post('/return-requests/:id/reject', isAdminAuthenticated, preventCache, returnController.rejectReturnRequest);
+
 
 
 

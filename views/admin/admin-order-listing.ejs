@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - miniTorque</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
+  <link rel="stylesheet" href="/css/admin/order-listing.css"/>
+    
+</head>
+<body>
+    <!-- Include Admin Sidebar -->
+   <%- include("../partials/sidebar") %>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Order Management</li>
+            </ol>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">Order Management</h1>
+                    <p class="page-subtitle">Manage and track all customer orders</p>
+                </div>
+                <div class="header-right">
+                    <div class="notification-container" onclick="window.location.href='/admin/return-requests'">
+                        <div class="notification-icon-wrapper">
+                            <i class="fas fa-bell notification-icon <%= returnRequestCount > 0 ? 'has-notifications' : '' %>" id="notificationBell"></i>
+                            <span class="notification-counter <%= returnRequestCount > 0 ? '' : 'hidden' %>" id="notificationCounter"><%= returnRequestCount || 0 %></span>
+                        </div>
+                        <span class="notification-label">Return Requests</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="filters-card">
+            <div class="filters-header">
+                <h3 class="filters-title">
+                    <i class="fas fa-search"></i>
+                    Search & Filter Orders
+                </h3>
+            </div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Search Orders</label>
+                    <div class="search-input-wrapper">
+                        <input type="text" class="form-control search-input" id="orderSearch" placeholder="Search by Order ID, Customer Name, Phone..." value="<%= searchTerm %>">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Status Filter</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="" <%= statusFilter === '' ? 'selected' : '' %>>All Status</option>
+                        <option value="Pending" <%= statusFilter === 'Pending' ? 'selected' : '' %>>Pending</option>
+                        <option value="Processing" <%= statusFilter === 'Processing' ? 'selected' : '' %>>Processing</option>
+                        <option value="Shipped" <%= statusFilter === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                        <option value="Delivered" <%= statusFilter === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                        <option value="Cancelled" <%= statusFilter === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        <option value="Returned" <%= statusFilter === 'Returned' ? 'selected' : '' %>>Returned</option>
+                    </select>
+                </div>
+                <div class="filter-group filter-actions">
+                    <button type="button" class="filter-btn primary" onclick="applyFilters()">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                    <button type="button" class="filter-btn secondary" onclick="resetFilters()">
+                        <i class="fas fa-refresh"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table Section -->
+        <div class="orders-card">
+            <div class="card-header">
+                <div class="header-left">
+                    <h3 class="card-title">
+                        <i class="fas fa-list"></i>
+                        Order Directory
+                    </h3>
+                    <p class="card-subtitle">Complete list of customer orders</p>
+                </div>
+                <div class="header-right">
+                    <div class="order-count">
+                        <span class="count-badge" id="filteredOrderCount"><%= orders.length %> orders</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th class="col-order-id">Order ID</th>
+                            <th class="col-customer">Customer</th>
+                            <th class="col-date">Date</th>
+                            <th class="col-items">Items</th>
+                            <th class="col-amount">Amount</th>
+                            <th class="col-payment">Payment</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <% orders.forEach(order => { %>
+                            <%
+                                // Check if order has individual item return requests
+                                const hasIndividualReturns = order.orderedItems.some(item => item.status === 'Return Request');
+                                const hasEntireOrderReturn = order.status === 'Return Request';
+                                const hasAnyReturnRequest = hasIndividualReturns || hasEntireOrderReturn;
+                            %>
+                            <tr class="<%= hasAnyReturnRequest ? 'has-return-request' : '' %>">
+                                <td>
+                                    <div class="order-id-cell">
+                                        <div class="order-id-main">
+                                            <i class="fas fa-receipt"></i>
+                                            <span><%= order.orderId %></span>
+                                        </div>
+                                        <% if (hasIndividualReturns && !hasEntireOrderReturn) { %>
+                                            <div class="return-indicator">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <span>Return Request</span>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="customer-info">
+                                        <div class="customer-avatar">
+                                            <%= order.userId?.fullName ? order.userId.fullName.charAt(0).toUpperCase() : order.shippingAddress.name.charAt(0).toUpperCase() %>
+                                        </div>
+                                        <div class="customer-details">
+                                            <div class="customer-name"><%= order.userId?.fullName || order.shippingAddress.name %></div>
+                                            <div class="customer-email"><%= order.userId?.email || 'N/A' %></div>
+                                            <div class="customer-phone"><%= order.shippingAddress.phone %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="date-cell">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <div class="date-info">
+                                            <span class="date-main"><%= new Date(order.createdAt).toLocaleDateString() %></span>
+                                            <span class="date-time"><%= new Date(order.createdAt).toLocaleTimeString() %></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="items-cell">
+                                        <div class="items-count">
+                                            <i class="fas fa-box"></i>
+                                            <span><%= order.orderedItems.length %> item(s)</span>
+                                        </div>
+                                        <div class="items-quantity">
+                                            Qty: <%= order.orderedItems.reduce((total, item) => total + item.quantity, 0) %>
+                                        </div>
+                                        <% if (hasIndividualReturns) { %>
+                                            <%
+                                                const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+                                                const returnedItems = order.orderedItems.filter(item => item.status === 'Returned');
+                                            %>
+                                            <% if (returnRequestItems.length > 0) { %>
+                                                <div class="return-info warning">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    <%= returnRequestItems.length %> return request(s)
+                                                </div>
+                                            <% } %>
+                                            <% if (returnedItems.length > 0) { %>
+                                                <div class="return-info danger">
+                                                    <i class="fas fa-undo"></i>
+                                                    <%= returnedItems.length %> returned
+                                                </div>
+                                            <% } %>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <%
+                                        // Calculate current total (same as order details page)
+                                        const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+                                        const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+                                        const includedItems = [...activeItems, ...returnRequestItems];
+                                        
+                                        let amountAfterDiscount = 0;
+                                        includedItems.forEach(item => {
+                                            amountAfterDiscount += item.totalPrice;
+                                        });
+                                        
+                                        let currentTotal = amountAfterDiscount;
+                                        if (includedItems.length > 0) {
+                                            currentTotal += order.shippingCharges;
+                                        }
+                                        
+                                        // Subtract coupon discount if applied
+                                        if (order.couponApplied && order.couponDiscount > 0) {
+                                            currentTotal -= order.couponDiscount;
+                                        }
+                                    %>
+                                    <div class="amount-cell">
+                                        <i class="fas fa-rupee-sign"></i>
+                                        <span class="amount-value">₹<%= currentTotal.toFixed(2) %></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="payment-cell">
+                                        <span class="payment-badge payment-<%= order.paymentMethod.toLowerCase().replace(/\s+/g, '-') %>">
+                                            <i class="fas fa-<%= order.paymentMethod.toLowerCase() === 'cod' ? 'money-bill' : order.paymentMethod.toLowerCase() === 'wallet' ? 'wallet' : 'credit-card' %>"></i>
+                                            <span><%= order.paymentMethod %></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="status-display">
+                                        <span class="status-badge status-<%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
+                                            <i class="fas fa-<%= order.status.toLowerCase() === 'pending' ? 'clock' : order.status.toLowerCase() === 'processing' ? 'cog' : order.status.toLowerCase() === 'shipped' ? 'truck' : order.status.toLowerCase() === 'delivered' ? 'check-circle' : order.status.toLowerCase() === 'returned' ? 'undo' : 'question-circle' %>"></i>
+                                            <span><%= order.status %></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="/admin/get-orders/<%= order._id %>/details" class="btn-action btn-view" title="View Order Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn-action btn-status" onclick="updateOrderStatus('<%= order._id %>', '<%= order.status %>')" title="Update Status">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <div class="pagination-info">
+                    Showing <span id="showingStart"><%= startIdx + 1 %></span> to <span id="showingEnd"><%= endIdx %></span> of <span id="totalOrders"><%= totalOrders %></span> orders
+                </div>
+                <nav aria-label="Order pagination">
+                    <ul class="pagination" id="pagination">
+                        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>" id="prevPage">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        <% for(let i = 1; i <= totalPages; i++) { %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                <a class="page-link" href="#" onclick="goToPage(<%= i %>)"><%= i %></a>
+                            </li>
+                        <% } %>
+                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>" id="nextPage">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div class="modal fade" id="statusUpdateModal" tabindex="-1" aria-labelledby="statusUpdateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusUpdateModalLabel">
+                        <i class="fas fa-edit"></i>
+                        Update Order Status
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="statusUpdateForm">
+                        <input type="hidden" id="updateOrderId">
+                        <div class="mb-3">
+                            <label for="newStatus" class="form-label">Select New Status</label>
+                            <select class="form-select" id="newStatus" required>
+                                <option value="">Choose status...</option>
+                                <!-- Options will be populated dynamically based on current status -->
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmStatusUpdate()">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+        // Apply filters function
+        let currentPage = 1;
+const ordersPerPage = 10;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const orderSearch = document.getElementById('orderSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+
+    // Initialize pagination variables from server-rendered data
+    currentPage = <%= currentPage %>;
+    totalPages = <%= totalPages %>;
+
+    // Search functionality
+    orderSearch.addEventListener('input', debounce(function() {
+        currentPage = 1;
+        fetchOrders();
+    }, 300));
+
+    // Status filter functionality
+    statusFilter.addEventListener('change', function() {
+        currentPage = 1;
+        fetchOrders();
+    });
+
+    // Pagination controls
+    prevPage.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (currentPage > 1) {
+            currentPage--;
+            fetchOrders();
+        }
+    });
+
+    nextPage.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            currentPage++;
+            fetchOrders();
+        }
+    });
+
+    // ✅ FIXED: Remove initial fetchOrders() call since data is already server-rendered
+    // Only fetch orders when user performs search/filter actions
+
+    // Initialize notification system
+    updateReturnRequestNotification();
+
+    // Set up periodic notification updates (every 30 seconds)
+    setInterval(updateReturnRequestNotification, 30000);
+});
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Calculate current total (same logic as order details page)
+function calculateCurrentTotal(order) {
+    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+    const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+    const includedItems = [...activeItems, ...returnRequestItems];
+    
+    let amountAfterDiscount = 0;
+    includedItems.forEach(item => {
+        amountAfterDiscount += item.totalPrice;
+    });
+    
+    let currentTotal = amountAfterDiscount;
+    if (includedItems.length > 0) {
+        currentTotal += order.shippingCharges;
+    }
+    
+    return currentTotal;
+}
+
+// Navigate to page
+function goToPage(page) {
+    currentPage = page;
+    fetchOrders();
+}
+
+// Fetch orders dynamically
+async function fetchOrders() {
+    const searchTerm = document.getElementById('orderSearch').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+
+    try {
+        const query = new URLSearchParams({
+            search: searchTerm,
+            page: currentPage,
+            status: statusFilter
+        }).toString();
+
+        const response = await fetch(`/admin/get-orders?${query}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch orders: ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderOrdersTable(data.orders, data);
+    } catch (error) {
+        console.error('Error fetching orders:', error.message);
+        Swal.fire({
+            title: 'Error',
+            text: 'Failed to load orders. Please try again.',
+            icon: 'error',
+            confirmButtonColor: '#000000'
+        });
+    }
+}
+
+// Update return request notification
+async function updateReturnRequestNotification() {
+    try {
+        const response = await fetch('/admin/get-return-request-count', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const count = data.count || 0;
+            
+            // Update notification bell
+            const notificationBell = document.getElementById('notificationBell');
+            const notificationCounter = document.getElementById('notificationCounter');
+            
+            if (notificationBell && notificationCounter) {
+                if (count > 0) {
+                    notificationBell.classList.add('has-notifications');
+                    notificationCounter.classList.remove('hidden');
+                    notificationCounter.textContent = count;
+                } else {
+                    notificationBell.classList.remove('has-notifications');
+                    notificationCounter.classList.add('hidden');
+                    notificationCounter.textContent = '0';
+                }
+            }
+            
+            // Update sidebar notification badge if it exists
+            const sidebarBadge = document.getElementById('returnRequestBadge');
+            const sidebarCount = document.getElementById('returnRequestCount');
+            
+            if (sidebarBadge && sidebarCount) {
+                if (count > 0) {
+                    sidebarBadge.style.display = 'inline-block';
+                    sidebarCount.textContent = count;
+                } else {
+                    sidebarBadge.style.display = 'none';
+                    sidebarCount.textContent = '0';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error updating return request notification:', error);
+    }
+}
+
+// Show notification when new return request is received
+function showNewReturnRequestNotification() {
+    // Show a toast notification
+    if (typeof Swal !== 'undefined') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        Toast.fire({
+            icon: 'info',
+            title: 'New Return Request',
+            text: 'A new return request has been submitted by a customer.'
+        });
+    }
+    
+    // Update notification immediately
+    updateReturnRequestNotification();
+}
+
+// Render orders table
+function renderOrdersTable(orders, paginationData) {
+    const tableBody = document.getElementById('ordersTableBody');
+    tableBody.innerHTML = '';
+
+    orders.forEach(order => {
+        const customerName = order.userId?.fullName || order.shippingAddress.name;
+        const customerEmail = order.userId?.email || 'N/A';
+        const avatarChar = customerName.charAt(0).toUpperCase();
+        
+        const totalItems = order.orderedItems.reduce((total, item) => total + item.quantity, 0);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="order-id">
+                    <strong>${order.orderId}</strong>
+                </div>
+            </td>
+            <td>
+                <div class="customer-info">
+                    <div class="customer-avatar">
+                        ${avatarChar}
+                    </div>
+                    <div class="customer-details">
+                        <h6>${customerName}</h6>
+                        <p>${customerEmail}</p>
+                        <p>${order.shippingAddress.phone}</p>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="order-date">
+                    ${new Date(order.createdAt).toLocaleDateString()}
+                    <br>
+                    <small class="text-muted">${new Date(order.createdAt).toLocaleTimeString()}</small>
+                </div>
+            </td>
+            <td>
+                <div class="order-items">
+                    <span class="item-count">${order.orderedItems.length} item(s)</span>
+                    <br>
+                    <small class="text-muted">Qty: ${totalItems}</small>
+                </div>
+            </td>
+            <td>
+                <div class="order-amount">
+                    <strong>₹${calculateCurrentTotal(order).toFixed(2)}</strong>
+                </div>
+            </td>
+            <td>
+                <span class="payment-method">
+                    ${order.paymentMethod}
+                </span>
+            </td>
+            <td>
+                <span class="status-badge status-${order.status.toLowerCase().replace(/\s+/g, '-')}">
+                    ${order.status}
+                </span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <a href="/admin/get-orders/${order._id}/details" class="btn-action btn-view">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    <button class="btn-action btn-status" onclick="updateOrderStatus('${order._id}', '${order.status}')">
+                        <i class="fas fa-edit"></i> Status
+                    </button>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    document.getElementById('showingStart').textContent = paginationData.startIdx + 1 || 0;
+    document.getElementById('showingEnd').textContent = paginationData.endIdx || 0;
+    document.getElementById('totalOrders').textContent = paginationData.totalOrders || 0;
+    totalPages = paginationData.totalPages || 1;
+
+    updatePagination();
+}
+
+// Update pagination links
+function updatePagination() {
+    const pagination = document.getElementById('pagination');
+    const pageLinks = pagination.querySelectorAll('.page-item:not(#prevPage):not(#nextPage)');
+    pageLinks.forEach(link => link.remove());
+
+    for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>`;
+        pagination.insertBefore(li, document.getElementById('nextPage'));
+    }
+
+    document.getElementById('prevPage').classList.toggle('disabled', currentPage === 1);
+    document.getElementById('nextPage').classList.toggle('disabled', currentPage === totalPages);
+}
+
+
+
+// Update order status
+function updateOrderStatus(orderId, currentStatus) {
+    // First, get the order data to check payment status
+    fetch(`/admin/get-orders/${orderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.order) {
+                const order = data.order;
+                
+                // Check payment status - prevent updates for incomplete payments (except COD)
+                if (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus !== 'Completed') {
+                    Swal.fire({
+                        title: 'Payment Required',
+                        text: `Cannot update order status. Payment status is "${order.paymentStatus}". Only orders with completed payments can be updated.`,
+                        icon: 'warning',
+                        confirmButtonColor: '#000000'
+                    });
+                    return;
+                }
+                
+                // Check if order was cancelled by customer
+                const isUserCancelled = order.status === 'Cancelled' && 
+                    order.orderedItems.every(item => 
+                        item.status === 'Cancelled' && 
+                        item.cancellationReason && 
+                        !item.cancellationReason.includes('by admin')
+                    );
+                
+                if (isUserCancelled) {
+                    Swal.fire({
+                        title: 'Order Locked',
+                        text: 'Cannot update status of an order that was cancelled by the customer.',
+                        icon: 'warning',
+                        confirmButtonColor: '#000000'
+                    });
+                    return;
+                }
+                
+                // If all checks pass, proceed with status update
+                document.getElementById('updateOrderId').value = orderId;
+                populateStatusOptions(currentStatus);
+                
+                const modal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
+                modal.show();
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load order details.',
+                    icon: 'error',
+                    confirmButtonColor: '#000000'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching order details:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load order details.',
+                icon: 'error',
+                confirmButtonColor: '#000000'
+            });
+        });
+}
+
+// Populate status options based on current status and flow restrictions
+function populateStatusOptions(currentStatus) {
+    const statusSelect = document.getElementById('newStatus');
+    statusSelect.innerHTML = '<option value="">Choose status...</option>';
+    
+    // Define the sequential flow
+    const statusFlow = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Return Request', 'Returned'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    
+    let allowedStatuses = [];
+    
+    switch (currentStatus) {
+        case 'Pending':
+            allowedStatuses = ['Processing', 'Cancelled'];
+            break;
+        case 'Processing':
+            allowedStatuses = ['Shipped', 'Cancelled'];
+            break;
+        case 'Shipped':
+            allowedStatuses = ['Delivered'];
+            break;
+        case 'Delivered':
+            allowedStatuses = ['Return Request'];
+            break;
+        case 'Return Request':
+            allowedStatuses = ['Returned'];
+            break;
+        case 'Partially Cancelled':
+            // For partially cancelled orders, allow progression of remaining items
+            allowedStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
+            break;
+        case 'Returned':
+        case 'Cancelled':
+            // Final states - no further changes allowed
+            allowedStatuses = [];
+            break;
+        default:
+            // For any other status, allow next in sequence
+            if (currentIndex !== -1 && currentIndex < statusFlow.length - 1) {
+                allowedStatuses = [statusFlow[currentIndex + 1]];
+            }
+    }
+    
+    // Add options to select
+    allowedStatuses.forEach(status => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.textContent = status;
+        statusSelect.appendChild(option);
+    });
+    
+    // If no allowed statuses, show message
+    if (allowedStatuses.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No status changes allowed';
+        option.disabled = true;
+        statusSelect.appendChild(option);
+    }
+}
+
+// Confirm status update
+async function confirmStatusUpdate() {
+    const orderId = document.getElementById('updateOrderId').value;
+    const newStatus = document.getElementById('newStatus').value;
+    
+    if (!newStatus) {
+        Swal.fire({
+            title: 'Error',
+            text: 'Please select a status.',
+            icon: 'error',
+            confirmButtonColor: '#000000'
+        });
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/get-orders/${orderId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to update order status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Order status updated successfully.',
+                icon: 'success',
+                confirmButtonColor: '#000000'
+            });
+            
+            // Close modal and refresh table
+            bootstrap.Modal.getInstance(document.getElementById('statusUpdateModal')).hide();
+            fetchOrders();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error('Error updating order status:', error.message);
+        Swal.fire({
+            title: 'Error',
+            text: 'Failed to update order status. Please try again.',
+            icon: 'error',
+            confirmButtonColor: '#000000'
+        });
+    }
+}
+        function applyFilters() {
+            currentPage = 1;
+            fetchOrders();
+        }
+
+        // Reset filters function
+        function resetFilters() {
+            document.getElementById('orderSearch').value = '';
+            document.getElementById('statusFilter').value = '';
+            currentPage = 1;
+            fetchOrders();
+        }
+    </script>
+</body>
+</html>
