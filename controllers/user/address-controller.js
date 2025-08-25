@@ -78,26 +78,32 @@ const loadAddressForm = async (req, res) => {
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
+    // ✅ ADDED: Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
     res.render('user/address', {
       user,
       address,
       isEdit,
       returnTo,
       wishlistCount,          // 🔥 Add wishlistCount here
+      cartCount,              // ✅ ADDED: Missing template variable
       isAuthenticated: true,  // 🔥 Add isAuthenticated
       currentPage: 'address-form', // 🔥 Add currentPage
       title: isEdit ? 'Edit Address' : 'Add New Address'
     });
   } catch (error) {
     console.error('Error loading address form:', error);
-    res.status(500).render('error', { 
+    res.status(500).render('error', {
       error: {
         status: 500,
         message: 'Error loading address form: ' + error.message
       },
       message: error.message,
       user: req.user || null,
-      wishlistCount: 0        // 🔥 Add wishlistCount for error page
+      wishlistCount: 0,       // 🔥 Add wishlistCount for error page
+      cartCount: 0            // ✅ ADDED: Missing template variable for error page
     });
   }
 };

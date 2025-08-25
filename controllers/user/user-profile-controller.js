@@ -75,10 +75,15 @@ const loadEditProfile = async (req, res) => {
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
-    res.render("user/edit-profile", { 
-      title: "Edit Profile", 
+    // ✅ ADDED: Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+    res.render("user/edit-profile", {
+      title: "Edit Profile",
       user,
       wishlistCount,          // 🔥 Add wishlistCount
+      cartCount,              // ✅ ADDED: Missing template variable
       isAuthenticated: true,  // 🔥 Add isAuthenticated
       currentPage: 'edit-profile'
     });
@@ -91,7 +96,8 @@ const loadEditProfile = async (req, res) => {
       },
       message: err.message,
       user: req.user || null,
-      wishlistCount: 0
+      wishlistCount: 0,
+      cartCount: 0  // ✅ ADDED: Missing template variable for error page
     });
   }
 };
@@ -108,23 +114,29 @@ const loadChangePassword = async (req, res) => {
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
-    res.render("user/change-password", { 
-      user, 
+    // ✅ ADDED: Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+    res.render("user/change-password", {
+      user,
       title: "Change Password",
       wishlistCount,          // 🔥 Add wishlistCount
+      cartCount,              // ✅ ADDED: Missing template variable
       isAuthenticated: true,  // 🔥 Add isAuthenticated
       currentPage: 'change-password'
     });
   } catch (err) {
     console.error("Error loading change password page:", err);
-    res.status(500).render("error", { 
+    res.status(500).render("error", {
       error: {
         status: 500,
         message: "Error loading change password page: " + err.message
       },
       message: err.message,
       user: req.user || null,
-      wishlistCount: 0
+      wishlistCount: 0,
+      cartCount: 0  // ✅ ADDED: Missing template variable for error page
     });
   }
 };
@@ -149,10 +161,15 @@ const loadWallet = async (req, res) => {
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
-    res.render("wallet", {
+    // ✅ ADDED: Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+    res.render("user/wallet", {
       user,
       title: "My Wallet",
       wishlistCount,          // 🔥 Add wishlistCount
+      cartCount,              // ✅ ADDED: Missing template variable
       isAuthenticated: true,  // 🔥 Add isAuthenticated
       currentPage: 'wallet',
       wallet: {
@@ -166,14 +183,15 @@ const loadWallet = async (req, res) => {
     });
   } catch (err) {
     console.error("Error loading wallet page:", err);
-    res.status(500).render("error", { 
+    res.status(500).render("error", {
       error: {
         status: 500,
         message: "Error loading wallet page: " + err.message
       },
       message: err.message,
       user: req.user || null,
-      wishlistCount: 0
+      wishlistCount: 0,
+      cartCount: 0  // ✅ ADDED: Missing template variable for error page
     });
   }
 };
@@ -276,11 +294,16 @@ const loadEmailChangeOtp = async (req, res) => {
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
+    // ✅ ADDED: Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
     res.render("email-change-otp", {
       title: "Verify Email Change",
       user,
       email: req.session.emailChangeOtp.email,
       wishlistCount,          // 🔥 Add wishlistCount
+      cartCount,              // ✅ ADDED: Missing template variable
       isAuthenticated: true,  // 🔥 Add isAuthenticated
       currentPage: 'email-change-otp'
     });
@@ -293,7 +316,8 @@ const loadEmailChangeOtp = async (req, res) => {
       },
       message: err.message,
       user: req.user || null,
-      wishlistCount: 0
+      wishlistCount: 0,
+      cartCount: 0  // ✅ ADDED: Missing template variable for error page
     });
   }
 };

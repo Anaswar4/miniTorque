@@ -161,6 +161,8 @@ router.post("/orders/:orderId/request-return", isUserAuthenticated, preventCache
 router.post("/orders/:orderId/items/:itemId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestIndividualItemReturn);
 router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCache, checkUserBlocked, orderController.downloadInvoice);
 
+// Wallet route
+router.get("/wallet", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadWallet);
 
 
 module.exports = router;
