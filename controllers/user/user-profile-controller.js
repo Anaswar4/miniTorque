@@ -260,11 +260,12 @@ const verifyCurrentEmail = async (req, res) => {
     }
 
     const otp = generateOtp();
+    console.log(otp);
     req.session.emailChangeOtp = {
       otp,
       email: user.email,
       userId,
-      expiresAt: Date.now() + 45 * 1000
+      expiresAt: Date.now() + 5 * 60 * 1000  // ✅ FIXED: 5 minutes instead of 45 seconds
     };
 
     try {
@@ -298,7 +299,7 @@ const loadEmailChangeOtp = async (req, res) => {
     const cart = await Cart.findOne({ userId }).lean();
     const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
-    res.render("email-change-otp", {
+    res.render("user/email-change-otp", {
       title: "Verify Email Change",
       user,
       email: req.session.emailChangeOtp.email,

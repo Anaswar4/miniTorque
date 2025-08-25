@@ -353,16 +353,16 @@
                         </div>
                     `;
 
-                    // 🔥 FIX: Update sidebar photo
-                    const sidebarContainer = document.querySelector('.profile-avatar-container');
-                    if (sidebarContainer) {
-                        sidebarContainer.innerHTML = `
+                    // 🔥 FIX: Update ALL sidebar photo containers (desktop + mobile)
+                    const sidebarContainers = document.querySelectorAll('.profile-avatar-container');
+                    sidebarContainers.forEach(container => {
+                        container.innerHTML = `
                             <div class="profile-avatar" id="sidebarProfileAvatar">${userName}</div>
-                            <div class="profile-avatar-overlay" onclick="triggerMainPhotoUpload()">
+                            <div class="profile-avatar-overlay" onclick="triggerPhotoUpload()">
                                 <i class="bi bi-camera"></i>
                             </div>
                         `;
-                    }
+                    });
 
                     // 🔥 FIX: Remove the delete button
                     const deleteBtn = document.querySelector('.profile-photo-actions .btn-secondary-custom');
@@ -415,16 +415,16 @@
                             </div>
                         `;
 
-                        // 🔥 FIX: Update sidebar photo immediately
-                        const sidebarContainer = document.querySelector('.profile-avatar-container');
-                        if (sidebarContainer) {
-                            sidebarContainer.innerHTML = `
-                                <img src="${newPhotoUrl}" alt="Profile Photo" class="profile-avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                <div class="profile-avatar-overlay" onclick="triggerMainPhotoUpload()">
+                        // 🔥 FIX: Update ALL sidebar photo containers (desktop + mobile)
+                        const sidebarContainers = document.querySelectorAll('.profile-avatar-container');
+                        sidebarContainers.forEach(container => {
+                            container.innerHTML = `
+                                <img src="${newPhotoUrl}" alt="Profile Photo" class="profile-avatar-img">
+                                <div class="profile-avatar-overlay" onclick="triggerPhotoUpload()">
                                     <i class="bi bi-camera"></i>
                                 </div>
                             `;
-                        }
+                        });
 
                         // 🔥 FIX: Show remove button immediately
                         const actionsContainer = document.querySelector('.profile-photo-actions');

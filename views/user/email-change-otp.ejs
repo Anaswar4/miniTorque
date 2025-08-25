@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email Change - miniTorque</title>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="/css/breadcrumb.css">
+    
+    <%- include("../partials/head") %>
+    
+    <style>
+        .email-change-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .email-change-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .email-change-header h2 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .email-change-header p {
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+        
+        .otp-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .otp-input:focus {
+            outline: none;
+            border-color: #007bff;
+            background: white;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .otp-input.filled {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .timer {
+            text-align: center;
+            margin: 1rem 0;
+            font-weight: 500;
+            color: #007bff;
+        }
+        
+        .timer.expired {
+            color: #dc3545;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .success-message {
+            color: #28a745;
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ff0000, #ff2b2b);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .new-email-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #dee2e6;
+            display: none;
+        }
+        
+        .new-email-section.show {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Account Sidebar -->
+    <%- include("../partials/user-sidebar") %>
+    
+    <div class="main-content fade-in">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/profile">My Profile</a></li>
+                <li class="breadcrumb-item"><a href="/profile/edit">Edit Profile</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Verify Email Change</li>
+            </ol>
+        </nav>
+        
+        <!-- Email Change OTP -->
+        <div class="email-change-container">
+            <div class="email-change-header">
+                <h2>Verify Email Change</h2>
+                <p>Enter the 6-digit code sent to <strong><%= email %></strong></p>
+            </div>
+            
+            <div class="otp-container">
+                <% for(let i = 0; i < 6; i++) { %>
+                    <input type="tel" inputmode="numeric" maxlength="1" class="otp-input" data-index="<%= i %>" />
+                <% } %>
+            </div>
+            
+            <div class="timer" id="timer">Time remaining: <span id="countdown">05:00</span></div>
+            <div class="error-message" id="error-message"></div>
+            <div class="success-message" id="success-message"></div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" id="verify-btn" disabled>
+                    <i class="bi bi-check-circle"></i> Verify OTP
+                </button>
+                <button type="button" class="btn btn-secondary" id="resend-btn" disabled>
+                    <i class="bi bi-arrow-clockwise"></i> Resend OTP
+                </button>
+            </div>
+            
+            <!-- New Email Section (shown after OTP verification) -->
+            <div class="new-email-section" id="new-email-section">
+                <h4>Enter New Email Address</h4>
+                <div class="form-group">
+                    <label for="newEmail" class="form-label">New Email Address *</label>
+                    <input type="email" class="form-control" id="newEmail" placeholder="Enter your new email address" required>
+                    <div class="error-message" id="newEmail-error"></div>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" id="change-email-btn">
+                        <i class="bi bi-envelope-check"></i> Change Email
+                    </button>
+                    <a href="/profile/edit" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        let timeLeft = 300; // 5 minutes (300 seconds)
+        let timerInterval;
+        let otpVerified = false;
+        
+        // OTP Input handling
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const verifyBtn = document.getElementById('verify-btn');
+        const resendBtn = document.getElementById('resend-btn');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        
+        // Auto-focus and navigation between OTP inputs
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                const value = e.target.value;
+                
+                // Only allow numbers
+                if (!/^\d$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+                
+                e.target.classList.add('filled');
+                
+                // Move to next input
+                if (value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                
+                // Check if all inputs are filled
+                checkOtpComplete();
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                // Handle backspace
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                    otpInputs[index - 1].classList.remove('filled');
+                }
+            });
+            
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text');
+                const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+                
+                digits.split('').forEach((digit, i) => {
+                    if (otpInputs[i]) {
+                        otpInputs[i].value = digit;
+                        otpInputs[i].classList.add('filled');
+                    }
+                });
+                
+                checkOtpComplete();
+            });
+        });
+        
+        function checkOtpComplete() {
+            const otp = Array.from(otpInputs).map(input => input.value).join('');
+            verifyBtn.disabled = otp.length !== 6;
+        }
+        
+        // Timer functionality
+        function startTimer() {
+            const countdown = document.getElementById('countdown');
+            const timer = document.getElementById('timer');
+            
+            timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                countdown.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timer.classList.add('expired');
+                    countdown.textContent = 'EXPIRED';
+                    resendBtn.disabled = false;
+                    if (!otpVerified) {
+                        verifyBtn.disabled = true;
+                        showError('OTP has expired. Please request a new one.');
+                    }
+                }
+                
+                timeLeft--;
+            }, 1000);
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            successMessage.textContent = '';
+        }
+        
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            errorMessage.textContent = '';
+        }
+        
+        function clearMessages() {
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+        }
+        
+        // Verify OTP
+        verifyBtn.addEventListener('click', async function() {
+            const otp = Array.from(otpInputs).map(input => input.value).join('');
+            
+            if (otp.length !== 6) {
+                showError('Please enter the complete 6-digit OTP');
+                return;
+            }
+            
+            clearMessages();
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Verifying...';
+            
+            try {
+                const response = await fetch('/profile/email-change-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ otp })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    otpVerified = true;
+                    clearInterval(timerInterval);
+                    showSuccess('OTP verified successfully! Now enter your new email address.');
+                    
+                    // Show new email section
+                    document.getElementById('new-email-section').classList.add('show');
+                    
+                    // Hide OTP section
+                    document.querySelector('.otp-container').style.display = 'none';
+                    document.getElementById('timer').style.display = 'none';
+                    verifyBtn.style.display = 'none';
+                    resendBtn.style.display = 'none';
+                } else {
+                    showError(data.message || 'Invalid OTP. Please try again.');
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="bi bi-check-circle"></i> Verify OTP';
+                }
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                showError('An error occurred. Please try again.');
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="bi bi-check-circle"></i> Verify OTP';
+            }
+        });
+        
+        // Resend OTP
+        resendBtn.addEventListener('click', async function() {
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+            
+            try {
+                // Reset timer and inputs
+                timeLeft = 300; // 5 minutes
+                clearInterval(timerInterval);
+                document.getElementById('timer').classList.remove('expired');
+                
+                // Clear OTP inputs
+                otpInputs.forEach(input => {
+                    input.value = '';
+                    input.classList.remove('filled');
+                });
+                
+                // Redirect back to edit profile to restart the process
+                window.location.href = '/profile/edit';
+            } catch (error) {
+                console.error('Error resending OTP:', error);
+                showError('Failed to resend OTP. Please try again.');
+                resendBtn.disabled = false;
+                resendBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Resend OTP';
+            }
+        });
+        
+        // Change Email
+        document.getElementById('change-email-btn').addEventListener('click', async function() {
+            const newEmail = document.getElementById('newEmail').value.trim();
+            const newEmailError = document.getElementById('newEmail-error');
+            
+            // Clear previous errors
+            newEmailError.textContent = '';
+            
+            // Validate email
+            if (!newEmail) {
+                newEmailError.textContent = 'Please enter a new email address';
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(newEmail)) {
+                newEmailError.textContent = 'Please enter a valid email address';
+                return;
+            }
+            
+            const changeEmailBtn = document.getElementById('change-email-btn');
+            changeEmailBtn.disabled = true;
+            changeEmailBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Changing Email...';
+            
+            try {
+                const response = await fetch('/profile/change-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newEmail })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Email Changed Successfully!',
+                        text: 'Your email address has been updated.',
+                        confirmButtonText: 'Go to Profile'
+                    }).then(() => {
+                        window.location.href = '/profile';
+                    });
+                } else {
+                    newEmailError.textContent = data.message || 'Failed to change email';
+                    changeEmailBtn.disabled = false;
+                    changeEmailBtn.innerHTML = '<i class="bi bi-envelope-check"></i> Change Email';
+                }
+            } catch (error) {
+                console.error('Error changing email:', error);
+                newEmailError.textContent = 'An error occurred. Please try again.';
+                changeEmailBtn.disabled = false;
+                changeEmailBtn.innerHTML = '<i class="bi bi-envelope-check"></i> Change Email';
+            }
+        });
+        
+        // Start timer when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            startTimer();
+            otpInputs[0].focus(); // Focus first input
+            
+            // Set active sidebar link
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            const profileLink = document.querySelector('a[href="/profile"]');
+            if (profileLink) profileLink.classList.add('active');
+        });
+    </script>
+</body>
+</html>
