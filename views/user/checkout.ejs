@@ -278,7 +278,6 @@
                             </div>
 
                             <!-- Cash on Delivery -->
-                            <% if (isCODAvailable) { %>
                             <div class="payment-option selected" data-payment="Cash on Delivery" onclick="selectPaymentMethod(this)">
                                 <div class="payment-header">
                                     <div class="payment-icon">
@@ -291,17 +290,6 @@
                                     <i class="fas fa-check"></i>
                                 </div>
                             </div>
-                            <% } else { %>
-                            <div class="payment-option disabled" data-payment="Cash on Delivery">
-                                <div class="payment-header">
-                                    <div class="payment-icon">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                    </div>
-                                    <div class="payment-title">Cash on Delivery</div>
-                                </div>
-                                <div class="payment-insufficient">Cash on delivery is not available for orders above ₹4000</div>
-                            </div>
-                            <% } %>
                         </div>
                     </div>
 
@@ -556,11 +544,7 @@
                 return;
             }
 
-            // Validate COD selection for orders above ₹4000
-            if (selectedPaymentMethod === 'Cash on Delivery' && currentTotal > 4000) {
-                showToast('Payment Method Not Available', 'Cash on Delivery is not available for orders above ₹4000. Please select Online Payment or Wallet Payment.', 'error');
-                return;
-            }
+            // COD validation removed - COD is now available for all order amounts
             
             const placeOrderBtn = document.querySelector('.btn-place-order');
             const originalText = placeOrderBtn.innerHTML;

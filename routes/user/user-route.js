@@ -7,8 +7,9 @@ const userProfileController = require("../../controllers/user/user-profile-contr
 const addressController = require("../../controllers/user/address-controller");
 const wishlistController = require("../../controllers/user/wishlist-controller");
 const cartController = require("../../controllers/user/cart-controller");
- const orderController = require("../../controllers/user/order-controller");
+const orderController = require("../../controllers/user/order-controller");
 const checkoutController = require("../../controllers/user/checkout-controller");
+const userUtilityController = require("../../controllers/user/user-utility-controller");
 const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 const { profileUpload, handleMulterError } = require("../../config/multer-config");
@@ -164,5 +165,7 @@ router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCach
 // Wallet route
 router.get("/wallet", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadWallet);
 
+//about
+router.get("/about", validateSession, addUserContext, checkUserBlocked, userUtilityController.loadAbout);
 
 module.exports = router;

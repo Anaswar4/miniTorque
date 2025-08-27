@@ -94,8 +94,8 @@ const loadCheckout = async (req, res) => {
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
     const finalAmount = amountAfterDiscount + shippingCharges;
 
-    // Check if COD should be available (hide COD if order amount exceeds ₹4000)
-    const isCODAvailable = finalAmount <= 4000;
+    // COD is now available for all order amounts
+    const isCODAvailable = true;
 
     // Check for address success message from session
     const addressSuccess = req.session.addressSuccess;
@@ -255,13 +255,7 @@ const placeOrder = async (req, res) => {
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50; // Free shipping based on amount after discount
     const finalAmount = amountAfterDiscount + shippingCharges; // Final amount = amount after discount + shipping
 
-    // Validate COD for orders above ₹4000
-    if (paymentMethod === 'Cash on Delivery' && finalAmount > 4000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cash on Delivery is not available for orders above ₹4000. Please select Wallet Payment.'
-      });
-    }
+    // COD validation removed - COD is now available for all order amounts
 
     // If wallet payment, check if sufficient balance
     if (paymentMethod === 'Wallet') {
