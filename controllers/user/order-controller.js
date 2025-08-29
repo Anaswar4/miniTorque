@@ -2,8 +2,8 @@ const Order = require('../../models/order-schema');
 const Product = require('../../models/product-schema');
 const User = require('../../models/user-model');
 const Wallet = require('../../models/wallet-schema');
-const Wishlist = require('../../models/wishlist-schema');  // ✅ ADDED: Missing import
-const Cart = require('../../models/cart-schema');  // ✅ ADDED: Missing import
+const Wishlist = require('../../models/wishlist-schema');  
+const Cart = require('../../models/cart-schema');  
 const InvoiceGenerator = require('../../utils/pdf-invoice-generator');
 
 
@@ -11,8 +11,8 @@ const InvoiceGenerator = require('../../utils/pdf-invoice-generator');
 // Load order listing page
 const loadOrderList = async (req, res) => {
   try {
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
-    const { highlight } = req.query; // Get highlight parameter from query string
+    const userId = req.session.userId || req.session.googleUserId;  
+    const { highlight } = req.query; 
 
     // Get user data for sidebar
     const user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto');
@@ -36,32 +36,29 @@ const loadOrderList = async (req, res) => {
     res.render('user/order-list', {
       user,
       orders: orders || [],
-      wishlistCount,  // ✅ ADDED: Missing template variable
-      cartCount,      // ✅ ADDED: Missing template variable
-      isAuthenticated: true,  // ✅ ADDED: Missing template variable
-      currentPage: 'orders',  // ✅ ADDED: Page identifier
+      wishlistCount,  
+      cartCount,      
+      isAuthenticated: true,  
+      currentPage: 'orders',  
       title: 'My Orders',
-      highlightOrderId: highlight || null // Pass highlight parameter to view
+      highlightOrderId: highlight || null 
     });
   } catch (error) {
     console.error('Error loading order list:', error);
     res.status(500).render('error', {
       message: 'Error loading orders',
-      user: res.locals.user || null,  // ✅ ADDED: User context for error page
-      wishlistCount: 0,  // ✅ ADDED: Fallback values
+      user: res.locals.user || null,  
+      wishlistCount: 0,  
       cartCount: 0
     });
   }
 };
 
-
-
-
 // Load order details page
 const loadOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
 
     // Get user data
     const user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto');
@@ -76,8 +73,8 @@ const loadOrderDetails = async (req, res) => {
     if (!order) {
       return res.status(404).render('error', {
         message: 'Order not found',
-        user: res.locals.user || null,  // ✅ ADDED: User context for error page
-        wishlistCount: 0,  // ✅ ADDED: Required template variables
+        user: res.locals.user || null,  
+        wishlistCount: 0,  
         cartCount: 0
       });
     }
@@ -93,18 +90,18 @@ const loadOrderDetails = async (req, res) => {
     res.render('user/order-details', {
       user,
       order,
-      wishlistCount,  // ✅ ADDED: Missing template variable
-      cartCount,      // ✅ ADDED: Missing template variable
-      isAuthenticated: true,  // ✅ ADDED: Missing template variable
-      currentPage: 'order-details',  // ✅ ADDED: Page identifier
+      wishlistCount,  
+      cartCount,      
+      isAuthenticated: true,  
+      currentPage: 'order-details',  
       title: `Order ${orderId}`
     });
   } catch (error) {
     console.error('Error loading order details:', error);
     res.status(500).render('error', {
       message: 'Error loading order details',
-      user: res.locals.user || null,  // ✅ ADDED: User context for error page
-      wishlistCount: 0,  // ✅ ADDED: Fallback values
+      user: res.locals.user || null,  
+      wishlistCount: 0,  
       cartCount: 0
     });
   }
@@ -116,7 +113,7 @@ const loadOrderDetails = async (req, res) => {
 const cancelOrderItem = async (req, res) => {
   try {
     const { orderId, itemId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
     const { reason } = req.body;
 
     const order = await Order.findOne({ orderId, userId })
@@ -208,10 +205,10 @@ const cancelOrderItem = async (req, res) => {
       timestamp: new Date()
     });
 
-    // Credit wallet for cancelled item (regardless of payment method)
+    // Credit wallet for cancelled item 
     let walletCreditAmount = 0;
     
-    // Calculate refund amount - deduct coupon discount if this is the last item in a partially cancelled order
+    // Calculate refund amount 
     let refundAmount = orderItem.totalPrice;
     
     // Check if this is the last item being cancelled and there were previous individual cancellations
@@ -221,7 +218,6 @@ const cancelOrderItem = async (req, res) => {
     
     if (activeItems.length === 0 && previouslyCancelledItems.length > 0 && order.couponDiscount > 0) {
       // This is the last item being cancelled after previous partial cancellations
-      // Deduct the coupon discount from the refund amount
       refundAmount = Math.max(0, orderItem.totalPrice - order.couponDiscount);
     }
     
@@ -232,7 +228,7 @@ const cancelOrderItem = async (req, res) => {
         walletCreditAmount = refundAmount;
       }
     } else {
-      // For online payments (including pending ones), always credit to wallet
+      // For online payments always credit to wallet
       walletCreditAmount = refundAmount;
     }
     
@@ -278,7 +274,7 @@ const cancelOrderItem = async (req, res) => {
 const cancelEntireOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
     const { reason } = req.body;
 
     const order = await Order.findOne({ orderId, userId })
@@ -302,7 +298,7 @@ const cancelEntireOrder = async (req, res) => {
     // Credit wallet for ALL cancelled orders (regardless of payment method) - BEFORE updating order amounts
     let walletCreditAmount = 0;
     
-    // For COD orders, credit only if payment was made (status is Completed)
+    // For COD orders, credit only if payment was made 
     // For online payments, credit the full amount regardless of payment status
     if (order.paymentMethod === 'Cash on Delivery') {
       // For COD, only credit if payment was actually collected (status Completed)
@@ -324,7 +320,7 @@ const cancelEntireOrder = async (req, res) => {
         );
       } catch (walletError) {
         console.error('Error adding money to wallet for cancelled order:', walletError);
-        // Continue with cancellation even if wallet credit fails
+        
       }
     }
 
@@ -351,7 +347,7 @@ const cancelEntireOrder = async (req, res) => {
           );
         } catch (stockError) {
           console.error('Error restoring product stock for item:', item.product.productName, stockError);
-          // Continue with other items even if one fails
+          
         }
       }
     }
@@ -391,7 +387,7 @@ const cancelEntireOrder = async (req, res) => {
 const requestReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
     const { reason, items, requestType } = req.body;
 
     // Get order with populated product data
@@ -405,7 +401,7 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Check if order can be returned (only delivered orders can be returned)
+    // Check if order can be returned(only delivered orders can be returned
     if (order.status !== 'Delivered') {
       return res.status(400).json({
         success: false,
@@ -421,7 +417,7 @@ const requestReturn = async (req, res) => {
       });
     }
 
-    // Check if order is within return window (e.g., 7 days from delivery)
+    // Check if order is within return window 
     const deliveryDate = order.orderTimeline.find(timeline => timeline.status === 'Delivered')?.timestamp;
     if (deliveryDate) {
       const daysSinceDelivery = Math.floor((new Date() - new Date(deliveryDate)) / (1000 * 60 * 60 * 24));
@@ -445,7 +441,7 @@ const requestReturn = async (req, res) => {
           orderItem.status = 'Return Request';
           orderItem.returnReason = returnItem.reason || reason || 'Return requested by customer';
           orderItem.returnRequestedAt = new Date();
-          orderItem.returnAttempted = true; // Mark that return has been attempted
+          orderItem.returnAttempted = true; 
           returnedItemsCount++;
           
           if (returnDescription) {
@@ -496,7 +492,7 @@ const requestReturn = async (req, res) => {
       order.status = 'Return Request';
       order.returnReason = reason || 'Return requested by customer';
       order.returnRequestedAt = new Date();
-      order.returnAttempted = true; // Mark that return has been attempted
+      order.returnAttempted = true; 
       
       // Also mark all items as return attempted
       order.orderedItems.forEach(item => {
@@ -535,7 +531,7 @@ const requestReturn = async (req, res) => {
 const downloadInvoice = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
 
     // Get user data
     const user = await User.findById(userId).select('fullName email profilePhoto');
@@ -558,9 +554,6 @@ const downloadInvoice = async (req, res) => {
     }
 
     // Check if order is eligible for invoice download
-    // 1. Order must not be fully cancelled
-    // 2. For online payments: payment must be completed
-    // 3. For COD: invoice is available immediately after order placement
     if (order.status === 'Cancelled') {
       return res.status(403).json({
         success: false,
@@ -601,13 +594,11 @@ const downloadInvoice = async (req, res) => {
   }
 };
 
-
-
 // Request return for individual item
 const requestIndividualItemReturn = async (req, res) => {
   try {
     const { orderId, itemId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
     const { reason } = req.body;
 
     // Get order with populated product data
@@ -621,7 +612,7 @@ const requestIndividualItemReturn = async (req, res) => {
       });
     }
 
-    // Check if order can be returned (only delivered orders can be returned)
+    // Check if order can be returned 
     if (order.status !== 'Delivered') {
       return res.status(400).json({
         success: false,
@@ -646,7 +637,7 @@ const requestIndividualItemReturn = async (req, res) => {
       });
     }
 
-    // Check if order is within return window (e.g., 7 days from delivery)
+    // Check if order is within return window 
     const deliveryDate = order.orderTimeline.find(timeline => timeline.status === 'Delivered')?.timestamp;
     if (deliveryDate) {
       const daysSinceDelivery = Math.floor((new Date() - new Date(deliveryDate)) / (1000 * 60 * 60 * 24));
@@ -662,7 +653,7 @@ const requestIndividualItemReturn = async (req, res) => {
     orderItem.status = 'Return Request';
     orderItem.returnReason = reason || 'Return requested by customer';
     orderItem.returnRequestedAt = new Date();
-    orderItem.returnAttempted = true; // Mark that return has been attempted
+    orderItem.returnAttempted = true; 
 
     // Add to order timeline
     order.orderTimeline.push({

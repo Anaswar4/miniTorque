@@ -12,9 +12,9 @@ const getProducts = async (req, res) => {
         const category = req.query.category || '';
         const sortBy = req.query.sortBy || 'newest';
 
-        // Build aggregation pipeline
+        
         let pipeline = [
-            // Join with categories
+            
             {
                 $lookup: {
                     from: "categories",
@@ -24,7 +24,7 @@ const getProducts = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             // Filter products and categories
             {
@@ -32,7 +32,7 @@ const getProducts = async (req, res) => {
                     isDeleted: false,
                     isBlocked: false,
                     isListed: true,
-                    // Only products from active categories
+                    
                     "categoryData.isListed": true,
                     "categoryData.isDeleted": false
                 }
@@ -41,7 +41,7 @@ const getProducts = async (req, res) => {
 
         // Add category filter
         if (category) {
-            pipeline[2].$match.category = new mongoose.Types.ObjectId(category); // ✅ FIX: Add new
+            pipeline[2].$match.category = new mongoose.Types.ObjectId(category); 
         }
 
         // Add search filter
@@ -54,7 +54,7 @@ const getProducts = async (req, res) => {
         }
 
         // Build sort options
-        let sortOptions = { createdAt: -1 }; // Default: newest first
+        let sortOptions = { createdAt: -1 }; 
         switch (sortBy) {
             case 'price-low':
                 sortOptions = { salePrice: 1 };
@@ -81,7 +81,7 @@ const getProducts = async (req, res) => {
         // Execute aggregation
         const products = await Product.aggregate(pipeline);
 
-        // ✅ FIX: Add price calculations (categoryData is already an object after $unwind)
+        //  Add price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -110,7 +110,7 @@ const getProducts = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -150,7 +150,6 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
     try {
-        // ✅ FIX: Use 'new' with ObjectId constructor
         const productId = new mongoose.Types.ObjectId(req.params.id);
 
         // Use aggregation to check product and category status
@@ -196,13 +195,11 @@ const getProductById = async (req, res) => {
 
         let product = productResult[0];
 
-        // ✅ FIX: After $unwind, categoryData is an object, not array
         if (product.categoryData) {
             product.category = product.categoryData;
             delete product.categoryData;
         }
 
-        // ✅ IMPROVED: Add price calculations with proper rounding
         if (product.productOffer && product.productOffer > 0) {
             product.finalPrice = parseFloat((product.salePrice * (1 - product.productOffer / 100)).toFixed(2));
             product.hasOffer = true;
@@ -213,7 +210,7 @@ const getProductById = async (req, res) => {
             product.discountAmount = 0;
         }
 
-        // ✅ ADD: Additional useful fields
+        //  Additional useful fields
         product.isInStock = product.quantity > 0;
         product.stockStatus = product.quantity > 10 ? 'in-stock' : 
                              product.quantity > 0 ? 'low-stock' : 'out-of-stock';
@@ -242,7 +239,7 @@ const getProductById = async (req, res) => {
 
 const getProductsByCategory = async (req, res) => {
     try {
-        const categoryId = new mongoose.Types.ObjectId(req.params.categoryId); // ✅ FIX: Add new
+        const categoryId = new mongoose.Types.ObjectId(req.params.categoryId); 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
         const sortBy = req.query.sortBy || 'newest';
@@ -301,7 +298,7 @@ const getProductsByCategory = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -316,7 +313,7 @@ const getProductsByCategory = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        // ✅ FIX: Price calculations (categoryData is object after $unwind)
+        //  Price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -382,7 +379,7 @@ const getFeaturedProducts = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -399,7 +396,7 @@ const getFeaturedProducts = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        // ✅ FIX: Add price calculations (categoryData is object after $unwind)
+        //  Add price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -461,7 +458,7 @@ const searchProducts = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -484,7 +481,7 @@ const searchProducts = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        // ✅ FIX: Add price calculations (categoryData is object after $unwind)
+        //  Add price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -513,7 +510,7 @@ const searchProducts = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -574,7 +571,7 @@ const getShopPage = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -591,9 +588,9 @@ const getShopPage = async (req, res) => {
         // Category filter
         if (req.query.category && req.query.category !== 'all') {
             if (Array.isArray(req.query.category)) {
-                pipeline[2].$match.category = { $in: req.query.category.map(id => new mongoose.Types.ObjectId(id)) }; // ✅ FIX: Add new
+                pipeline[2].$match.category = { $in: req.query.category.map(id => new mongoose.Types.ObjectId(id)) }; 
             } else {
-                pipeline[2].$match.category = new mongoose.Types.ObjectId(req.query.category); // ✅ FIX: Add new
+                pipeline[2].$match.category = new mongoose.Types.ObjectId(req.query.category); 
             }
         }
 
@@ -657,7 +654,7 @@ const getShopPage = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        // ✅ FIX: Add price calculations (categoryData is object after $unwind)
+        //  Add price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -686,7 +683,7 @@ const getShopPage = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -775,7 +772,7 @@ const getShopPage = async (req, res) => {
                 availability: req.query.availability || '',
                 sort: req.query.sort || 'newest'
             },
-            user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user set by addUserContext middleware
+            user: res.locals.user || null,  
             isAuthenticated: !!(req.session.userId || req.session.googleUserId),
             currentPage: 'shop'
         });
@@ -788,15 +785,15 @@ const getShopPage = async (req, res) => {
                 message: 'Error loading shop page: ' + error.message
             },
             message: error.message,
-            user: res.locals.user || null  // ✅ FIXED: Use res.locals.user
+            user: res.locals.user || null  
         });
     }
 };
 
-// ✅ COMPLETELY FIXED: Product Details function
+//  Product Details function
 const getProductDetails = async (req, res) => {
     try {
-        // ✅ FIXED: Define user and userId consistently for both auth methods
+        //  Define user and userId consistently for both auth methods
         const user = req.session.user || null;
         const userId = req.session.userId || req.session.googleUserId;
         const productId = req.params.id;
@@ -807,11 +804,11 @@ const getProductDetails = async (req, res) => {
             userProfile = await User.findById(userId).select('fullName email name displayName googleName profilePhoto').lean();
         }
 
-        // ✅ FIX: Use aggregation with proper ObjectId handling
+        //  Use aggregation with proper ObjectId handling
         const productPipeline = [
             {
                 $match: {
-                    _id: new mongoose.Types.ObjectId(productId), // ✅ FIX: Add new
+                    _id: new mongoose.Types.ObjectId(productId), 
                     isDeleted: false,
                     isBlocked: false,
                     isListed: true
@@ -826,7 +823,7 @@ const getProductDetails = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" // ✅ ADD: Unwind for proper filtering
+                $unwind: "$categoryData" 
             },
             {
                 $match: {
@@ -848,17 +845,17 @@ const getProductDetails = async (req, res) => {
 
         const product = productResult[0];
 
-        // ✅ FIX: Convert categoryData object (after $unwind)
+        //  Convert categoryData object 
         if (product.categoryData) {
             product.category = product.categoryData;
             delete product.categoryData;
         }
 
-        // ✅ FIX: Related products query with proper ObjectId
+        //  Related products query with proper ObjectId
         const relatedProducts = await Product.aggregate([
             {
                 $match: {
-                    _id: { $ne: new mongoose.Types.ObjectId(productId) }, // ✅ FIX: Add new
+                    _id: { $ne: new mongoose.Types.ObjectId(productId) }, 
                     isListed: true,
                     isDeleted: false,
                     isBlocked: false,
@@ -949,7 +946,7 @@ const getProductDetails = async (req, res) => {
         if (error.name === 'CastError') {
             return res.status(404).render('pageNotFound', {
                 message: 'Invalid product ID format',
-                user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
+                user: res.locals.user || null,  
                 wishlistCount: 0
             });
         }
@@ -960,7 +957,7 @@ const getProductDetails = async (req, res) => {
                 message: 'Error loading product details: ' + error.message
             },
             message: error.message,
-            user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
+            user: res.locals.user || null,  
             wishlistCount: 0
         });
     }

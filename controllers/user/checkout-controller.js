@@ -8,14 +8,12 @@ const Wishlist = require('../../models/wishlist-schema');
 const { calculateFinalPrice, calculateItemTotal, calculateItemDiscount, syncAllCartPrices, calculateCartSummary } = require('../../utils/price-calculator');
 const { applyBestOffersToProducts } = require('../../utils/offer-utils');
 
-
-// Load checkout page
 // Load checkout page
 const loadCheckout = async (req, res) => {
   try {
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
 
-    // Get user data and wallet balance
+    // Get user data 
     const user = await User.findById(userId).select('fullName email profilePhoto');
     if (!user) {
       return res.redirect('/login');
@@ -141,7 +139,7 @@ const loadCheckout = async (req, res) => {
 // Process order placement
 const placeOrder = async (req, res) => {
   try {
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
     const { selectedAddressId, paymentMethod = 'Cash on Delivery' } = req.body;
 
     // Validate address selection

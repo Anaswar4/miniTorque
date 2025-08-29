@@ -87,12 +87,12 @@ const loadHome = async (req, res) => {
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
-    // ✅ FIXED: Get user's cart and wishlist data for both regular and Google OAuth users
+    //  Get user cart and wishlist data for both regular and Google OAuth users
     let userWishlistIds = [];
     let wishlistCount = 0;
     let cartCount = 0;
 
-    const userId = req.session.userId || req.session.googleUserId; // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId; 
 
     if (userId) {
       // Get cart count
@@ -110,14 +110,14 @@ const loadHome = async (req, res) => {
     }
 
     res.render('user/home', {
-      user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user set by addUserContext middleware
+      user: res.locals.user || null,  
       navLinks,
       featuredProducts,
       activeCategories,
       userWishlistIds,
       wishlistCount,
       cartCount,
-      isAuthenticated: !!(req.session.userId || req.session.googleUserId), // ✅ FIXED: Support both auth methods
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId), 
       currentPage: 'home'
     });
 
@@ -129,10 +129,10 @@ const loadHome = async (req, res) => {
         message: 'Error loading home page: ' + error.message
       },
       message: error.message,
-      user: res.locals.user || null,  // ✅ FIXED: Use res.locals.user
+      user: res.locals.user || null,  
       cartCount: 0,
       wishlistCount: 0,
-      isAuthenticated: !!(req.session.userId || req.session.googleUserId) // ✅ FIXED: Support both auth methods
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId) 
     });
   }
 };
@@ -289,7 +289,7 @@ const resendOTP = async (req, res) => {
 
 // Show login page
 const showLogin = async (req, res) => {
-  // ✅ FIXED: Check both regular and Google OAuth authentication
+  //  Check both regular and Google OAuth authentication
   if (req.session.userId || req.session.googleUserId) return res.redirect('/home');
   const blocked = req.query.blocked === 'true';
   return res.render('user/login', { error: null, blocked });

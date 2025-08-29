@@ -4,12 +4,11 @@ const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model');
 
 // Load cart page
-// Load cart page
 const loadCart = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
     
-    // Get user data for sidebar
+    //  user data for sidebar
     const user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto').lean();
     if (!user) {
       return res.redirect('/login');
@@ -27,7 +26,7 @@ const loadCart = async (req, res) => {
 
     // Filter out items with unavailable products
     let cartItems = [];
-    let cartCount = 0; // ✅ ADD: Initialize cartCount
+    let cartCount = 0; 
     
     if (cart && cart.items) {
       cartItems = cart.items.filter(item => 
@@ -39,7 +38,7 @@ const loadCart = async (req, res) => {
         !item.productId.isDeleted
       );
 
-      // ✅ ADD: Calculate cart count (total quantity of items)
+      //  Calculate cart count (total quantity of items)
       cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
       // Update prices with current product data
@@ -66,7 +65,7 @@ const loadCart = async (req, res) => {
     res.render('user/cart', {
       user,
       cartItems: cartItems || [],
-      cartCount,        // ✅ ADD: Pass cartCount to template
+      cartCount,        
       wishlistCount,
       isAuthenticated: true,
       currentPage: 'cart',
@@ -76,9 +75,9 @@ const loadCart = async (req, res) => {
     console.error('Error loading cart:', error);
     res.status(500).render('error', { 
       message: 'Error loading cart',
-      cartCount: 0,     // ✅ ADD: Pass cartCount to error template
+      cartCount: 0,     
       wishlistCount: 0,
-      user: res.locals.user || null  // ✅ FIXED: Use res.locals.user
+      user: res.locals.user || null  
     });
   }
 };
@@ -478,9 +477,9 @@ const removeOutOfStockItems = async (req, res) => {
           !item.productId.isListed ||
           item.productId.isDeleted ||
           item.productId.quantity === 0) {
-        return false; // Remove this item
+        return false; 
       }
-      return true; // Keep this item
+      return true; 
     });
 
     const removedItemCount = initialItemCount - availableItems.length;

@@ -1,4 +1,3 @@
-// Admin dashboard controller
 const User = require("../../models/user-model");
 // const Order = require("../../models/order-schema");
 // const Product = require("../../models/product-schema");

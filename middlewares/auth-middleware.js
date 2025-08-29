@@ -9,6 +9,17 @@ const authMiddleware = {
   try {
     // Check if admin session exists
     if (req.session && req.session.admin_id) {
+      // Check for session timeout (24 hours)
+      const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+      if (
+        req.session.loginTime &&
+        Date.now() - new Date(req.session.loginTime).getTime() > sessionTimeout
+      ) {
+        return req.session.destroy(() => {
+          res.redirect('/admin/admin-login?expired=true');
+        });
+      }
+
       const admin = await User.findById(req.session.admin_id);
 
       // Validate admin user and ensure they are not blocked

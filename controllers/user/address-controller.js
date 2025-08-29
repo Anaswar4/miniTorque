@@ -74,11 +74,11 @@ const loadAddressForm = async (req, res) => {
       }
     }
 
-    // 🔥 Fetch wishlist count
+    //  Fetch wishlist count
     const wishlist = await Wishlist.findOne({ userId }).lean();
     const wishlistCount = wishlist ? wishlist.products.length : 0;
 
-    // ✅ ADDED: Get cart count for navbar
+    //  ADDED: Get cart count for navbar
     const cart = await Cart.findOne({ userId }).lean();
     const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
@@ -87,10 +87,10 @@ const loadAddressForm = async (req, res) => {
       address,
       isEdit,
       returnTo,
-      wishlistCount,          // 🔥 Add wishlistCount here
-      cartCount,              // ✅ ADDED: Missing template variable
-      isAuthenticated: true,  // 🔥 Add isAuthenticated
-      currentPage: 'address-form', // 🔥 Add currentPage
+      wishlistCount,          
+      cartCount,              
+      isAuthenticated: true,  
+      currentPage: 'address-form', 
       title: isEdit ? 'Edit Address' : 'Add New Address'
     });
   } catch (error) {
@@ -102,8 +102,8 @@ const loadAddressForm = async (req, res) => {
       },
       message: error.message,
       user: req.user || null,
-      wishlistCount: 0,       // 🔥 Add wishlistCount for error page
-      cartCount: 0            // ✅ ADDED: Missing template variable for error page
+      wishlistCount: 0,       
+      cartCount: 0            
     });
   }
 };

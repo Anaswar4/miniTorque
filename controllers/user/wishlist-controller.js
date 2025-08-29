@@ -2,7 +2,6 @@ const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model'); const Cart = require('../../models/cart-schema');
 
 // Load wishlist listing page
-// Load wishlist listing page
 const loadWishlist = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -13,7 +12,7 @@ const loadWishlist = async (req, res) => {
       return res.redirect('/login');
     }
     
-    // ✅ ADD: Get cart count first
+    //  Get cart count first
     let cartCount = 0;
     const cart = await Cart.findOne({ userId }).lean();
     if (cart && cart.items) {
@@ -53,8 +52,8 @@ const loadWishlist = async (req, res) => {
     res.render('user/wishlist', {
       user,
       wishlist: { products: wishlistProducts },
-      cartCount,              // ✅ ADD: Pass cartCount to template
-      wishlistCount,          // Add wishlistCount here
+      cartCount,              
+      wishlistCount,          
       title: 'My Wishlist',
       isAuthenticated: true,
       currentPage: 'wishlist'
@@ -69,8 +68,8 @@ const loadWishlist = async (req, res) => {
       },
       message: error.message,
       user: req.user || null,
-      cartCount: 0,           // ✅ ADD: Pass cartCount to error page
-      wishlistCount: 0        // Add wishlistCount for error page
+      cartCount: 0,           
+      wishlistCount: 0        
     });
   }
 };
