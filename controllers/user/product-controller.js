@@ -12,9 +12,7 @@ const getProducts = async (req, res) => {
         const category = req.query.category || '';
         const sortBy = req.query.sortBy || 'newest';
 
-        
         let pipeline = [
-            
             {
                 $lookup: {
                     from: "categories",
@@ -32,7 +30,6 @@ const getProducts = async (req, res) => {
                     isDeleted: false,
                     isBlocked: false,
                     isListed: true,
-                    
                     "categoryData.isListed": true,
                     "categoryData.isDeleted": false
                 }
@@ -53,14 +50,32 @@ const getProducts = async (req, res) => {
             ];
         }
 
-        // Build sort options
+        // ADD CALCULATED FINAL PRICE FIELD
+        pipeline.push({
+            $addFields: {
+                finalSellingPrice: {
+                    $cond: {
+                        if: { $and: [{ $gt: ["$productOffer", 0] }, { $ne: ["$productOffer", null] }] },
+                        then: {
+                            $multiply: [
+                                "$salePrice",
+                                { $subtract: [1, { $divide: ["$productOffer", 100] }] }
+                            ]
+                        },
+                        else: "$salePrice"
+                    }
+                }
+            }
+        });
+
+        // Build sort options - UPDATED to use calculated final price for price sorting
         let sortOptions = { createdAt: -1 }; 
         switch (sortBy) {
             case 'price-low':
-                sortOptions = { salePrice: 1 };
+                sortOptions = { finalSellingPrice: 1 };
                 break;
             case 'price-high':
-                sortOptions = { salePrice: -1 };
+                sortOptions = { finalSellingPrice: -1 };
                 break;
             case 'name-asc':
                 sortOptions = { productName: 1 };
@@ -97,6 +112,9 @@ const getProducts = async (req, res) => {
                 product.hasOffer = false;
                 product.discountAmount = 0;
             }
+
+            // Remove the temporary field
+            delete product.finalSellingPrice;
         });
 
         // Get total count for pagination
@@ -258,27 +276,6 @@ const getProductsByCategory = async (req, res) => {
             });
         }
 
-        // Build sort options
-        let sortOptions = { createdAt: -1 };
-        switch (sortBy) {
-            case 'price-low':
-                sortOptions = { salePrice: 1 };
-                break;
-            case 'price-high':
-                sortOptions = { salePrice: -1 };
-                break;
-            case 'name-asc':
-                sortOptions = { productName: 1 };
-                break;
-            case 'name-desc':
-                sortOptions = { productName: -1 };
-                break;
-            case 'newest':
-            default:
-                sortOptions = { createdAt: -1 };
-                break;
-        }
-
         // Aggregation for products
         const pipeline = [
             {
@@ -306,10 +303,49 @@ const getProductsByCategory = async (req, res) => {
                     "categoryData.isDeleted": false
                 }
             },
-            { $sort: sortOptions },
-            { $skip: (page - 1) * limit },
-            { $limit: limit }
+            // ADD CALCULATED FINAL PRICE FIELD
+            {
+                $addFields: {
+                    finalSellingPrice: {
+                        $cond: {
+                            if: { $and: [{ $gt: ["$productOffer", 0] }, { $ne: ["$productOffer", null] }] },
+                            then: {
+                                $multiply: [
+                                    "$salePrice",
+                                    { $subtract: [1, { $divide: ["$productOffer", 100] }] }
+                                ]
+                            },
+                            else: "$salePrice"
+                        }
+                    }
+                }
+            }
         ];
+
+        // Build sort options - UPDATED
+        let sortOptions = { createdAt: -1 };
+        switch (sortBy) {
+            case 'price-low':
+                sortOptions = { finalSellingPrice: 1 };
+                break;
+            case 'price-high':
+                sortOptions = { finalSellingPrice: -1 };
+                break;
+            case 'name-asc':
+                sortOptions = { productName: 1 };
+                break;
+            case 'name-desc':
+                sortOptions = { productName: -1 };
+                break;
+            case 'newest':
+            default:
+                sortOptions = { createdAt: -1 };
+                break;
+        }
+
+        pipeline.push({ $sort: sortOptions });
+        pipeline.push({ $skip: (page - 1) * limit });
+        pipeline.push({ $limit: limit });
 
         const products = await Product.aggregate(pipeline);
 
@@ -329,6 +365,9 @@ const getProductsByCategory = async (req, res) => {
                 product.hasOffer = false;
                 product.discountAmount = 0;
             }
+
+            // Remove the temporary field
+            delete product.finalSellingPrice;
         });
 
         // Get total count for pagination
@@ -560,55 +599,41 @@ const getShopPage = async (req, res) => {
         const limit = parseInt(req.query.limit) || 12;
         const skip = (page - 1) * limit;
 
-        let pipeline = [
-            // Join with categories
-            {
-                $lookup: {
-                    from: "categories",
-                    localField: "category",
-                    foreignField: "_id",
-                    as: "categoryData"
-                }
-            },
-            {
-                $unwind: "$categoryData" 
-            },
-            {
-                $match: {
-                    isListed: true,
-                    isDeleted: false,
-                    isBlocked: false,
-                    status: "Available",
-                    "categoryData.isListed": true,
-                    "categoryData.isDeleted": false
-                }
-            }
-        ];
+        // Build the base match conditions
+        let baseMatch = {
+            isListed: true,
+            isDeleted: false,
+            isBlocked: false,
+            status: "Available",
+            "categoryData.isListed": true,
+            "categoryData.isDeleted": false
+        };
 
+        // Apply filters to base match
         // Category filter
         if (req.query.category && req.query.category !== 'all') {
             if (Array.isArray(req.query.category)) {
-                pipeline[2].$match.category = { $in: req.query.category.map(id => new mongoose.Types.ObjectId(id)) }; 
+                baseMatch.category = { $in: req.query.category.map(id => new mongoose.Types.ObjectId(id)) };
             } else {
-                pipeline[2].$match.category = new mongoose.Types.ObjectId(req.query.category); 
+                baseMatch.category = new mongoose.Types.ObjectId(req.query.category);
             }
         }
 
         // Price range filter
         if (req.query.minPrice || req.query.maxPrice) {
-            pipeline[2].$match.salePrice = {};
+            baseMatch.salePrice = {};
             if (req.query.minPrice) {
-                pipeline[2].$match.salePrice.$gte = parseFloat(req.query.minPrice);
+                baseMatch.salePrice.$gte = parseFloat(req.query.minPrice);
             }
             if (req.query.maxPrice) {
-                pipeline[2].$match.salePrice.$lte = parseFloat(req.query.maxPrice);
+                baseMatch.salePrice.$lte = parseFloat(req.query.maxPrice);
             }
         }
 
         // Search filter
         if (req.query.search) {
             const searchRegex = new RegExp(req.query.search, 'i');
-            pipeline[2].$match.$or = [
+            baseMatch.$or = [
                 { productName: searchRegex },
                 { brand: searchRegex },
                 { description: searchRegex }
@@ -618,20 +643,55 @@ const getShopPage = async (req, res) => {
         // Availability filter
         if (req.query.availability) {
             if (req.query.availability === 'in-stock') {
-                pipeline[2].$match.quantity = { $gt: 0 };
+                baseMatch.quantity = { $gt: 0 };
             } else if (req.query.availability === 'on-sale') {
-                pipeline[2].$match.productOffer = { $gt: 0 };
+                baseMatch.productOffer = { $gt: 0 };
             }
         }
 
-        // Build sort object
+        // Products pipeline
+        let pipeline = [
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "categoryData"
+                }
+            },
+            {
+                $unwind: "$categoryData"
+            },
+            {
+                $match: baseMatch
+            },
+            // ADD CALCULATED FINAL PRICE FIELD
+            {
+                $addFields: {
+                    finalSellingPrice: {
+                        $cond: {
+                            if: { $and: [{ $gt: ["$productOffer", 0] }, { $ne: ["$productOffer", null] }] },
+                            then: {
+                                $multiply: [
+                                    "$salePrice",
+                                    { $subtract: [1, { $divide: ["$productOffer", 100] }] }
+                                ]
+                            },
+                            else: "$salePrice"
+                        }
+                    }
+                }
+            }
+        ];
+
+        // Build sort object - UPDATED
         let sort = {};
         switch (req.query.sort) {
             case 'price-low':
-                sort.salePrice = 1;
+                sort.finalSellingPrice = 1;
                 break;
             case 'price-high':
-                sort.salePrice = -1;
+                sort.finalSellingPrice = -1;
                 break;
             case 'name-az':
                 sort.productName = 1;
@@ -654,7 +714,7 @@ const getShopPage = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        //  Add price calculations 
+        // Add price calculations
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -670,9 +730,12 @@ const getShopPage = async (req, res) => {
                 product.hasOffer = false;
                 product.discountAmount = 0;
             }
+
+            // Remove the temporary field
+            delete product.finalSellingPrice;
         });
 
-        // Get total count for pagination
+        // FIXED: Get total count with SAME filters as main pipeline
         const countPipeline = [
             {
                 $lookup: {
@@ -683,17 +746,10 @@ const getShopPage = async (req, res) => {
                 }
             },
             {
-                $unwind: "$categoryData" 
+                $unwind: "$categoryData"
             },
             {
-                $match: {
-                    isListed: true,
-                    isDeleted: false,
-                    isBlocked: false,
-                    status: "Available",
-                    "categoryData.isListed": true,
-                    "categoryData.isDeleted": false
-                }
+                $match: baseMatch  
             },
             { $count: "total" }
         ];
@@ -738,14 +794,17 @@ const getShopPage = async (req, res) => {
             hasPrevPage: page > 1,
             nextPage: page + 1,
             prevPage: page - 1,
-            pages: []
+            pages: [],
+            showPagination: totalPages > 1  
         };
 
-        // Generate page numbers for pagination
-        const startPage = Math.max(1, page - 2);
-        const endPage = Math.min(totalPages, page + 2);
-        for (let i = startPage; i <= endPage; i++) {
-            pagination.pages.push(i);
+        // Generate page numbers for pagination only if needed
+        if (totalPages > 1) {
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(totalPages, page + 2);
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.pages.push(i);
+            }
         }
 
         // Build query string for pagination links
@@ -772,7 +831,7 @@ const getShopPage = async (req, res) => {
                 availability: req.query.availability || '',
                 sort: req.query.sort || 'newest'
             },
-            user: res.locals.user || null,  
+            user: res.locals.user || null,
             isAuthenticated: !!(req.session.userId || req.session.googleUserId),
             currentPage: 'shop'
         });
@@ -785,7 +844,7 @@ const getShopPage = async (req, res) => {
                 message: 'Error loading shop page: ' + error.message
             },
             message: error.message,
-            user: res.locals.user || null  
+            user: res.locals.user || null
         });
     }
 };
