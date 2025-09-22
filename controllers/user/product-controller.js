@@ -3,6 +3,7 @@ const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 const User = require('../../models/user-model');
 const Wishlist = require('../../models/wishlist-schema');
+const Cart= require('../../models/cart-schema')
 
 const getProducts = async (req, res) => {
     try {
@@ -778,10 +779,9 @@ const getShopPage = async (req, res) => {
             }
 
             // Get cart count
-            const Cart = require('../../models/cart-schema');
             const cart = await Cart.findOne({ userId: userId }).lean();
             if (cart && cart.items) {
-                cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+                cartCount = cart.items.length;
             }
         }
 
@@ -965,10 +965,9 @@ const getProductDetails = async (req, res) => {
 
         if (userId) {
             // GET CART COUNT
-            const Cart = require('../../models/cart-schema');
             const cart = await Cart.findOne({ userId: userId }).lean();
             if (cart && cart.items) {
-                cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+                cartCount = cart.items.length;
                 // CHECK if current product is in cart
                 isInCart = cart.items.some(item => item.productId.toString() === productId);
             }
@@ -1022,6 +1021,283 @@ const getProductDetails = async (req, res) => {
     }
 };
 
+// Get wishlist IDs for authenticated user
+const getUserWishlistIds = async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.googleUserId;
+        
+        if (!userId) {
+            return res.json({
+                success: true,
+                wishlistIds: [],
+                wishlistCount: 0
+            });
+        }
+
+        const wishlist = await Wishlist.findOne({ userId }).lean();
+        
+        if (!wishlist || !wishlist.products) {
+            return res.json({
+                success: true,
+                wishlistIds: [],
+                wishlistCount: 0
+            });
+        }
+
+        const wishlistIds = wishlist.products.map(item => item.productId.toString());
+        
+        res.json({
+            success: true,
+            wishlistIds,
+            wishlistCount: wishlist.products.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching user wishlist:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch wishlist'
+        });
+    }
+};
+
+// Add to cart API endpoint
+const addToCart = async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.googleUserId;
+        const { productId, quantity = 1 } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Please login to add items to cart'
+            });
+        }
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        // Validate product exists and is available
+        const product = await Product.findOne({
+            _id: new mongoose.Types.ObjectId(productId),
+            isListed: true,
+            isDeleted: false,
+            isBlocked: false,
+            quantity: { $gt: 0 }
+        }).populate('category');
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found or out of stock'
+            });
+        }
+
+        // Check if category is active
+        if (!product.category || !product.category.isListed || product.category.isDeleted) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product category is not available'
+            });
+        }
+
+        // Find or create cart
+        let cart = await Cart.findOne({ userId });
+        
+        if (!cart) {
+            cart = new Cart({
+                userId,
+                items: []
+            });
+        }
+
+        // Check if product already in cart
+        const existingItemIndex = cart.items.findIndex(
+            item => item.productId.toString() === productId
+        );
+
+        if (existingItemIndex > -1) {
+            // Update quantity if product already in cart
+            const newQuantity = cart.items[existingItemIndex].quantity + parseInt(quantity);
+            
+            if (newQuantity > product.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Stock limit reached'
+                });
+            }
+
+            cart.items[existingItemIndex].quantity = newQuantity;
+            cart.items[existingItemIndex].price = product.salePrice;
+            // FIXED: Add totalPrice calculation
+            cart.items[existingItemIndex].totalPrice = product.salePrice * newQuantity;
+        } else {
+            // Add new item to cart
+            cart.items.push({
+                productId: new mongoose.Types.ObjectId(productId),
+                quantity: parseInt(quantity),
+                price: product.salePrice,
+                // FIXED: Add totalPrice calculation
+                totalPrice: product.salePrice * parseInt(quantity)
+            });
+        }
+
+        await cart.save();
+
+        // Calculate cart count
+        const cartCount = cart.items.length;
+
+        res.json({
+            success: true,
+            message: 'Product added to cart successfully',
+            cartCount
+        });
+
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add product to cart'
+        });
+    }
+};
+
+
+// Toggle wishlist API endpoint
+const toggleWishlist = async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.googleUserId;
+        const { productId } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Please login to manage your wishlist'
+            });
+        }
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product ID is required'
+            });
+        }
+
+        // Validate product exists
+        const product = await Product.findOne({
+            _id: new mongoose.Types.ObjectId(productId),
+            isListed: true,
+            isDeleted: false,
+            isBlocked: false
+        });
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Find or create wishlist
+        let wishlist = await Wishlist.findOne({ userId });
+        
+        if (!wishlist) {
+            wishlist = new Wishlist({
+                userId,
+                products: []
+            });
+        }
+
+        // Check if product is already in wishlist
+        const existingIndex = wishlist.products.findIndex(
+            item => item.productId.toString() === productId
+        );
+
+        let action, message;
+
+        if (existingIndex > -1) {
+            // Remove from wishlist
+            wishlist.products.splice(existingIndex, 1);
+            action = 'removed';
+            message = 'Removed from wishlist';
+        } else {
+            // Add to wishlist
+            wishlist.products.push({
+                productId: new mongoose.Types.ObjectId(productId),
+                addedAt: new Date()
+            });
+            action = 'added';
+            message = 'Added to wishlist';
+        }
+
+        await wishlist.save();
+
+        res.json({
+            success: true,
+            message,
+            action,
+            wishlistCount: wishlist.products.length
+        });
+
+    } catch (error) {
+        console.error('Error toggling wishlist:', error);
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update wishlist'
+        });
+    }
+};
+
+// Get cart count for navbar
+const getCartCount = async (req, res) => {
+    try {
+        const userId = req.session.userId || req.session.googleUserId;
+        
+        if (!userId) {
+            return res.json({
+                success: true,
+                cartCount: 0
+            });
+        }
+
+        const cart = await Cart.findOne({ userId }).lean();
+        const cartCount = cart && cart.items ? cart.items.length : 0;  
+
+
+        res.json({
+            success: true,
+            cartCount
+        });
+
+    } catch (error) {
+        console.error('Error fetching cart count:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch cart count'
+        });
+    }
+};
+
 module.exports = {
     getProducts,
     getProductById,
@@ -1029,5 +1305,9 @@ module.exports = {
     getFeaturedProducts,
     searchProducts,
     getShopPage,
-    getProductDetails
+    getProductDetails,
+    getUserWishlistIds,
+    addToCart,
+    toggleWishlist,
+    getCartCount
 };

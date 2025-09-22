@@ -109,6 +109,11 @@ router.get("/api/category/:categoryId/products", validateSession, addUserContext
 // Shop Page
 router.get("/shopPage", validateSession, addUserContext, checkUserBlocked, userProductController.getShopPage);
 router.get("/product/:id", validateSession, addUserContext, checkUserBlocked, userProductController.getProductDetails);
+// Product API endpoints
+router.get("/api/wishlist/ids", validateSession, addUserContext, checkUserBlocked, userProductController.getUserWishlistIds);
+router.post("/api/cart/add", validateSession, addUserContext, checkUserBlocked, userProductController.addToCart);
+router.post("/api/wishlist/toggle", validateSession, addUserContext, checkUserBlocked, userProductController.toggleWishlist);
+router.get("/api/cart/count", validateSession, addUserContext, checkUserBlocked, userProductController.getCartCount);
 
 // Profile
 router.get("/profile", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadProfile);

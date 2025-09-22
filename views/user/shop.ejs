@@ -527,7 +527,7 @@
                                                 </div>
                                                 <% } %>
 
-                                                    <!-- 🔥 UPDATED WISHLIST BUTTON -->
+                                                    <!--  UPDATED WISHLIST BUTTON -->
                                                     <button
                                                         class="wishlist-icon <%= userWishlistIds.includes(product._id.toString()) ? 'active' : '' %>"
                                                         data-product-id="<%= product._id %>"
@@ -568,7 +568,7 @@
                                                     title="<%= product.quantity===0 ? 'Out of Stock' : 'Add to Cart' %>
                                                         ">
                                                         <i
-                                                            class="fas fa-<%= product.quantity===0 ? 'times' : 'plus' %>"></i>
+                                                            class="fas fa-<%= product.quantity === 0 ? 'times' : 'plus' %>"></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -699,238 +699,366 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- ====================  PAGE SCRIPTS  ==================== -->
-    <script>
-        // Initialize global state (both wishlist and cart)
-        document.addEventListener('DOMContentLoaded', async function () {
-            // Initialize cart state first
-            if (window.cartState) {
-                await window.cartState.init();
-            }
 
-            // Initialize global wishlist state
-            const serverWishlistIds = <% - JSON.stringify(userWishlistIds || []) %>;
-            if (window.globalState) {
-                await window.globalState.init(serverWishlistIds);
-                window.globalState.syncAllWishlistButtons();
-            }
-        });
-        /* ------------------------------------------------------------------
-           TOAST
-        ------------------------------------------------------------------ */
-        function showToast(msg, type = 'success') {
-            let box = document.getElementById('toast-container');
-            if (!box) {
-                box = document.createElement('div');
-                box.id = 'toast-container';
-                box.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
-                document.body.appendChild(box);
-            }
-            const toast = document.createElement('div');
-            toast.style.cssText = `
+<script>
+/* ------------------------------------------------------------------
+   TOAST NOTIFICATIONS
+------------------------------------------------------------------ */
+function showToast(msg, type = 'success') {
+    let box = document.getElementById('toast-container');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'toast-container';
+        box.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(box);
+    }
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
         background:${type === 'success' ? '#4caf50' : '#f44336'};
         color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);
         font-size:14px;font-weight:500;max-width:350px;display:flex;align-items:center;gap:8px;
         opacity:0;transform:translateX(100%);transition:all .3s ease;`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${msg}</span>`;
-            box.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; }, 10);
-            setTimeout(() => {
-                toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 300);
-            }, type === 'success' ? 3000 : 5000);
-        }
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${msg}</span>`;
 
-        /* ------------------------------------------------------------------
-           WISHLIST (Shop Page)
-        ------------------------------------------------------------------ */
-        async function toggleWishlistFromShop(productId, btn) {
-            btn.disabled = true;
-            try {
-                // Always use /wishlist/add endpoint - it handles toggle functionality automatically
-                const res = await fetch('/wishlist/add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ productId })
-                });
-                const out = await res.json();
-                if (out.success) {
-                    // Update global wishlist state and sync all buttons across pages
-                    if (out.action === 'added') {
-                        window.globalState.addToWishlist(productId);
-                    } else if (out.action === 'removed') {
-                        window.globalState.removeFromWishlist(productId);
-                    }
+    box.appendChild(toast);
 
-                    // Update navbar wishlist count
-                    if (typeof updateWishlistCount === 'function') {
-                        updateWishlistCount();
-                    }
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
 
-                    showToast(out.message || (out.action === 'added' ? 'Added to wishlist' : 'Removed from wishlist'), 'success');
-                } else {
-                    showToast(out.message || 'Failed to update wishlist', 'error');
-                }
-            } catch (err) {
-                console.error('Error toggling wishlist:', err);
-                showToast('Please login first', 'error');
-            } finally {
-                btn.disabled = false;
-            }
-        }
-        /* alias for older calls, so they don’t error */
-        function toggleWishlist(id, el) { toggleWishlistFromShop(id, el); }
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, type === 'success' ? 3000 : 5000);
+}
 
-        /* counters */
-        function updateCartCounter(c) {
-            const el = document.getElementById('cartCount');
-            if (el) { el.textContent = c; el.style.display = c > 0 ? 'flex' : 'none'; }
-        }
+/* ------------------------------------------------------------------
+   GLOBAL STATE MANAGEMENT
+------------------------------------------------------------------ */
+window.shopState = {
+    wishlistIds: <%- JSON.stringify(userWishlistIds || []) %>, 
+    cartCount: <%= cartCount || 0 %>,
+    wishlistCount: <%= wishlistCount || 0 %>,
+    isAuthenticated: <%= isAuthenticated ? 'true' : 'false' %>
+};
 
-        /*  FILTER FORM / PRICE VALIDATION */
-        document.addEventListener('DOMContentLoaded', () => {
-            const filterForm = document.getElementById('filterForm');
-            const minPriceInput = document.getElementById('minPriceInput');
-            const maxPriceInput = document.getElementById('maxPriceInput');
-            const minPriceMessage = document.getElementById('minPriceMessage');
-            const maxPriceMessage = document.getElementById('maxPriceMessage');
-            const priceRangeMsg = document.getElementById('priceRangeMessage');
+/* ------------------------------------------------------------------
+   WISHLIST FUNCTIONS
+------------------------------------------------------------------ */
+async function toggleWishlistFromShop(productId, btn) {
+    if (!productId) {
+        showToast('Product ID is required', 'error');
+        return;
+    }
 
-            function showMsg(el, msg, type = 'error') {
-                el.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' :
-                    type === 'success' ? 'fa-check-circle' :
-                        type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${msg}`;
-                el.className = `validation-message ${type} show`;
-            }
-            function hideMsg(el) { el.className = 'validation-message'; el.innerHTML = ''; }
+    if (!window.shopState.isAuthenticated) {
+        showToast('Please login to manage your wishlist', 'error');
+        return;
+    }
 
-            function validatePriceInputs() {
-                const min = parseFloat(minPriceInput.value), max = parseFloat(maxPriceInput.value);
-                let ok = true;
-                minPriceInput.className = 'form-control';
-                maxPriceInput.className = 'form-control';
-                hideMsg(minPriceMessage); hideMsg(maxPriceMessage); hideMsg(priceRangeMsg);
+    btn.disabled = true;
 
-                if (minPriceInput.value && (isNaN(min) || min < 0)) {
-                    minPriceInput.classList.add('invalid'); showMsg(minPriceMessage, 'Invalid minimum price'); ok = false;
-                } else if (minPriceInput.value) { showMsg(minPriceMessage, 'Looks good', 'success'); }
-
-                if (maxPriceInput.value && (isNaN(max) || max < 0)) {
-                    maxPriceInput.classList.add('invalid'); showMsg(maxPriceMessage, 'Invalid maximum price'); ok = false;
-                }
-
-                if (minPriceInput.value && maxPriceInput.value && !isNaN(min) && !isNaN(max)) {
-                    if (min > max) { showMsg(priceRangeMsg, 'Maximum price must be greater', 'error'); ok = false; }
-                    else if (min === max && min > 0) { showMsg(priceRangeMsg, 'Price range is narrow', 'warning'); }
-                    else { showMsg(priceRangeMsg, 'Price range OK', 'success'); }
-                }
-                if (!minPriceInput.value && !maxPriceInput.value) { showMsg(priceRangeMsg, 'Enter price range to filter', 'info'); }
-                return ok;
-            }
-
-            function delayedValidate(i) {
-                clearTimeout(i._vT); i._vT = setTimeout(validatePriceInputs, 300);
-            }
-            minPriceInput.addEventListener('input', () => delayedValidate(minPriceInput));
-            maxPriceInput.addEventListener('input', () => delayedValidate(maxPriceInput));
-            ['focus', 'blur'].forEach(evt => {
-                [minPriceInput, maxPriceInput].forEach(inp => {
-                    inp.addEventListener(evt, () => validatePriceInputs());
-                });
-            });
-
-            filterForm.addEventListener('submit', e => {
-                if (!validatePriceInputs()) { e.preventDefault(); }
-            });
-
-            setTimeout(validatePriceInputs, 500);
+    try {
+        const response = await fetch('/api/wishlist/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ productId })
         });
 
-        /* ------------------------------------------------------------------
-           SIMPLE VIEW PRODUCT NAV
-        ------------------------------------------------------------------ */
-        function viewProduct(id) { window.location.href = `/product/${id}`; }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
 
-        /* ADD TO CART (Missing Function)*/
-        async function addToCart(productId) {
-            const button = event.target.closest('.add-to-cart');
-            const originalContent = button.innerHTML;
+        const result = await response.json();
 
-            try {
-                // Show loading state
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                button.disabled = true;
-
-                const response = await fetch('/add-to-cart', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ productId, quantity: 1 })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Show success state
-                    button.innerHTML = '<i class="fas fa-check"></i>';
-                    button.style.backgroundColor = '#28a745';
-
-                    // Update cart counter
-                    updateCartCounter(result.cartCount);
-
-                    setTimeout(() => {
-                        button.innerHTML = originalContent;
-                        button.style.backgroundColor = '';
-                        button.disabled = false;
-                    }, 1500);
-
-                    // Update cart count using unified cart state system
-                    if (window.cartState) {
-                        window.cartState.updateCount();
-                    } else if (typeof updateCartCount === 'function') {
-                        updateCartCount();
-                    }
-
-                    showToast('Added to cart successfully!', 'success');
-                } else {
-                    button.innerHTML = originalContent;
-                    button.disabled = false;
-                    showToast(result.message || 'Failed to add to cart', 'error');
+        if (result.success) {
+            // Update button state immediately
+            const icon = btn.querySelector('i');
+            if (result.action === 'added') {
+                btn.classList.add('active');
+                icon.className = 'fas fa-heart text-danger';
+                btn.title = 'Remove from Wishlist';
+                // Add to local state
+                if (!window.shopState.wishlistIds.includes(productId)) {
+                    window.shopState.wishlistIds.push(productId);
                 }
-            } catch (error) {
-                console.error('Error adding to cart:', error);
+            } else {
+                btn.classList.remove('active');
+                icon.className = 'far fa-heart';
+                btn.title = 'Add to Wishlist';
+                // Remove from local state
+                window.shopState.wishlistIds = window.shopState.wishlistIds.filter(id => id !== productId);
+            }
+
+            // Update navbar wishlist count
+            updateWishlistCount(result.wishlistCount);
+            showToast(result.message, 'success');
+        } else {
+            showToast(result.message || 'Failed to update wishlist', 'error');
+        }
+    } catch (err) {
+        console.error('Error toggling wishlist:', err);
+        showToast('Please login to manage your wishlist', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Alias for older calls
+function toggleWishlist(id, el) {
+    toggleWishlistFromShop(id, el);
+}
+
+/* ------------------------------------------------------------------
+   CART FUNCTIONS
+------------------------------------------------------------------ */
+async function addToCart(productId) {
+    if (!productId) {
+        showToast('Product ID is required', 'error');
+        return;
+    }
+
+    if (!window.shopState.isAuthenticated) {
+        showToast('Please login to add items to cart', 'error');
+        return;
+    }
+
+    // Get the button that was clicked
+    const button = event?.target?.closest('.add-to-cart');
+    const originalContent = button?.innerHTML;
+
+    try {
+        // Show loading state
+        if (button) {
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+        }
+
+        const response = await fetch('/api/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ productId, quantity: 1 })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success state
+            if (button) {
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.style.backgroundColor = '#28a745';
+
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.style.backgroundColor = '';
+                    button.disabled = false;
+                }, 1500);
+            }
+
+            // Update cart counter
+            updateCartCounter(result.cartCount);
+            showToast('Added to cart successfully!', 'success');
+        } else {
+            // FIXED: Show the actual server error message
+            if (button) {
                 button.innerHTML = originalContent;
                 button.disabled = false;
-                showToast('Please login to add items to cart', 'error');
             }
+            
+            // Display the specific error message from server (like stock limit)
+            showToast(result.message || 'Failed to add to cart', 'error');
         }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        
+        if (button) {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            showToast('Please login to add items to cart', 'error');
+        } else {
+            showToast('Unable to add item to cart. Please try again.', 'error');
+        }
+    }
+}
 
-        /* ------------------------------------------------------------------
-           UPDATE CART COUNTER (Unified System)
-        ------------------------------------------------------------------ */
-        function updateCartCounter(count) {
-            // Use unified cart state system
-            if (window.cartState) {
-                window.cartState.updateCount(count);
-            } else {
-                // Fallback for legacy support
-                const cartCounter = document.querySelector('#cartCount');
-                if (cartCounter) {
-                    cartCounter.textContent = count || '0';
-                    cartCounter.style.display = count > 0 ? 'flex' : 'none';
+/* ------------------------------------------------------------------
+   NAVIGATION FUNCTIONS
+------------------------------------------------------------------ */
+function viewProduct(id) {
+    if (!id) {
+        console.error('Product ID is required');
+        return;
+    }
+    window.location.href = `/product/${id}`;
+}
+
+/* ------------------------------------------------------------------
+   UPDATE COUNTERS
+------------------------------------------------------------------ */
+function updateCartCounter(count) {
+    window.shopState.cartCount = count || 0;
+    const cartElements = document.querySelectorAll('#cartCount, .cart-count');
+    cartElements.forEach(elem => {
+        elem.textContent = count || '0';
+        elem.style.display = count > 0 ? 'flex' : 'none';
+    });
+}
+
+function updateWishlistCount(count) {
+    window.shopState.wishlistCount = count || 0;
+    const wishlistElements = document.querySelectorAll('#wishlistCount, .wishlist-count');
+    wishlistElements.forEach(elem => {
+        elem.textContent = count || '0';
+        elem.style.display = count > 0 ? 'flex' : 'none';
+    });
+}
+
+/* ------------------------------------------------------------------
+   INITIALIZATION
+------------------------------------------------------------------ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Sync initial wishlist button states
+    if (window.shopState.isAuthenticated && window.shopState.wishlistIds) {
+        document.querySelectorAll('.wishlist-icon').forEach(btn => {
+            const productId = btn.getAttribute('data-product-id');
+            if (window.shopState.wishlistIds.includes(productId)) {
+                btn.classList.add('active');
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-heart text-danger';
                 }
+                btn.title = 'Remove from Wishlist';
+            }
+        });
+    }
 
-                // Also update navbar cart counters
-                const cartCountElements = document.querySelectorAll('.cart-count');
-                cartCountElements.forEach(elem => {
-                    elem.textContent = count || '0';
-                    elem.style.display = count > 0 ? 'flex' : 'none';
-                });
+    // Initialize counters
+    updateCartCounter(window.shopState.cartCount);
+    updateWishlistCount(window.shopState.wishlistCount);
+});
+
+/* ------------------------------------------------------------------
+   PRICE VALIDATION
+------------------------------------------------------------------ */
+document.addEventListener('DOMContentLoaded', () => {
+    const filterForm = document.getElementById('filterForm');
+    const minPriceInput = document.getElementById('minPriceInput');
+    const maxPriceInput = document.getElementById('maxPriceInput');
+    const minPriceMessage = document.getElementById('minPriceMessage');
+    const maxPriceMessage = document.getElementById('maxPriceMessage');
+    const priceRangeMsg = document.getElementById('priceRangeMessage');
+
+    function showMsg(el, msg, type = 'error') {
+        if (!el) return;
+        el.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' :
+            type === 'success' ? 'fa-check-circle' :
+                type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${msg}`;
+        el.className = `validation-message ${type} show`;
+    }
+
+    function hideMsg(el) {
+        if (!el) return;
+        el.className = 'validation-message';
+        el.innerHTML = '';
+    }
+
+    function validatePriceInputs() {
+        if (!minPriceInput || !maxPriceInput) return true;
+
+        const min = parseFloat(minPriceInput.value);
+        const max = parseFloat(maxPriceInput.value);
+        let isValid = true;
+
+        // Reset states
+        minPriceInput.className = 'form-control';
+        maxPriceInput.className = 'form-control';
+        hideMsg(minPriceMessage);
+        hideMsg(maxPriceMessage);
+        hideMsg(priceRangeMsg);
+
+        // Validate minimum price
+        if (minPriceInput.value && (isNaN(min) || min < 0)) {
+            minPriceInput.classList.add('error');
+            showMsg(minPriceMessage, 'Invalid minimum price');
+            isValid = false;
+        } else if (minPriceInput.value) {
+            showMsg(minPriceMessage, 'Looks good', 'success');
+        }
+
+        // Validate maximum price
+        if (maxPriceInput.value && (isNaN(max) || max < 0)) {
+            maxPriceInput.classList.add('error');
+            showMsg(maxPriceMessage, 'Invalid maximum price');
+            isValid = false;
+        } else if (maxPriceInput.value) {
+            showMsg(maxPriceMessage, 'Looks good', 'success');
+        }
+
+        // Validate price range
+        if (minPriceInput.value && maxPriceInput.value && !isNaN(min) && !isNaN(max)) {
+            if (min > max) {
+                showMsg(priceRangeMsg, 'Maximum price must be greater than minimum', 'error');
+                isValid = false;
+            } else if (min === max && min > 0) {
+                showMsg(priceRangeMsg, 'Price range is very narrow', 'warning');
+            } else {
+                showMsg(priceRangeMsg, 'Price range is valid', 'success');
             }
         }
 
-    </script>
+        if (!minPriceInput.value && !maxPriceInput.value) {
+            showMsg(priceRangeMsg, 'Enter price range to filter products', 'info');
+        }
+
+        return isValid;
+    }
+
+    function delayedValidate(input) {
+        clearTimeout(input._validationTimer);
+        input._validationTimer = setTimeout(validatePriceInputs, 300);
+    }
+
+    // Add event listeners
+    if (minPriceInput) {
+        minPriceInput.addEventListener('input', () => delayedValidate(minPriceInput));
+        minPriceInput.addEventListener('focus', validatePriceInputs);
+        minPriceInput.addEventListener('blur', validatePriceInputs);
+    }
+
+    if (maxPriceInput) {
+        maxPriceInput.addEventListener('input', () => delayedValidate(maxPriceInput));
+        maxPriceInput.addEventListener('focus', validatePriceInputs);
+        maxPriceInput.addEventListener('blur', validatePriceInputs);
+    }
+
+    // Validate on form submit
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            if (!validatePriceInputs()) {
+                e.preventDefault();
+                showToast('Please fix the price range errors before adding filters', 'error');
+            }
+        });
+    }
+
+    // Initial validation
+    setTimeout(validatePriceInputs, 500);
+});
+</script>
+
+
+
 
     <%- include("../partials/footer") %>
 </body>
