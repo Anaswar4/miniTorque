@@ -524,12 +524,12 @@
       async function fetchSearchResults(query) {
         try {
           //  existing API route
-          const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`);
+         const response = await fetch(`/navbar-search?q=${encodeURIComponent(query)}&limit=10`);
           if (!response.ok) throw new Error("Network response was not ok");
-          const data = await response.json();
+          const products = await response.json();
 
           //  Return the products array from your API response
-          return data.success ? data.products : [];
+          return Array.isArray(products) ? products : [];
         } catch (error) {
           console.error("Error fetching search results:", error);
           return [];
@@ -546,26 +546,25 @@
 
         products.forEach((product) => {
           const item = document.createElement("a");
-          //  Update href to match your route structure (adjust as needed)
-          item.href = `#`; // Or `/product/${product._id}` if you have that route
+          item.href = `/product/${product._id}`;
           item.classList.add("search-result-item");
 
-          //  Use your actual product schema fields
+          //actual product schema fields
           item.innerHTML = `
           <img src="/uploads/products/${product.mainImage}" 
                alt="${product.productName}" 
                onerror="this.src='/assets/placeholder.jpg'" />
           <div>
             <div class="title">${product.productName}</div>
-            <div class="author">${product.brand}</div>
-            <div class="price">₹${product.salePrice.toFixed(2)}</div>
+            <div class="brand">${product.brand}</div>
+            
           </div>
         `;
 
           // Add click handler to view product
           item.addEventListener('click', (e) => {
             e.preventDefault();
-            viewProduct(product._id); // Use your existing viewProduct function
+            viewProduct(product._id); // Use existing viewProduct function
           });
 
           resultsContainer.appendChild(item);
@@ -671,7 +670,7 @@
         }
       });
 
-      // 🔥 FIXED: Active page highlighting with safe URL handling
+      //  Active page highlighting with safe URL handling
       function setActiveNavLink() {
         const currentPath = window.location.pathname;
         const navLinks = document.querySelectorAll('.nav-link');
@@ -845,8 +844,6 @@
             e.stopPropagation();
           }
         });
-
-        console.log('Dropdown functionality initialized successfully');
       }
 
       // Initialize user dropdown
@@ -892,7 +889,7 @@
       });
     });
     document.addEventListener("DOMContentLoaded", function () {
-      // 🔥 GLOBAL STATE MANAGEMENT SYSTEM FOR REAL-TIME SYNCHRONIZATION
+      //  GLOBAL STATE MANAGEMENT SYSTEM FOR REAL-TIME SYNCHRONIZATION
       window.globalState = {
         wishlist: {
           userWishlistIds: [],
@@ -1156,7 +1153,7 @@
         syncAllWishlistButtons: () => window.globalState.syncAllWishlistButtons()
       };
 
-      // 🔥 ENHANCED GLOBAL UPDATE FUNCTIONS WITH REAL-TIME SYNC
+      //  ENHANCED GLOBAL UPDATE FUNCTIONS WITH REAL-TIME SYNC
       window.updateWishlistCount = async function () {
         try {
           const response = await fetch('/wishlist/count');
@@ -1176,7 +1173,7 @@
         }
       };
 
-      // 🔥 UNIFIED CART STATE MANAGEMENT SYSTEM
+      //  UNIFIED CART STATE MANAGEMENT SYSTEM
       window.cartState = {
         count: 0,
         initialized: false,
@@ -1278,12 +1275,12 @@
         }
       };
 
-      // 🔥 ENHANCED GLOBAL CART COUNT UPDATE FUNCTION WITH REAL-TIME SYNC
+      //  ENHANCED GLOBAL CART COUNT UPDATE FUNCTION WITH REAL-TIME SYNC
       window.updateCartCount = async function () {
         await window.cartState.updateCount();
       };
 
-      // 🔥 UNIVERSAL TOAST FUNCTION - ACCESSIBLE FROM ALL PAGES
+      //  UNIVERSAL TOAST FUNCTION - ACCESSIBLE FROM ALL PAGES
       window.showToast = function (message, type = 'success') {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -1315,15 +1312,15 @@
         }, type === 'success' ? 3000 : 5000);
       };
 
-      // 🔥 SETUP CROSS-PAGE COMMUNICATION FOR CART AND WISHLIST UPDATES
+      //  SETUP CROSS-PAGE COMMUNICATION FOR CART AND WISHLIST UPDATES
       window.addEventListener('storage', function(e) {
-        console.log('🔄 Storage event received:', e.key, e.newValue);
+        console.log(' Storage event received:', e.key, e.newValue);
 
         if (e.key === 'miniTorque_cart_sync') {
           try {
             const data = JSON.parse(e.newValue || '{}');
             if (data.type === 'cart_update' && window.cartState) {
-              console.log('📦 Syncing cart from other page:', data.count);
+              console.log(' Syncing cart from other page:', data.count);
               window.cartState.handleExternalUpdate(data);
             }
           } catch (error) {
@@ -1333,7 +1330,7 @@
           try {
             const data = JSON.parse(e.newValue || '{}');
             if (data.type === 'wishlist_update' && window.globalState) {
-              console.log('❤️ Syncing wishlist from other page:', data.productId, data.action);
+              console.log(' Syncing wishlist from other page:', data.productId, data.action);
               window.globalState.handleWishlistUpdate(data.productId, data.action);
             }
           } catch (error) {
@@ -1342,22 +1339,22 @@
         }
       });
 
-      // 🔥 DEBUG FUNCTION FOR TESTING CROSS-PAGE SYNC
+      //  DEBUG FUNCTION FOR TESTING CROSS-PAGE SYNC
       window.testSync = function() {
-        console.log('🧪 Testing cross-page synchronization...');
+        console.log(' Testing cross-page synchronization...');
         console.log('Cart State:', window.cartState ? window.cartState.count : 'Not initialized');
         console.log('Wishlist State:', window.globalState ? window.globalState.wishlist.userWishlistIds : 'Not initialized');
 
         // Test cart sync
         if (window.cartState) {
           window.cartState.broadcastUpdate();
-          console.log('📦 Cart sync test broadcast sent');
+          console.log(' Cart sync test broadcast sent');
         }
 
         // Test wishlist sync
         if (window.globalState) {
           window.globalState.broadcastWishlistUpdate('test-product-id', 'added');
-          console.log('❤️ Wishlist sync test broadcast sent');
+          console.log(' Wishlist sync test broadcast sent');
         }
       };
 

@@ -5,6 +5,9 @@ const User = require('../../models/user-model');
 const Wishlist = require('../../models/wishlist-schema');
 const Cart= require('../../models/cart-schema')
 
+
+
+
 const getProducts = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -467,11 +470,12 @@ const getFeaturedProducts = async (req, res) => {
     }
 };
 
-const searchProducts = async (req, res) => {
+ const searchProducts = async (req, res) => {
     try {
         const query = req.query.q || '';
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
+      
 
         if (!query.trim()) {
             return res.json({
@@ -486,6 +490,8 @@ const searchProducts = async (req, res) => {
                 }
             });
         }
+
+       
 
         // Use aggregation with category filtering
         const pipeline = [
@@ -521,7 +527,7 @@ const searchProducts = async (req, res) => {
 
         const products = await Product.aggregate(pipeline);
 
-        //  Add price calculations 
+        // Add price calculations 
         products.forEach(product => {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -589,10 +595,11 @@ const searchProducts = async (req, res) => {
         console.error('Error searching products:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to search products'
-        });
-    }
-};
+             message: 'Failed to search products'
+         });
+     }
+ };
+
 
 const getShopPage = async (req, res) => {
     try {
@@ -632,13 +639,13 @@ const getShopPage = async (req, res) => {
         }
 
         // Search filter
-        if (req.query.search) {
-            const searchRegex = new RegExp(req.query.search, 'i');
+        if(req.query.search){
+            const searchQuery = req.query.search;
             baseMatch.$or = [
-                { productName: searchRegex },
-                { brand: searchRegex },
-                { description: searchRegex }
-            ];
+                {productName:{$regex:`^${searchQuery}`,$options:'i'}},
+                { brand: { $regex: `^${searchQuery}`, $options: 'i' } },
+                 { description: { $regex: `^${searchQuery}`, $options: 'i' } }
+            ]
         }
 
         // Availability filter
@@ -736,7 +743,7 @@ const getShopPage = async (req, res) => {
             delete product.finalSellingPrice;
         });
 
-        // FIXED: Get total count with SAME filters as main pipeline
+        //  Get total count with SAME filters as main pipeline
         const countPipeline = [
             {
                 $lookup: {
@@ -983,7 +990,7 @@ const getProductDetails = async (req, res) => {
             }
         }
 
-        // Render with all data
+        
         res.render('user/product-details', {
             product,
             relatedProducts,
@@ -992,7 +999,7 @@ const getProductDetails = async (req, res) => {
             cartCount,
             isInCart,
             isWishlisted,
-            user: userProfile || user, // Use detailed user profile if available
+            user: userProfile || user, 
             isAuthenticated: !!userId,
             currentPage: 'product-details'
         });

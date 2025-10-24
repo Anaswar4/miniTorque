@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const userController = require("../../controllers/user/user-controller");
+const navSearchController = require("../../controllers/user/navSearch-controller");
 const userProductController = require("../../controllers/user/product-controller");
 const userProfileController = require("../../controllers/user/user-profile-controller");
 const addressController = require("../../controllers/user/address-controller");
@@ -22,7 +23,7 @@ router.get(
 );
 
 
-// Google OAuth Callback - FIXED
+// Google OAuth Callback 
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/signup" }),
@@ -63,6 +64,7 @@ router.get(
 
 // Landing page - redirect authenticated users to home
 router.get("/", preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked, userController.loadHome);
+router.get("/navbar-search",preventCache,redirectIfAuthenticated,validateSession,addUserContext,checkUserBlocked,navSearchController.searchProduct);
 
 
 // Public routes - redirect authenticated users away from login/signup

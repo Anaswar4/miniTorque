@@ -877,7 +877,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         // Sync all wishlist buttons on page load
         window.globalState.syncAllWishlistButtons();
     }
-    console.log('✅ DOM Content Loaded');
+    console.log(' DOM Content Loaded');
     
     // Get all elements
     const addToCartBtn = document.querySelector('.btn-add-to-cart');
@@ -931,10 +931,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ================================
     if (addToCartBtn) {
         addToCartBtn.addEventListener('click', async function () {
-            console.log('🛒 Add to Cart clicked');
+            console.log(' Add to Cart clicked');
             
             if (this.disabled) {
-                console.log('❌ Button is disabled');
+                console.log(' Button is disabled');
                 return;
             }
 
@@ -995,10 +995,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                         this.disabled = false;
                     }, 2000);
                 } else {
-                    throw new Error(result.message || 'Failed to add to cart');
+                //  const msg = typeof result.message === 'string' ? result.message : 'Failed to add to cart';
+                //   throw new Error(msg);
+                     throw new Error(result.message || 'Failed to add to cart');
                 }
             } catch (error) {
-                console.error('❌ Cart error:', error);
+                console.error(' Cart error:', error);
                 
                 // Reset button
                 this.querySelector('span').textContent = originalText;
