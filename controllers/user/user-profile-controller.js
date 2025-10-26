@@ -249,38 +249,59 @@ const updateProfileData = async (req, res) => {
 const verifyCurrentEmail = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
-    const { currentEmail } = req.body;
+    const { currentEmail, newEmail } = req.body;  
     if (!userId) return res.status(401).json({ success: false, message: "Please login" });
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
+    // Verify current email is correct
     if (user.email !== currentEmail.toLowerCase().trim()) {
       return res.status(400).json({ success: false, message: "Current email is incorrect" });
     }
 
+    // Validate new email format
+    const emailValidation = validateEmailFormat(newEmail);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ success: false, message: emailValidation.error });
+    }
+
+    // Check if new email already exists
+    const existingUser = await User.findOne({
+      email: emailValidation.trimmedValue,
+      _id: { $ne: userId }
+    });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+
+    // Generate OTP
     const otp = generateOtp();
     console.log(otp);
+    
+    // Store new email in session
     req.session.emailChangeOtp = {
       otp,
-      email: user.email,
+      email: emailValidation.trimmedValue,  
       userId,
       expiresAt: Date.now() + 5 * 60 * 1000  
     };
 
     try {
-      await sendOTP(user.email, otp);
+      // Send OTP to NEW email
+      await sendOTP(emailValidation.trimmedValue, otp);
     } catch (error) {
       console.error('Error sending OTP:', error);
       return res.status(500).json({ success: false, message: "Failed to send OTP" });
     }
 
-    res.json({ success: true, message: "OTP sent to your current email address" });
+    res.json({ success: true, message: "OTP sent to your new email address" });
   } catch (err) {
     console.error("Error verifying current email:", err);
     res.status(500).json({ success: false, message: "Failed to verify email" });
   }
 };
+
 
 const loadEmailChangeOtp = async (req, res) => {
   try {
@@ -348,32 +369,19 @@ const verifyEmailChangeOtp = async (req, res) => {
 
 const changeEmail = async (req, res) => {
   try {
-    const { newEmail } = req.body;
     const sessionOtp = req.session.emailChangeOtp;
     if (!sessionOtp || !sessionOtp.verified) {
       return res.status(400).json({ success: false, message: "OTP not verified" });
     }
 
-    const emailValidation = validateEmailFormat(newEmail);
-    if (!emailValidation.isValid) {
-      return res.status(400).json({ success: false, message: emailValidation.error });
-    }
-
-    const existingUser = await User.findOne({
-      email: emailValidation.trimmedValue,
-      _id: { $ne: sessionOtp.userId }
-    });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
-    }
-
+    // Update to the new email stored in session
     const updatedUser = await User.findByIdAndUpdate(
       sessionOtp.userId,
-      { email: emailValidation.trimmedValue },
+      { email: sessionOtp.email },  
       { new: true, runValidators: true }
     ).select("-password");
 
-    req.session.email = emailValidation.trimmedValue;
+    req.session.email = sessionOtp.email;
     req.session.emailChangeOtp = null;
 
     res.json({ success: true, message: "Email updated successfully", user: updatedUser });
@@ -382,6 +390,7 @@ const changeEmail = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to update email address" });
   }
 };
+
 
 /* ------------------------------------------------------------------
    4. PASSWORD UPDATE

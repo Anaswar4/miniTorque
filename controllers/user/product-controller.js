@@ -638,12 +638,12 @@ const getShopPage = async (req, res) => {
             }
         }
 
-        // Search filter
+    // Search filter
         if(req.query.search){
             const searchQuery = req.query.search;
             baseMatch.$or = [
-                {productName:{$regex:`^${searchQuery}`,$options:'i'}},
-                { brand: { $regex: `^${searchQuery}`, $options: 'i' } },
+                {productName:{$regex:searchQuery,$options:'i'}},
+                 { brand: { $regex: `^${searchQuery}`, $options: 'i' } },
                  { description: { $regex: `^${searchQuery}`, $options: 'i' } }
             ]
         }

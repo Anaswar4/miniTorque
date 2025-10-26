@@ -19,7 +19,7 @@ const searchProduct = async (req,res)=>{
             {
                 $match: {
                     $or: [
-                        { productName: { $regex: `^${query}`, $options: 'i' } },
+                        { productName: { $regex: query, $options: 'i' } },
                         { 'category.name': { $regex: `^${query}`, $options: 'i' } }  
                     ],
                     isListed: true,

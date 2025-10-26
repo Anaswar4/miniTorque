@@ -64,7 +64,7 @@ router.get(
 
 // Landing page - redirect authenticated users to home
 router.get("/", preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked, userController.loadHome);
-router.get("/navbar-search",preventCache,redirectIfAuthenticated,validateSession,addUserContext,checkUserBlocked,navSearchController.searchProduct);
+router.get("/navbar-search",preventCache,validateSession,addUserContext,checkUserBlocked,navSearchController.searchProduct);
 
 
 // Public routes - redirect authenticated users away from login/signup

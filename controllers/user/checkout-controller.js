@@ -338,7 +338,7 @@ const placeOrder = async (req, res) => {
 const loadOrderSuccess = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const userId = req.session.userId || req.session.googleUserId;  // ✅ FIXED: Support both auth methods
+    const userId = req.session.userId || req.session.googleUserId;  
 
     const order = await Order.findOne({ orderId, userId })
       .populate('orderedItems.product');

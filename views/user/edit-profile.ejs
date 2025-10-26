@@ -85,31 +85,43 @@
             </div>
         </div>
 
+       
         <!-- Email Verification Modal -->
-        <div id="emailVerificationModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Verify Current Email</h3>
-                    <button type="button" class="close" onclick="closeEmailVerificationModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <p>To change your email address, please verify your current email first.</p>
-                    <div class="form-group">
-                        <label for="currentEmail" class="form-label">Current Email Address</label>
-                        <input type="email" class="form-control" id="currentEmail"
-                            placeholder="Enter your current email">
-                        <div class="error-message" id="currentEmail-error"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        onclick="closeEmailVerificationModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="verifyCurrentEmail()" id="verifyEmailBtn">
-                        Send OTP
-                    </button>
-                </div>
+<div id="emailVerificationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Change Email Address</h3>
+            <button type="button" class="close" onclick="closeEmailVerificationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Enter your current and new email addresses. OTP will be sent to your new email.</p>
+            
+            <!-- Current Email Field  -->
+            <div class="form-group">
+                <label for="currentEmail" class="form-label">Current Email Address</label>
+                <input type="email" class="form-control" id="currentEmail"
+                    value="<%= user.email %>" readonly>
+                <div class="error-message" id="currentEmail-error"></div>
+            </div>
+            
+            <!-- New Email Field  -->
+            <div class="form-group">
+                <label for="newEmail" class="form-label">New Email Address</label>
+                <input type="email" class="form-control" id="newEmail"
+                    placeholder="Enter your new email address">
+                <div class="error-message" id="newEmail-error"></div>
             </div>
         </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary"
+                onclick="closeEmailVerificationModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="verifyCurrentEmail()" id="verifyEmailBtn">
+                Send OTP to New Email
+            </button>
+        </div>
+    </div>
+</div>
+
 
         <!-- Toast container -->
         <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
@@ -311,51 +323,90 @@
                 }
             });
 
-            /* ------------ Email Verification Modal ------------ */
-            function openEmailVerificationModal() {
-                document.getElementById('emailVerificationModal').style.display = 'block';
-                document.getElementById('currentEmail').value = '<%= user.email || "" %>';
-            }
-            function closeEmailVerificationModal() {
-                document.getElementById('emailVerificationModal').style.display = 'none';
-                clearError('currentEmail');
-            }
-            window.onclick = e => {
-                const modal = document.getElementById('emailVerificationModal');
-                if (e.target === modal) closeEmailVerificationModal();
-            };
+           
+           /* ------------ Email Verification Modal ------------ */
+function openEmailVerificationModal() {
+    document.getElementById('emailVerificationModal').style.display = 'block';
+    document.getElementById('currentEmail').value = '<%= user.email || "" %>';
+    document.getElementById('newEmail').value = '';  
+}
 
-            async function verifyCurrentEmail() {
-                const currentEmail = document.getElementById('currentEmail').value.trim();
-                if (!currentEmail) { showError('currentEmail', 'Please enter your current email'); return; }
-                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!re.test(currentEmail)) { showError('currentEmail', 'Enter a valid email'); return; }
+function closeEmailVerificationModal() {
+    document.getElementById('emailVerificationModal').style.display = 'none';
+    clearError('currentEmail');
+    clearError('newEmail');  
+}
 
-                clearError('currentEmail');
-                const btn = document.getElementById('verifyEmailBtn');
-                btn.disabled = true; btn.textContent = 'Sending OTP...';
+window.onclick = e => {
+    const modal = document.getElementById('emailVerificationModal');
+    if (e.target === modal) closeEmailVerificationModal();
+};
 
-                try {
-                    const res = await fetch('/profile/verify-current-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ currentEmail })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        closeEmailVerificationModal();
-                        showToast('OTP Sent', 'An OTP has been sent to your email', 'success');
-                        setTimeout(() => window.location.href = '/profile/email-change-otp', 3000);
-                    } else {
-                        showError('currentEmail', data.message || 'Verification failed');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showError('currentEmail', 'Error verifying email');
-                } finally {
-                    btn.disabled = false; btn.textContent = 'Send OTP';
-                }
-            }
+async function verifyCurrentEmail() {
+    const currentEmail = document.getElementById('currentEmail').value.trim();
+    const newEmail = document.getElementById('newEmail').value.trim();  
+    
+    // Validate current email
+    if (!currentEmail) { 
+        showError('currentEmail', 'Please enter your current email'); 
+        return; 
+    }
+    
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!re.test(currentEmail)) { 
+        showError('currentEmail', 'Enter a valid email'); 
+        return; 
+    }
+    
+    // Validate new email
+    if (!newEmail) { 
+        showError('newEmail', 'Please enter your new email'); 
+        return; 
+    }
+    if (!re.test(newEmail)) { 
+        showError('newEmail', 'Enter a valid new email'); 
+        return; 
+    }
+    
+    // Check if emails are the same
+    if (currentEmail.toLowerCase() === newEmail.toLowerCase()) {
+        showError('newEmail', 'New email must be different from current email');
+        return;
+    }
+
+    clearError('currentEmail');
+    clearError('newEmail');
+    
+    const btn = document.getElementById('verifyEmailBtn');
+    btn.disabled = true; 
+    btn.textContent = 'Sending OTP...';
+
+    try {
+        const res = await fetch('/profile/verify-current-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                currentEmail,
+                newEmail  
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeEmailVerificationModal();
+            showToast('OTP Sent', 'An OTP has been sent to your new email address', 'success');
+            setTimeout(() => window.location.href = '/profile/email-change-otp', 3000);
+        } else {
+            showError('newEmail', data.message || 'Verification failed');
+        }
+    } catch (err) {
+        console.error(err);
+        showError('newEmail', 'Error verifying email');
+    } finally {
+        btn.disabled = false; 
+        btn.textContent = 'Send OTP';
+    }
+}
+
         </script>
 </body>
 
