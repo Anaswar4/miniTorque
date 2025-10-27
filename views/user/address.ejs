@@ -478,7 +478,7 @@
 
             // Set existing values if editing
             const existingState = '<%= address ? address.state : "" %>';
-            const existingDistrict = '<%= address ? address.landMark : "" %>'; // Note: This seems to be wrong in original, should be district field
+            const existingDistrict = '<%= address ? address.district : "" %>'; 
             
             if (existingState) {
                 stateSelect.value = existingState;

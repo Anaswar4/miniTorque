@@ -56,6 +56,13 @@ const validateAddAddressForm = (formData) => {
         validatedData.state = formData.state.trim();
     }
 
+    // Validate district
+    if (!formData.district || formData.district.trim().length < 2) {
+        errors.district = 'District is required';
+    } else {
+        validatedData.district = formData.district.trim();
+    }
+
     // Validate pincode
     if (!formData.pincode || !/^[1-9]\d{5}$/.test(formData.pincode.trim())) {
         errors.pincode = 'Pincode must be exactly 6 digits and cannot start with 0';

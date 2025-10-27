@@ -209,6 +209,37 @@ const validateState = (state) => {
 };
 
 
+/**
+ * Validates district field
+ * @param {string} district - The district to validate
+ * @returns {object} - { isValid: boolean, error: string, field: string }
+ */
+const validateDistrict = (district) => {
+    if (!district || district.trim() === '') {
+        return {
+            isValid: false,
+            error: 'District is required',
+            field: 'district'
+        };
+    }
+
+    const trimmedDistrict = district.trim();
+    
+    if (trimmedDistrict.length < 2) {
+        return {
+            isValid: false,
+            error: 'District must be at least 2 characters long',
+            field: 'district'
+        };
+    }
+
+    return {
+        isValid: true,
+        trimmedValue: trimmedDistrict
+    };
+};
+
+
 
 /**
  * Validates pincode field
