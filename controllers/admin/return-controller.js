@@ -53,7 +53,7 @@ const getReturnRequests = async (req, res) => {
         processedRequests.push({
           ...order.toObject(),
           returnType: 'entire',
-          returnItems: order.orderedItems,
+          returnItems: includedItems,
           returnAmount: currentTotal
         });
       } else {

@@ -89,87 +89,88 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="product-info">
-                                            <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
-                                                <% 
-                                                // For individual returns, show the specific returned item
-                                                const returnItem = order.returnItems[0];
-                                                const product = returnItem.product;
-                                                let productImage = null;
-                                                let hasImage = false;
-                                                
-                                                if (product && product.productImages && product.productImages.length > 0) {
-                                                    productImage = `/uploads/products/${product.productImages[0]}`;
-                                                    hasImage = true;
-                                                } else if (product && product.mainImage) {
-                                                    productImage = `/uploads/products/${product.mainImage}`;
-                                                    hasImage = true;
-                                                }
-                                                %>
-                                                <% if (hasImage) { %>
-                                                    <img src="<%= productImage %>" 
-                                                         alt="Product" class="product-image"
-                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                                    <div class="product-placeholder" style="display: none;">
-                                                        <i class="fas fa-image"></i>
-                                                    </div>
-                                                <% } else { %>
-                                                    <div class="product-placeholder">
-                                                        <i class="fas fa-image"></i>
-                                                    </div>
-                                                <% } %>
-                                                <div class="product-details">
-                                                    <h6><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
-                                                    <small>
-                                                        Qty: <%= returnItem.quantity || 1 %> | Individual Return
-                                                    </small>
-                                                </div>
-                                            <% } else if (order.orderedItems && order.orderedItems.length > 0) { %>
-                                                <% 
-                                                // For entire order returns, show first item with count
-                                                const firstItem = order.orderedItems[0];
-                                                const product = firstItem.product;
-                                                let productImage = null;
-                                                let hasImage = false;
-                                                
-                                                if (product && product.productImages && product.productImages.length > 0) {
-                                                    productImage = `/uploads/products/${product.productImages[0]}`;
-                                                    hasImage = true;
-                                                } else if (product && product.mainImage) {
-                                                    productImage = `/uploads/products/${product.mainImage}`;
-                                                    hasImage = true;
-                                                }
-                                                %>
-                                                <% if (hasImage) { %>
-                                                    <img src="<%= productImage %>" 
-                                                         alt="Product" class="product-image"
-                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                                    <div class="product-placeholder" style="display: none;">
-                                                        <i class="fas fa-image"></i>
-                                                    </div>
-                                                <% } else { %>
-                                                    <div class="product-placeholder">
-                                                        <i class="fas fa-image"></i>
-                                                    </div>
-                                                <% } %>
-                                                <div class="product-details">
-                                                    <h6><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
-                                                    <small>
-                                                        <% if (order.orderedItems.length > 1) { %>
-                                                            +<%= order.orderedItems.length - 1 %> more items | Entire Order
-                                                        <% } else { %>
-                                                            Qty: <%= firstItem.quantity || 1 %> | Entire Order
-                                                        <% } %>
-                                                    </small>
-                                                </div>
-                                            <% } else { %>
-                                                <div class="product-details">
-                                                    <h6>No items</h6>
-                                                    <small>No products found</small>
-                                                </div>
-                                            <% } %>
-                                        </div>
-                                    </td>
+    <div class="product-info">
+        <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
+            <% 
+            const returnItem = order.returnItems[0];
+            const product = returnItem.product;
+            let productImage = null;
+            let hasImage = false;
+            
+            if (product && product.productImages && product.productImages.length > 0) {
+                productImage = `/uploads/products/${product.productImages[0]}`;
+                hasImage = true;
+            } else if (product && product.mainImage) {
+                productImage = `/uploads/products/${product.mainImage}`;
+                hasImage = true;
+            }
+            %>
+            <% if (hasImage) { %>
+                <img src="<%= productImage %>" 
+                     alt="Product" class="product-image"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="product-placeholder" style="display: none;">
+                    <i class="fas fa-image"></i>
+                </div>
+            <% } else { %>
+                <div class="product-placeholder">
+                    <i class="fas fa-image"></i>
+                </div>
+            <% } %>
+            <div class="product-details">
+                <h6><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
+                <small>Qty: <%= returnItem.quantity || 1 %></small>
+            </div>
+        <% } else if (order.returnItems && order.returnItems.length > 0) { %>
+            <div class="product-details">
+                <% /* Show ALL products with their images */ %>
+                <% order.returnItems.forEach((item, index) => { %>
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <% 
+                        let productImage = null;
+                        let hasImage = false;
+                        const product = item.product;
+                        
+                        if (product && product.productImages && product.productImages.length > 0) {
+                            productImage = `/uploads/products/${product.productImages[0]}`;
+                            hasImage = true;
+                        } else if (product && product.mainImage) {
+                            productImage = `/uploads/products/${product.mainImage}`;
+                            hasImage = true;
+                        }
+                        %>
+                        
+                        <% if (hasImage) { %>
+                            <img src="<%= productImage %>" 
+                                 alt="Product" class="product-image"
+                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="product-placeholder" style="display: none; width: 40px; height: 40px; margin-right: 10px;">
+                                <i class="fas fa-image"></i>
+                            </div>
+                        <% } else { %>
+                            <div class="product-placeholder" style="width: 40px; height: 40px; margin-right: 10px;">
+                                <i class="fas fa-image"></i>
+                            </div>
+                        <% } %>
+                        
+                        <h6 style="margin: 0;"><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
+                    </div>
+                    <% if (index < order.returnItems.length - 1) { %>
+                        <hr style="margin: 8px 0;">
+                    <% } %>
+                <% }); %>
+                <small><%= order.returnItems.length %> items | Entire Order</small>
+            </div>
+        <% } else { %>
+            <div class="product-details">
+                <h6>No items</h6>
+                <small>No products found</small>
+            </div>
+        <% } %>
+    </div>
+</td>
+
                                     <td>
                                         <div class="amount-cell">
                                             <i class="fas fa-rupee-sign"></i>
@@ -182,17 +183,35 @@
                                             <span><%= order.returnRequestedAt ? new Date(order.returnRequestedAt).toLocaleDateString('en-IN') : 'N/A' %></span>
                                         </div>
                                     </td>
-                                    <td>
-                                        <div class="reason-cell">
-                                            <div class="reason-text">
-                                                <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
-                                                    <%= order.returnItems[0].returnReason || 'No reason provided' %>
-                                                <% } else { %>
-                                                    <%= order.returnReason || 'No reason provided' %>
-                                                <% } %>
-                                            </div>
-                                        </div>
-                                    </td>
+                                   <td>
+    <div class="reason-cell">
+        <div class="reason-text">
+            <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
+                <%= order.returnItems[0].returnReason || 'No reason provided' %>
+            <% } else if (order.returnItems && order.returnItems.length > 0) { %>
+                <% /* For entire order with multiple items, show all unique reasons */ %>
+                <% 
+                const reasons = order.returnItems
+                    .map(item => item.returnReason)
+                    .filter(reason => reason && reason.trim())
+                    .filter((reason, index, self) => self.indexOf(reason) === index); // Remove duplicates
+                
+                if (reasons.length > 0) {
+                %>
+                    <% reasons.forEach((reason, index) => { %>
+                        <%= reason %><%= index < reasons.length - 1 ? ', ' : '' %>
+                    <% }); %>
+                <% } else { %>
+                    <%= order.returnReason || 'No reason provided' %>
+                <% } %>
+            <% } else { %>
+                <%= order.returnReason || 'No reason provided' %>
+            <% } %>
+        </div>
+    </div>
+</td>
+
+
                                     <td>
                                         <div class="status-display">
                                             <span class="status-badge status-pending">
