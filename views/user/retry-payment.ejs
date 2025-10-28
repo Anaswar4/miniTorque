@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retry Payment</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <%- include("../partials/head") %>
+    <link rel="stylesheet" href="/css/user/retry-payment.css">
+</head>
+<body>
+    <div class="retry-container">
+        <div class="retry-card">
+            <div class="retry-icon">
+                <i class="fas fa-redo"></i>
+            </div>
+
+            <h1 class="retry-title">Retry Payment</h1>
+            <p class="retry-subtitle">Complete your payment to confirm your order</p>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <h4><i class="fas fa-receipt"></i> Order Summary</h4>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Order ID</span>
+                    <span class="summary-value order-id"><%= order.orderId %></span>
+                </div>
+                
+                <% if (order.couponApplied && order.couponDiscount > 0) { %>
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal</span>
+                    <span class="summary-value">₹<%= (order.finalAmount + order.couponDiscount - order.shippingCharges).toFixed(2) %></span>
+                </div>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Coupon Discount</span>
+                    <span class="summary-value" style="color: var(--success-color);">-₹<%= order.couponDiscount.toFixed(2) %></span>
+                </div>
+                
+                <% if (order.shippingCharges > 0) { %>
+                <div class="summary-row">
+                    <span class="summary-label">Shipping</span>
+                    <span class="summary-value">₹<%= order.shippingCharges.toFixed(2) %></span>
+                </div>
+                <% } %>
+                <% } %>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Total Amount</span>
+                    <span class="summary-value">₹<%= order.finalAmount.toFixed(2) %></span>
+                </div>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Payment Method</span>
+                    <span class="summary-value">Online Payment</span>
+                </div>
+            </div>
+
+            <!-- Retry Payment Button -->
+            <button class="btn-retry-payment" onclick="initiatePayment()">
+                <i class="fas fa-credit-card"></i>
+                Pay ₹<%= order.finalAmount.toFixed(2) %>
+            </button>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                    <a href="/order-details/<%= order.orderId %>" class="btn-secondary-custom">
+                    <i class="fas fa-eye"></i>
+                    View Order Details
+                </a>
+                <a href="/shop" class="btn-secondary-custom">
+                    <i class="fas fa-store"></i>
+                    Continue Shopping
+                </a>
+            </div>
+
+            <!-- Security Info -->
+            <div class="security-info">
+                <h5><i class="fas fa-shield-alt"></i> Secure Payment</h5>
+                <p>
+                    Your payment information is encrypted and secure. We use industry-standard security measures 
+                    to protect your financial data during the transaction process.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+    // Helper function to show toast messages
+    function showToast(message, type) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 9999;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            `;
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            background: ${type === 'success' ? '#4caf50' : '#f44336'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 350px;
+            word-wrap: break-word;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+
+        // Add icon
+        const icon = document.createElement('i');
+        icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        toast.appendChild(icon);
+
+        // Add message
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+        toast.appendChild(messageSpan);
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+
+        // Auto remove
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }, type === 'success' ? 3000 : 5000);
+    }
+
+    function initiatePayment() {
+        const retryBtn = document.querySelector('.btn-retry-payment');
+        const originalText = retryBtn.innerHTML;
+
+        // Show loading state
+        retryBtn.disabled = true;
+        retryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        const options = {
+            key: '<%= razorpayKeyId %>',
+            amount: <%= Math.round(order.finalAmount * 100) %>,
+            currency: 'INR',
+            name: 'miniTorque',
+            description: 'Retry Payment for Order <%= order.orderId %>',
+            order_id: '<%= razorpayOrderId %>',
+            prefill: {
+                name: '<%= user.fullName %>',
+                email: '<%= user.email %>',
+                contact: '<%= order.shippingAddress.phone %>'
+            },
+            theme: {
+                color: '#667eea'
+            },
+            handler: async function (response) {
+                // Payment successful
+                try {
+                    const verifyResponse = await fetch('/checkout/verify-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            orderId: '<%= order.orderId %>'
+                        })
+                    });
+
+                    const verifyResult = await verifyResponse.json();
+
+                    if (verifyResult.success) {
+                        // Payment verified successfully
+                        showToast('Payment successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = `/order-success/<%= order.orderId %>`;
+                        }, 2000);
+                    } else {
+                        throw new Error(verifyResult.message || 'Payment verification failed');
+                    }
+
+                } catch (error) {
+                    console.error('Payment verification error:', error);
+                    
+                    // Mark payment as failed and redirect to failure page
+                    try {
+                        await fetch('/checkout/payment-failed', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                orderId: '<%= order.orderId %>',
+                                error: { description: 'Payment verification failed' }
+                            })
+                        });
+                        
+                        // Redirect to failure page
+                        window.location.href = `/order-failure/<%= order.orderId %>`;
+                    } catch (failureError) {
+                        // Fallback: show toast if redirect fails
+                        showToast('Payment verification failed. Please contact support.', 'error');
+
+                        // Reset button
+                        retryBtn.disabled = false;
+                        retryBtn.innerHTML = originalText;
+                    }
+                }
+            },
+            modal: {
+                ondismiss: function() {
+                    // Payment modal closed
+                    retryBtn.disabled = false;
+                    retryBtn.innerHTML = originalText;
+                }
+            }
+        };
+
+        // Create Razorpay instance and open payment modal
+        const rzp = new Razorpay(options);
+        
+        rzp.on('payment.failed', async function (response) {
+            // Payment failed
+            try {
+                await fetch('/checkout/payment-failed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: '<%= order.orderId %>',
+                        error: response.error
+                    })
+                });
+
+                // Redirect to failure page
+                window.location.href = `/order-failure/<%= order.orderId %>`;
+
+            } catch (error) {
+                console.error('Error handling payment failure:', error);
+                
+                // Fallback: show toast if redirect fails
+                showToast(response.error.description || 'Payment was not successful', 'error');
+
+                // Reset button
+                retryBtn.disabled = false;
+                retryBtn.innerHTML = originalText;
+            }
+        });
+
+        rzp.open();
+    }
+</script>
+
+
+    <%- include("../partials/footer") %>
+</body>
+</html>

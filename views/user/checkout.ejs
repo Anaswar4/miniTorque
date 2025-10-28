@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - miniTorque</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
-   
+
     <link rel="stylesheet" href="/css/user/checkout.css">
 
+    <%- include("../partials/head") %>
 
-     <%- include("../partials/head") %>
-
-     <link rel="stylesheet" href="/css/breadcrumb.css">
+    <link rel="stylesheet" href="/css/breadcrumb.css">
 
 </head>
+
 <body>
     <div class="checkout-container">
         <!-- Breadcrumb -->
@@ -49,9 +51,8 @@
                     <% if (addresses && addresses.length > 0) { %>
                         <div class="addresses-grid">
                             <% addresses.forEach((address, index) => { %>
-                                <div class="address-card <%= index === 0 ? 'selected' : '' %>" 
-                                     data-address-id="<%= address._id %>"
-                                     onclick="selectAddress(this)">
+                                <div class="address-card <%= index === 0 ? 'selected' : '' %>"
+                                    data-address-id="<%= address._id %>" onclick="selectAddress(this)">
                                     <% if (address.isDefault) { %>
                                         <div class="default-star">
                                             <i class="fas fa-star"></i>
@@ -101,8 +102,8 @@
                             const quantity = item.quantity;
                             
                             // Use offer details if available, otherwise fall back to sale price
-                            let finalPrice = item.price || item.productId.salePrice; // Cart should have final price stored
-                            let originalPrice = item.productId.salePrice; // Original sale price before offers
+                            let finalPrice = item.price || item.productId.salePrice;
+                            let originalPrice = item.productId.salePrice;
                             let discountPercentage = 0;
                             let discountPerItem = 0;
                             
@@ -118,8 +119,7 @@
                         %>
                         <div class="product-item">
                             <img src="/uploads/products/<%= item.productId.mainImage %>"
-                                 alt="<%= item.productId.productName %>"
-                                 class="product-image">
+                                 alt="<%= item.productId.productName %>" class="product-image">
                             <div class="product-details">
                                 <div class="product-name"><%= item.productId.productName %></div>
                                 <div class="product-brand">Brand: <%= item.productId.brand %></div>
@@ -164,7 +164,7 @@
                         cartItems.forEach(item => {
                             totalItemCount += item.quantity;
                             
-                            // Check if item is out of stock (assuming we have this info)
+                            // Check if item is out of stock
                             const isOutOfStock = item.productId.quantity === 0;
                             
                             if (isOutOfStock) {
@@ -238,15 +238,16 @@
 
                     <!-- Payment Method Section -->
                     <div class="mt-3 pt-3" style="border-top: 2px solid var(--border-color);">
-                        <h5 class="mb-3" style="font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <h5 class="mb-3"
+                            style="font-size: 1rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
                             <i class="fas fa-credit-card"></i>
                             Payment Method
                         </h5>
-                        
+
                         <div class="payment-methods">
                             <!-- Wallet Payment -->
-                            <div class="payment-option <%= (user.walletBalance && user.walletBalance >= orderSummary.finalAmount) ? '' : 'disabled' %>" 
-                                 data-payment="Wallet" onclick="selectPaymentMethod(this)">
+                            <div class="payment-option <%= (user.walletBalance && user.walletBalance >= orderSummary.finalAmount) ? '' : 'disabled' %>"
+                                data-payment="Wallet" onclick="selectPaymentMethod(this)">
                                 <div class="payment-header">
                                     <div class="payment-icon">
                                         <i class="fas fa-wallet"></i>
@@ -278,7 +279,8 @@
                             </div>
 
                             <!-- Cash on Delivery -->
-                            <div class="payment-option selected" data-payment="Cash on Delivery" onclick="selectPaymentMethod(this)">
+                            <div class="payment-option <%= isCODAvailable ? 'selected' : 'disabled' %>"
+                                data-payment="Cash on Delivery" onclick="selectPaymentMethod(this)">
                                 <div class="payment-header">
                                     <div class="payment-icon">
                                         <i class="fas fa-money-bill-wave"></i>
@@ -286,6 +288,9 @@
                                     <div class="payment-title">Cash on Delivery</div>
                                 </div>
                                 <div class="payment-description">Pay when your order is delivered</div>
+                                <% if (!isCODAvailable) { %>
+                                    <div class="payment-insufficient">Not available for orders above ₹2000</div>
+                                <% } %>
                                 <div class="payment-selected-indicator">
                                     <i class="fas fa-check"></i>
                                 </div>
@@ -293,8 +298,7 @@
                         </div>
                     </div>
 
-                    <button class="btn-place-order" onclick="placeOrder()"
-                            <%= addresses.length === 0 ? 'disabled' : '' %>>
+                    <button class="btn-place-order" onclick="placeOrder()" <%= addresses.length === 0 ? 'disabled' : '' %>>
                         <i class="fas fa-check-circle"></i>
                         Place Order
                     </button>
@@ -305,12 +309,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
+
     <!-- Toast Container -->
     <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
-    
+
     <style>
         .toast {
             background: white;
@@ -327,63 +333,63 @@
             transition: all 0.3s ease;
             border-left: 4px solid;
         }
-        
+
         .toast.show {
             transform: translateX(0);
         }
-        
+
         .toast.success {
             border-left-color: #10b981;
         }
-        
+
         .toast.error {
             border-left-color: #ef4444;
         }
-        
+
         .toast.warning {
             border-left-color: #f59e0b;
         }
-        
+
         .toast.info {
             border-left-color: #3b82f6;
         }
-        
+
         .toast-icon {
             font-size: 20px;
             flex-shrink: 0;
         }
-        
+
         .toast.success .toast-icon {
             color: #10b981;
         }
-        
+
         .toast.error .toast-icon {
             color: #ef4444;
         }
-        
+
         .toast.warning .toast-icon {
             color: #f59e0b;
         }
-        
+
         .toast.info .toast-icon {
             color: #3b82f6;
         }
-        
+
         .toast-content {
             flex: 1;
         }
-        
+
         .toast-title {
             font-weight: 600;
             margin-bottom: 4px;
             color: #111827;
         }
-        
+
         .toast-message {
             color: #6b7280;
             font-size: 14px;
         }
-        
+
         .toast-close {
             background: none;
             border: none;
@@ -397,26 +403,26 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .toast-close:hover {
             color: #6b7280;
         }
     </style>
-    
+
     <script>
         // Toast notification system
         function showToast(title, message, type = 'info', duration = 4000) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
+
             const icons = {
                 success: 'fas fa-check-circle',
                 error: 'fas fa-exclamation-circle',
                 warning: 'fas fa-exclamation-triangle',
                 info: 'fas fa-info-circle'
             };
-            
+
             toast.innerHTML = `
                 <div class="toast-icon">
                     <i class="${icons[type]}"></i>
@@ -429,16 +435,16 @@
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            
+
             container.appendChild(toast);
-            
+
             // Trigger animation
             setTimeout(() => toast.classList.add('show'), 100);
-            
+
             // Auto remove
             setTimeout(() => removeToast(toast), duration);
         }
-        
+
         function removeToast(toast) {
             if (toast && toast.parentElement) {
                 toast.classList.remove('show');
@@ -456,7 +462,7 @@
         let isCODAvailable = <%= isCODAvailable ? 'true' : 'false' %>;
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Set first address as selected if available
             const firstAddress = document.querySelector('.address-card');
             if (firstAddress) {
@@ -544,8 +550,6 @@
                 return;
             }
 
-            // COD validation removed - COD is now available for all order amounts
-            
             const placeOrderBtn = document.querySelector('.btn-place-order');
             const originalText = placeOrderBtn.innerHTML;
 
@@ -617,7 +621,7 @@
                     key: result.razorpayKeyId,
                     amount: result.amount,
                     currency: result.currency,
-                    name: 'ARVENCLAIRE',
+                    name: 'miniTorque',
                     description: 'Order Payment',
                     order_id: result.razorpayOrderId,
                     prefill: {
@@ -657,7 +661,7 @@
                             }
                         } catch (error) {
                             console.error('Payment verification error:', error);
-                            
+
                             // Mark payment as failed and redirect to failure page
                             try {
                                 await fetch('/checkout/payment-failed', {
@@ -670,7 +674,7 @@
                                         error: { description: 'Payment verification failed' }
                                     })
                                 });
-                                
+
                                 // Redirect to failure page
                                 window.location.href = `/order-failure/${result.orderId}`;
                             } catch (failureError) {
@@ -680,8 +684,24 @@
                         }
                     },
                     modal: {
-                        ondismiss: function() {
-                            // Payment modal closed - reset button
+                        ondismiss: async function () {
+                            // Payment modal closed without completion - mark as failed
+                            try {
+                                await fetch('/checkout/payment-failed', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        orderId: result.orderId,
+                                        error: { description: 'Payment cancelled by user' }
+                                    })
+                                });
+                            } catch (error) {
+                                console.error('Error marking payment as failed:', error);
+                            }
+
+                            // Reset button
                             const placeOrderBtn = document.querySelector('.btn-place-order');
                             placeOrderBtn.disabled = false;
                             placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> Place Order';
@@ -691,7 +711,7 @@
 
                 // Create Razorpay instance and open payment modal
                 const rzp = new Razorpay(options);
-                
+
                 rzp.on('payment.failed', async function (response) {
                     // Payment failed
                     try {
@@ -710,7 +730,7 @@
                         window.location.href = `/order-failure/${result.orderId}`;
                     } catch (error) {
                         console.error('Error handling payment failure:', error);
-                        
+
                         // Fallback: show toast if redirect fails
                         showToast('Payment Failed', response.error.description || 'Payment was not successful', 'error');
 
@@ -732,4 +752,5 @@
 
     <%- include("../partials/footer") %>
 </body>
+
 </html>

@@ -1,12 +1,19 @@
 const Order = require('../../models/order-schema');
 const Product = require('../../models/product-schema');
 const User = require('../../models/user-model');
+const Razorpay = require('razorpay');
 const Wallet = require('../../models/wallet-schema');
 const Wishlist = require('../../models/wishlist-schema');  
 const Cart = require('../../models/cart-schema');  
 const InvoiceGenerator = require('../../utils/pdf-invoice-generator');
 
 
+
+// razorpay initialization 
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 // Load order listing page
 const loadOrderList = async (req, res) => {
@@ -681,6 +688,131 @@ const requestIndividualItemReturn = async (req, res) => {
   }
 };
 
+// Load retry payment page
+const loadRetryPayment = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.session.userId || req.session.googleUserId;
+
+    // Get user data
+    const user = await User.findById(userId).select('fullName email profilePhoto');
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    // Get order
+    const order = await Order.findOne({ orderId, userId })
+      .populate('orderedItems.product');
+      
+    if (!order) {
+      return res.redirect('/orders');
+    }
+
+    // Check if order payment is actually failed
+    if (order.paymentStatus !== 'Failed') {
+      return res.redirect(`/order-details/${orderId}`);
+    }
+
+    // Get wishlist count for navbar
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    // Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+    // Create new Razorpay order for retry
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(order.finalAmount * 100), // Amount in paise
+      currency: 'INR',
+      receipt: order.orderId + '_retry_' + Date.now(),
+      notes: {
+        orderId: order.orderId,
+        userId: userId.toString(),
+        retry: 'true'
+      }
+    });
+
+    res.render('user/retry-payment', {
+      user,
+      order,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+      razorpayOrderId: razorpayOrder.id,
+      wishlistCount,
+      cartCount,
+      isAuthenticated: true,
+      currentPage: 'retry-payment',
+      title: 'Retry Payment'
+    });
+
+  } catch (error) {
+    console.error('Error loading retry payment:', error);
+    res.status(500).render('error', {
+      error: {
+        status: 500,
+        message: 'Error loading retry payment page: ' + error.message
+      },
+      message: error.message,
+      user: req.user || null,
+      wishlistCount: 0,
+      cartCount: 0
+    });
+  }
+};
+
+// Load order failure page
+const loadOrderFailure = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.session.userId || req.session.googleUserId;
+
+    // Get user data
+    const user = await User.findById(userId).select('fullName email profilePhoto');
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    // Get order
+    const order = await Order.findOne({ orderId, userId })
+      .populate('orderedItems.product');
+      
+    if (!order) {
+      return res.redirect('/orders');
+    }
+
+    // Get wishlist count for navbar
+    const wishlist = await Wishlist.findOne({ userId }).lean();
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    // Get cart count for navbar
+    const cart = await Cart.findOne({ userId }).lean();
+    const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+
+    res.render('user/order-failure', {
+      user,
+      order,
+      wishlistCount,
+      cartCount,
+      isAuthenticated: true,
+      currentPage: 'order-failure',
+      title: 'Payment Failed'
+    });
+
+  } catch (error) {
+    console.error('Error loading order failure:', error);
+    res.status(500).render('error', {
+      error: {
+        status: 500,
+        message: 'Error loading order failure page: ' + error.message
+      },
+      message: error.message,
+      user: req.user || null,
+      wishlistCount: 0,
+      cartCount: 0
+    });
+  }
+};
+
 
 
 module.exports = {
@@ -690,5 +822,7 @@ module.exports = {
   cancelEntireOrder,
   requestReturn,
   requestIndividualItemReturn,
-  downloadInvoice
+  downloadInvoice,
+  loadRetryPayment,      
+  loadOrderFailure 
 };

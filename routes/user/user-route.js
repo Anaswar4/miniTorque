@@ -34,21 +34,16 @@ router.get(
         console.error("Session regen error:", err);
         return res.redirect("/login?error=session");
       }
-
       //  Now tell Passport to store the logged-in user in the new session
       req.login(req.user, (err) => {
         if (err) {
           console.error("Passport login error:", err);
           return res.redirect("/login?error=login");
         }
-
-        //  Store your custom session values for Google OAuth
-        req.session.googleUserId = req.user._id;  // Only set googleUserId for Google OAuth
+        req.session.googleUserId = req.user._id;  
         req.session.email = req.user.email;
         req.session.loginTime = new Date();
-        req.session.user = req.user;  // Store user object for template access
-
-        //  Save the updated session and redirect
+        req.session.user = req.user;  
         req.session.save((err) => {
           if (err) {
             console.error("Session save error:", err);
@@ -127,6 +122,8 @@ router.post("/profile/email-change-otp", isUserAuthenticated, preventCache, chec
 router.post("/profile/change-email", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.changeEmail);
 router.post("/profile/photo", isUserAuthenticated, preventCache, checkUserBlocked, profileUpload.single('profilePhoto'), handleMulterError, userProfileController.uploadProfilePhoto);
 router.delete("/profile/photo", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.deleteProfilePhoto);
+
+
 // Address-related routes
 router.get("/address", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, addressController.loadAddressList);
 router.get("/address/add", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, addressController.loadAddressForm);
@@ -135,9 +132,13 @@ router.post("/address", isUserAuthenticated, preventCache, checkUserBlocked, add
 router.put("/address/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.updateAddress);
 router.put("/address/set-default/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.setAsDefault);
 router.delete("/address/:id", isUserAuthenticated, preventCache, checkUserBlocked, addressController.deleteAddress);
+
+
 // Change password route
 router.get("/change-password", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadChangePassword);
 router.post("/change-password", isUserAuthenticated, preventCache, checkUserBlocked, userProfileController.updatePassword);
+
+
 // Wishlist-related routes
 router.get("/wishlist", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, wishlistController.loadWishlist);
 router.post("/wishlist/add", isUserAuthenticated, preventCache, checkUserBlocked, checkProductAvailabilityForWishlist, wishlistController.addToWishlist);
@@ -156,18 +157,27 @@ router.post("/cart/remove-out-of-stock", isUserAuthenticated, preventCache, chec
 router.get("/cart/validate", isUserAuthenticated, preventCache, checkUserBlocked, cartController.validateCartItems);
 router.get("/cart/count", isUserAuthenticated, preventCache, checkUserBlocked, cartController.getCartCount);
 
-// Checkout-related routes
+
+// // Checkout-related routes
 router.get("/checkout", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadCheckout);
 router.post("/checkout/place-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.placeOrder);
+router.post("/checkout/create-razorpay-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.createRazorpayOrder);
+router.post("/checkout/verify-payment", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.verifyPayment);
+router.post("/checkout/payment-failed", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.paymentFailed);
 router.get("/order-success/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadOrderSuccess);
 
+// Order-related routes
 router.get("/orders", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadOrderList);
 router.get("/order-details/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadOrderDetails);
+router.get("/checkout/retry-payment/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadRetryPayment);
+router.get("/order-failure/:orderId", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, orderController.loadOrderFailure);
 router.post("/orders/:orderId/items/:itemId/cancel", isUserAuthenticated, preventCache, checkUserBlocked, orderController.cancelOrderItem);
 router.post("/orders/:orderId/cancel-entire", isUserAuthenticated, preventCache, checkUserBlocked, orderController.cancelEntireOrder);
 router.post("/orders/:orderId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestReturn);
 router.post("/orders/:orderId/items/:itemId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestIndividualItemReturn);
 router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCache, checkUserBlocked, orderController.downloadInvoice);
+
+
 
 // Wallet route
 router.get("/wallet", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadWallet);
