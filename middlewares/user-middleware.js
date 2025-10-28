@@ -67,11 +67,13 @@ const checkUserBlocked = async (req, res, next) => {
 
 /**
  * Makes user data available to all EJS templates in res.locals.user
+ * Supports both regular and Google authentication
  */
 const addUserContext = async (req, res, next) => {
   try {
-    if (req.session.userId) {
-      const userData = await User.findById(req.session.userId);
+    const userId = req.session.userId || req.session.googleUserId;
+    if (userId) {
+      const userData = await User.findById(userId);
       res.locals.user = userData;
     } else {
       res.locals.user = null;
@@ -86,9 +88,11 @@ const addUserContext = async (req, res, next) => {
 
 /**
  * Middleware to ensure user is logged in
+ * Supports both regular and Google authentication
  */
 const isUserAuthenticated = (req, res, next) => {
-  if (req.session.userId) return next();
+  const userId = req.session.userId || req.session.googleUserId;
+  if (userId) return next();
   return res.redirect("/login");
 };
 
@@ -104,17 +108,21 @@ const preventCache = (req, res, next) => {
 
 /**
  * Redirect already-authenticated users away from login/signup
+ * Supports both regular and Google authentication
  */
 const redirectIfAuthenticated = (req, res, next) => {
-  if (req.session.userId) return res.redirect("/home");
+  const userId = req.session.userId || req.session.googleUserId;
+  if (userId) return res.redirect("/home");
   next();
 };
 
 /**
  * Validate session and optionally handle expiration
+ * Supports both regular and Google authentication
  */
 const validateSession = (req, res, next) => {
-  if (req.session?.userId) {
+  const userId = req.session?.userId || req.session?.googleUserId;
+  if (userId) {
     const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
     if (
       req.session.loginTime &&

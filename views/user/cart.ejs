@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - miniTorque</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Bootstrap Icons -->
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <!-- Shared Breadcrumb CSS -->
+     <link rel="stylesheet" href="/css/breadcrumb.css">
+</head>
+<body>
+    <!-- Include Header Content -->
+    <%- include("../partials/head") %>
+
+   <link rel="stylesheet" href="/css/user/cart.css">
+
+<div class="cart-wrapper">
+    <div class="cart-container">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Cart</li>
+                </ol>
+            </nav>
+        </div>
+
+        <!-- Cart Header -->
+        <div class="cart-header">
+            <h1 class="cart-title">Shopping Cart</h1>
+            <p class="cart-subtitle">Review your items and proceed to checkout when ready</p>
+        </div>
+
+        <% if (cartItems && cartItems.length > 0) { %>
+            <%
+                // Calculate out-of-stock items for banner
+                const outOfStockItems = cartItems.filter(item => item.productId.quantity === 0);
+                const availableItems = cartItems.filter(item => item.productId.quantity > 0);
+            %>
+
+            <!-- Out-of-Stock Banner (show only if there are out-of-stock items) -->
+            <% if (outOfStockItems.length > 0) { %>
+                <div class="out-of-stock-banner" id="outOfStockBanner">
+                    <div class="banner-content">
+                        <i class="bi bi-exclamation-triangle-fill banner-icon"></i>
+                        <div class="banner-text">
+                            <div class="banner-title">
+                                <%= outOfStockItems.length %> item<%= outOfStockItems.length > 1 ? 's' : '' %> in your cart <%= outOfStockItems.length > 1 ? 'are' : 'is' %> out of stock
+                            </div>
+                            <div class="banner-subtitle">
+                                These items cannot be purchased and won't be included in checkout
+                            </div>
+                        </div>
+                    </div>
+                    <div class="banner-actions">
+                        <button class="btn-remove-unavailable" onclick="removeAllOutOfStockItems()">
+                            <i class="bi bi-trash"></i>
+                            Remove Unavailable
+                        </button>
+                        <a href="/shopPage" class="btn-continue-shopping">
+                            <i class="bi bi-plus-circle"></i>
+                            Add More Items
+                        </a>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- Cart Content -->
+            <div class="cart-content">
+                <!-- Cart Items -->
+                <div class="cart-items">
+                    <% cartItems.forEach(item => { %>
+                        <%
+                            const isOutOfStock = item.productId.quantity === 0;
+                            const isLowStock = item.productId.quantity > 0 && item.productId.quantity <= 5;
+                            const stockClass = isOutOfStock ? 'out-of-stock' : (isLowStock ? 'low-stock' : 'in-stock');
+                        %>
+                        <div class="cart-item <%= isOutOfStock ? 'out-of-stock' : '' %>"
+                             data-product-id="<%= item.productId._id %>"
+                             data-regular-price="<%= item.productId.regularPrice %>"
+                             data-sale-price="<%= item.productId.salePrice %>"
+                             data-product-offer="<%= item.productId.productOffer || 0 %>"
+                             data-product-stock="<%= item.productId.quantity %>"
+                             data-is-out-of-stock="<%= isOutOfStock %>">
+                            <!-- Product Image -->
+                            <img src="/uploads/products/<%= item.productId.mainImage %>"
+                                 alt="<%= item.productId.productName %>"
+                                 class="item-image"
+                                 onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
+
+                            <!-- Product Details -->
+                            <div class="item-details">
+                                <div class="item-brand"><%= item.productId.brand %></div>
+                                <h3 class="item-name"><%= item.productId.productName %></h3>
+                                <div class="item-price">₹<%= Math.round(item.price) %></div>
+                                <div class="item-stock <%= stockClass %>">
+                                    <% if (isOutOfStock) { %>
+                                        <i class="bi bi-x-circle"></i> Out of Stock
+                                    <% } else if (isLowStock) { %>
+                                        <i class="bi bi-exclamation-triangle"></i> Only <%= item.productId.quantity %> left
+                                    <% } else { %>
+                                        <i class="bi bi-check-circle"></i> In Stock
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Quantity Controls Wrapper -->
+                            <div class="quantity-controls-wrapper">
+                                <!-- Quantity Controls -->
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" onclick="updateQuantity('<%= item.productId._id %>', <%= item.quantity - 1 %>)"
+                                            <%= (item.quantity <= 1) ? 'disabled' : '' %>>
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input type="number" class="qty-input" value="<%= item.quantity %>"
+                                           min="1" max="5" readonly>
+                                    <button class="qty-btn" onclick="updateQuantity('<%= item.productId._id %>', <%= item.quantity + 1 %>)"
+                                            <%= (item.quantity >= 5 || item.quantity >= item.productId.quantity || isOutOfStock) ? 'disabled' : '' %>
+                                            <% if (item.quantity >= 5) { %>
+                                                title="Maximum 5 items allowed per product"
+                                            <% } else if (item.quantity >= item.productId.quantity) { %>
+                                                title="Not enough stock available"
+                                            <% } else if (isOutOfStock) { %>
+                                                title="Product is out of stock"
+                                            <% } %>>
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Quantity Limit Message (positioned at bottom) -->
+                                <% if (item.quantity >= 5) { %>
+                                    <div class="quantity-limit-message">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span>Maximum limit reached<br><small>(5 items per product)</small></span>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            <!-- Item Total -->
+                            <div class="item-total">₹<%= Math.round(item.totalPrice) %></div>
+
+                            <!-- Remove Button -->
+                            <button class="remove-btn" onclick="removeFromCart('<%= item.productId._id %>')" title="Remove item">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    <% }) %>
+                </div>
+
+                <!-- Cart Summary -->
+                <div class="cart-summary">
+                    <h3 class="summary-title">Order Summary</h3>
+
+                    <%
+                        let subtotal = 0; // Based on regular prices
+                        let totalDiscount = 0;
+                        let totalItemCount = 0;
+                        let availableItemsCount = 0;
+                        let availableQuantity = 0;
+                        let outOfStockQuantity = 0;
+                        let amountAfterDiscount = 0; // Amount customer actually pays
+
+                        cartItems.forEach(item => {
+                            totalItemCount += item.quantity; // Count all items (quantities)
+
+                            if (item.productId.quantity > 0) {
+                                // Subtotal based on regular prices
+                                const regularPrice = item.productId.regularPrice;
+                                const salePrice = item.productId.salePrice;
+                                const quantity = item.quantity;
+                                
+                                subtotal += regularPrice * quantity;
+                                amountAfterDiscount += item.totalPrice; // This is sale price * quantity
+                                availableItemsCount++;
+                                availableQuantity += quantity;
+
+                                // Calculate proportional discount
+                                const itemDiscount = (regularPrice - salePrice) * quantity;
+                                totalDiscount += itemDiscount;
+                            } else {
+                                outOfStockQuantity += item.quantity;
+                            }
+                        });
+
+                        const shipping = amountAfterDiscount > 500 ? 0 : 50; // Free shipping based on amount after discount
+                        const total = amountAfterDiscount + shipping; // Final amount customer pays
+                        const outOfStockItemsCount = cartItems.length - availableItemsCount;
+                    %>
+
+                    <!-- Availability Breakdown -->
+                    <% if (outOfStockItemsCount > 0) { %>
+                        <div class="availability-breakdown">
+                            <div class="breakdown-title">Cart Breakdown</div>
+                            <div class="breakdown-item available">
+                                <span><i class="bi bi-check-circle"></i> Available Items</span>
+                                <span class="count"><%= availableItemsCount %> (<%= availableQuantity %> items)</span>
+                            </div>
+                            <div class="breakdown-item unavailable">
+                                <span><i class="bi bi-x-circle"></i> Out of Stock</span>
+                                <span class="count"><%= outOfStockItemsCount %> (<%= outOfStockQuantity %> items)</span>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <div class="summary-row">
+                        <span class="summary-label">Subtotal (<%= totalItemCount %> items)</span>
+                        <span class="summary-value">₹<%= Math.round(subtotal) %></span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-label">Discount</span>
+                        <span class="summary-value" style="color: #059669;">
+                            <% if (totalDiscount > 0) { %>
+                                -₹<%= Math.round(totalDiscount) %>
+                            <% } else { %>
+                                ₹0.00
+                            <% } %>
+                        </span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-label">Shipping</span>
+                        <span class="summary-value">
+                            <% if (shipping === 0) { %>
+                                <span style="color: #059669;">FREE</span>
+                            <% } else { %>
+                                ₹<%= Math.round(shipping) %>
+                            <% } %>
+                        </span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span class="summary-label">Total</span>
+                        <span class="summary-value">₹<%= Math.round(total) %></span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="cart-actions">
+                        <% if (availableItemsCount > 0) { %>
+                            <button class="btn-cart btn-primary" onclick="proceedToCheckout()" id="checkoutBtn">
+                                <i class="bi bi-credit-card"></i>
+                                Proceed to Checkout (<%= availableItemsCount %> item<%= availableItemsCount > 1 ? 's' : '' %>)
+                            </button>
+                        <% } else { %>
+                            <button class="btn-cart btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;" id="checkoutBtn" onclick="showCheckoutUnavailableMessage()">
+                                <i class="bi bi-x-circle"></i>
+                                <% if (outOfStockItemsCount > 0) { %>
+                                    Cannot Checkout - All Items Out of Stock
+                                <% } else { %>
+                                    No Available Items
+                                <% } %>
+                            </button>
+                        <% } %>
+
+                        <% if (outOfStockItemsCount > 0) { %>
+                            <button class="btn-cart btn-secondary" onclick="removeAllOutOfStockItems()" style="background: #ef4444; color: white; border-color: #ef4444;">
+                                <i class="bi bi-trash"></i>
+                                Remove Out of Stock Items
+                            </button>
+                        <% } %>
+
+                        <a href="/shopPage" class="btn-cart btn-secondary">
+                            <i class="bi bi-arrow-left"></i>
+                            Continue Shopping
+                        </a>
+
+                        <button class="btn-cart btn-secondary" onclick="clearCart()" style="color: #dc2626; border-color: #dc2626;">
+                            <i class="bi bi-trash"></i>
+                            Clear Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <% } else { %>
+            <!-- Empty Cart -->
+            <div class="empty-cart">
+                <div class="empty-icon">
+                    <i class="bi bi-cart-x"></i>
+                </div>
+                <h2 class="empty-title">Your Cart is Empty</h2>
+                <p class="empty-text">Looks like you haven't added any items to your cart yet. Start shopping to fill it up!</p>
+                <a href="/shopPage" class="btn-cart btn-primary">
+                    <i class="bi bi-bag"></i>
+                    Start Shopping
+                </a>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- SweetAlert2 JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // Initialize cart state management on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize cart state for real-time synchronization
+        if (window.cartState) {
+            await window.cartState.init();
+            console.log('🛒 Cart state initialized on cart page');
+        }
+    });
+
+    // Update cart item quantity
+    async function updateQuantity(productId, newQuantity) {
+        if (newQuantity < 1) {
+            // If quantity would be 0, directly remove the item
+            removeFromCart(productId);
+            return;
+        }
+
+        if (newQuantity > 5) {
+            showToast('Maximum Limit Reached', 'You can only add up to 5 items per product.', 'error');
+            return;
+        }
+
+        // Prevent multiple simultaneous requests for the same product
+        const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+        if (cartItem.dataset.updating === 'true') {
+            return;
+        }
+
+        // Frontend stock validation before API call
+        const productStock = parseInt(cartItem.dataset.productStock || 0);
+        const isOutOfStock = cartItem.classList.contains('out-of-stock');
+        const currentQuantity = parseInt(cartItem.querySelector('.qty-input').value);
+
+        // Check if product is out of stock
+        if (isOutOfStock || productStock === 0) {
+            showSweetAlert('This product is currently out of stock.', 'error');
+            return;
+        }
+
+        // Only check stock limits when increasing quantity
+        if (newQuantity > currentQuantity && newQuantity > productStock) {
+            showSweetAlert(`Only ${productStock} items available in stock. Cannot increase beyond available quantity.`, 'error');
+            return;
+        }
+
+        try {
+            // Mark as updating
+            cartItem.dataset.updating = 'true';
+
+            // Show loading state
+            const qtyButtons = cartItem.querySelectorAll('.qty-btn');
+            qtyButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i>';
+            });
+
+            const response = await fetch('/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productId, quantity: newQuantity })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update the UI
+                const qtyInput = cartItem.querySelector('.qty-input');
+                const itemTotal = cartItem.querySelector('.item-total');
+
+                qtyInput.value = newQuantity;
+                itemTotal.textContent = `₹${Math.round(result.itemTotal)}`;
+
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(result.cartCount);
+                } else {
+                    updateCartCounter(result.cartCount);
+                }
+
+                // Update button states immediately after successful update
+                updateButtonStates(productId);
+
+                // Recalculate totals
+                updateCartTotals();
+            } else {
+                // Enhanced error handling with specific stock validation messages
+                let errorMessage = result.message || 'Failed to update quantity';
+
+                if (result.code === 'OUT_OF_STOCK') {
+                    errorMessage = 'This product is currently out of stock.';
+                } else if (result.code === 'INSUFFICIENT_STOCK') {
+                    errorMessage = `Only ${result.availableStock || 0} items available in stock.`;
+                } else if (result.code === 'CART_QUANTITY_LIMIT') {
+                    errorMessage = 'Maximum limit reached! You can only add up to 5 items per product.';
+                }
+
+                showSweetAlert(errorMessage, 'error');
+
+                // If stock-related error, update the frontend stock data
+                if (result.code === 'OUT_OF_STOCK' || result.code === 'INSUFFICIENT_STOCK') {
+                    if (result.availableStock !== undefined) {
+                        cartItem.dataset.productStock = result.availableStock;
+                        if (result.availableStock === 0) {
+                            cartItem.classList.add('out-of-stock');
+                        }
+                        // Update button states with new stock information
+                        updateButtonStates(productId);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            showSweetAlert('Failed to update cart. Please try again.', 'error');
+        } finally {
+            // Remove updating flag
+            cartItem.dataset.updating = 'false';
+
+            // Restore buttons
+            const qtyButtons = cartItem.querySelectorAll('.qty-btn');
+            qtyButtons[0].innerHTML = '<i class="bi bi-dash"></i>';
+            qtyButtons[1].innerHTML = '<i class="bi bi-plus"></i>';
+
+            // Re-enable buttons based on current state
+            updateButtonStates(productId);
+        }
+    }
+
+    // Remove item from cart
+    async function removeFromCart(productId) {
+        try {
+            const response = await fetch('/cart/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove the item from UI
+                const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+                cartItem.style.transition = 'all 0.3s ease';
+                cartItem.style.opacity = '0';
+                cartItem.style.transform = 'translateX(-100%)';
+
+                setTimeout(() => {
+                    cartItem.remove();
+
+                    // Check if cart is empty
+                    const remainingItems = document.querySelectorAll('.cart-item');
+                    if (remainingItems.length === 0) {
+                        // Use real-time UI update instead of page reload
+                        updateCartUIToEmpty();
+                    } else {
+                        updateCartTotals();
+                    }
+                }, 300);
+
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(data.cartCount);
+                } else {
+                    updateCartCounter(data.cartCount);
+                }
+
+                showSweetAlert('Item removed from cart', 'success');
+            } else {
+                showSweetAlert(data.message || 'Failed to remove item', 'error');
+            }
+        } catch (error) {
+            console.error('Error removing item:', error);
+            showSweetAlert('Failed to remove item. Please try again.', 'error');
+        }
+    }
+
+    // Clear entire cart with real-time UI updates
+    async function clearCart() {
+        try {
+            // Show confirmation dialog first
+            const result = await Swal.fire({
+                title: 'Clear Cart?',
+                text: 'Are you sure you want to remove all items from your cart? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, clear cart',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            });
+
+            if (!result.isConfirmed) {
+                return; // User cancelled
+            }
+
+            // Show loading state
+            Swal.fire({
+                title: 'Clearing Cart...',
+                text: 'Please wait while we clear your cart.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const response = await fetch('/cart/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(0);
+                } else {
+                    updateCartCounter(0);
+                }
+
+                // Update UI to show empty cart state in real-time
+                updateCartUIToEmpty();
+
+                // Show success message
+                Swal.fire({
+                    title: 'Cart Cleared!',
+                    text: 'All items have been removed from your cart.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                console.log('✅ Cart cleared successfully with real-time UI update');
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to clear cart. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to clear cart. Please check your connection and try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
+
+    // Update cart UI to show empty state in real-time
+    function updateCartUIToEmpty() {
+        try {
+            // Find the specific cart container (not the generic .container)
+            const cartContainer = document.querySelector('.cart-container');
+            if (!cartContainer) {
+                console.error('Cart container not found');
+                return;
+            }
+
+            // Add fade-out effect before clearing content
+            cartContainer.style.transition = 'opacity 0.2s ease-out';
+            cartContainer.style.opacity = '0';
+
+            setTimeout(() => {
+                // Completely clear all existing content first
+                cartContainer.innerHTML = '';
+
+                // Also remove any floating or absolute positioned elements that might remain
+                const cartItems = document.querySelectorAll('.cart-item');
+                const cartContent = document.querySelectorAll('.cart-content');
+                const outOfStockBanner = document.querySelectorAll('#outOfStockBanner');
+                const cartSummary = document.querySelectorAll('.cart-summary');
+
+                // Remove any remaining cart-related elements
+                [...cartItems, ...cartContent, ...outOfStockBanner, ...cartSummary].forEach(element => {
+                    if (element && element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                });
+
+                // Create empty cart HTML
+                const emptyCartHTML = `
+                    <!-- Breadcrumb Navigation -->
+                    <div class="breadcrumb-container">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">Cart</li>
+                            </ol>
+                        </nav>
+                    </div>
+
+                    <!-- Cart Header -->
+                    <div class="cart-header">
+                        <h1 class="cart-title">Shopping Cart</h1>
+                        <p class="cart-subtitle">Review your items and proceed to checkout when ready</p>
+                    </div>
+
+                    <!-- Empty Cart -->
+                    <div class="empty-cart">
+                        <div class="empty-icon">
+                            <i class="bi bi-cart-x"></i>
+                        </div>
+                        <h2 class="empty-title">Your Cart is Empty</h2>
+                        <p class="empty-text">Looks like you haven't added any items to your cart yet. Start shopping to fill it up!</p>
+                        <a href="/shopPage" class="btn-cart btn-primary">
+                            <i class="bi bi-bag"></i>
+                            Start Shopping
+                        </a>
+                    </div>
+                `;
+
+                // Insert the new empty cart content
+                cartContainer.innerHTML = emptyCartHTML;
+
+                // Fade back in with the new content
+                setTimeout(() => {
+                    cartContainer.style.transition = 'opacity 0.3s ease-in';
+                    cartContainer.style.opacity = '1';
+                }, 50);
+
+                console.log('✅ Cart UI completely updated to empty state');
+            }, 200);
+
+        } catch (error) {
+            console.error('Error updating cart UI to empty state:', error);
+            // Fallback to page reload if UI update fails
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        }
+    }
+
+    // Enhanced checkout function with comprehensive validation
+    function proceedToCheckout() {
+        // Check if there are available items
+        const availableItems = document.querySelectorAll('.cart-item:not(.out-of-stock)');
+        const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+
+        if (availableItems.length === 0) {
+            if (outOfStockItems.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Proceed to Checkout',
+                    html: `
+                        <p>All items in your cart are currently out of stock.</p>
+                        <p><strong>Options:</strong></p>
+                        <ul style="text-align: left; margin: 1rem 0;">
+                            <li>Remove out-of-stock items and add available products</li>
+                            <li>Continue shopping to find alternative products</li>
+                            <li>Check back later when items are restocked</li>
+                        </ul>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Remove Out of Stock Items',
+                    cancelButtonText: 'Continue Shopping',
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#111827'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        removeAllOutOfStockItems();
+                    } else if (result.dismiss === Swal.DismissReason.cancel) {
+                        window.location.href = '/shop';
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Empty Cart',
+                    text: 'Your cart is empty. Add some products to proceed.',
+                    confirmButtonColor: '#111827'
+                }).then(() => {
+                    window.location.href = '/shop';
+                });
+            }
+            return;
+        }
+
+        // Validate stock levels for available items
+        let hasStockIssues = false;
+        const stockIssues = [];
+
+        availableItems.forEach(item => {
+            const productId = item.dataset.productId;
+            const currentQty = parseInt(item.querySelector('.qty-input').value);
+            const availableStock = parseInt(item.dataset.productStock || 0);
+            const productName = item.querySelector('.item-name').textContent;
+
+            if (currentQty > availableStock) {
+                hasStockIssues = true;
+                stockIssues.push({
+                    name: productName,
+                    requested: currentQty,
+                    available: availableStock
+                });
+            }
+        });
+
+        if (hasStockIssues) {
+            let issueText = 'The following items have stock issues:\n\n';
+            stockIssues.forEach(issue => {
+                issueText += `• ${issue.name}: Requested ${issue.requested}, Available ${issue.available}\n`;
+            });
+            issueText += '\nPlease adjust quantities before proceeding.';
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Issues Detected',
+                text: issueText,
+                confirmButtonColor: '#111827'
+            });
+            return;
+        }
+
+        // Redirect to checkout page
+        window.location.href = '/checkout';
+    }
+
+    // Function to show message when checkout is unavailable
+    function showCheckoutUnavailableMessage() {
+        const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Checkout Unavailable',
+            html: `
+                <p>Cannot proceed to checkout because all items in your cart are out of stock.</p>
+                <p><strong>${outOfStockItems.length}</strong> item${outOfStockItems.length > 1 ? 's are' : ' is'} currently unavailable.</p>
+                <br>
+                <p>Would you like to remove these items and continue shopping?</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Remove & Shop',
+            cancelButtonText: 'Keep Items',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                removeAllOutOfStockItems();
+            }
+        });
+    }
+
+    // Function to remove all out-of-stock items from cart
+    async function removeAllOutOfStockItems() {
+        const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+
+        if (outOfStockItems.length === 0) {
+            showSweetAlert('No out-of-stock items to remove.', 'info');
+            return;
+        }
+
+        // Show confirmation dialog
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Remove Out-of-Stock Items',
+            html: `
+                <p>Are you sure you want to remove <strong>${outOfStockItems.length}</strong> out-of-stock item${outOfStockItems.length > 1 ? 's' : ''} from your cart?</p>
+                <p><em>This action cannot be undone.</em></p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Remove All',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        // Show loading state
+        const loadingAlert = Swal.fire({
+            title: 'Removing Items...',
+            html: 'Please wait while we remove out-of-stock items.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            // Use the new bulk removal endpoint
+            const response = await fetch('/cart/remove-out-of-stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            // Close loading alert
+            loadingAlert.close();
+
+            if (data.success) {
+                const removedCount = data.removedCount;
+
+                // Remove out-of-stock items from UI with animation
+                outOfStockItems.forEach(item => {
+                    item.style.transition = 'all 0.3s ease';
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-100%)';
+                    setTimeout(() => {
+                        item.remove();
+                    }, 300);
+                });
+
+                // Update cart counter using unified cart state system
+                if (window.cartState) {
+                    window.cartState.updateCount(data.cartCount);
+                } else {
+                    updateCartCounter(data.cartCount);
+                }
+
+                // Update cart totals and UI
+                setTimeout(() => {
+                    updateCartTotals();
+
+                    // Hide out-of-stock banner
+                    const banner = document.getElementById('outOfStockBanner');
+                    if (banner) {
+                        banner.style.transition = 'all 0.3s ease';
+                        banner.style.opacity = '0';
+                        banner.style.transform = 'translateY(-20px)';
+                        setTimeout(() => {
+                            banner.remove();
+                        }, 300);
+                    }
+
+                    // Check if cart is now empty
+                    const remainingItems = document.querySelectorAll('.cart-item');
+                    if (remainingItems.length === 0) {
+                        // Use real-time UI update instead of page reload
+                        setTimeout(() => {
+                            updateCartUIToEmpty();
+                        }, 500);
+                    }
+                }, 500);
+
+                // Show success message
+                if (removedCount > 0) {
+                    showSweetAlert(`Successfully removed ${removedCount} out-of-stock item${removedCount > 1 ? 's' : ''} from your cart.`, 'success');
+                } else {
+                    showSweetAlert('No out-of-stock items were found to remove.', 'info');
+                }
+            } else {
+                showSweetAlert(data.message || 'Failed to remove out-of-stock items.', 'error');
+            }
+
+        } catch (error) {
+            loadingAlert.close();
+            console.error('Error during bulk removal:', error);
+            showSweetAlert('An error occurred while removing items. Please try again.', 'error');
+        }
+    }
+
+    // Update button states for a specific product
+    function updateButtonStates(productId) {
+        const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+        if (!cartItem) return;
+
+        const qtyButtons = cartItem.querySelectorAll('.qty-btn');
+        const currentQty = parseInt(cartItem.querySelector('.qty-input').value);
+        const isOutOfStock = cartItem.classList.contains('out-of-stock');
+        const productStock = parseInt(cartItem.dataset.productStock || 0);
+
+        // Update minus button
+        qtyButtons[0].disabled = currentQty <= 1 || isOutOfStock;
+        // Update onclick attribute for minus button
+        qtyButtons[0].setAttribute('onclick', `updateQuantity('${productId}', ${currentQty - 1})`);
+
+        // Update plus button - check quantity limit, stock limit, and out of stock
+        const isAtMaxQuantity = currentQty >= 5;
+        const isAtStockLimit = currentQty >= productStock;
+
+        qtyButtons[1].disabled = isAtMaxQuantity || isAtStockLimit || isOutOfStock;
+
+        // Update tooltip for plus button
+        if (isAtMaxQuantity) {
+            qtyButtons[1].setAttribute('title', 'Maximum 5 items allowed per product');
+        } else if (isAtStockLimit) {
+            qtyButtons[1].setAttribute('title', 'Not enough stock available');
+        } else if (isOutOfStock) {
+            qtyButtons[1].setAttribute('title', 'Product is out of stock');
+        } else {
+            qtyButtons[1].removeAttribute('title');
+        }
+
+        // Update onclick attribute for plus button
+        if (qtyButtons[1].disabled) {
+            qtyButtons[1].setAttribute('onclick', `showLimitMessage('${productId}')`);
+        } else {
+            qtyButtons[1].setAttribute('onclick', `updateQuantity('${productId}', ${currentQty + 1})`);
+        }
+
+        // Update quantity limit message
+        updateQuantityLimitMessage(cartItem, currentQty);
+    }
+
+    // Function to update quantity limit message
+    function updateQuantityLimitMessage(cartItem, currentQty) {
+        const quantityControlsWrapper = cartItem.querySelector('.quantity-controls-wrapper');
+        let existingMessage = cartItem.querySelector('.quantity-limit-message');
+        const productStock = parseInt(cartItem.dataset.productStock || 0);
+        const isOutOfStock = cartItem.classList.contains('out-of-stock');
+
+        // Determine what message to show
+        let shouldShowMessage = false;
+        let messageContent = '';
+
+        if (currentQty >= 5) {
+            shouldShowMessage = true;
+            messageContent = `
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Maximum limit reached<br><small>(5 items per product)</small></span>
+            `;
+        } else if (isOutOfStock || productStock === 0) {
+            shouldShowMessage = true;
+            messageContent = `
+                <i class="bi bi-x-circle-fill"></i>
+                <span>Out of stock<br><small>(Cannot add more items)</small></span>
+            `;
+        } else if (currentQty >= productStock && productStock > 0) {
+            shouldShowMessage = true;
+            messageContent = `
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Stock limit reached<br><small>(${productStock} items available)</small></span>
+            `;
+        }
+
+        if (shouldShowMessage) {
+            if (!existingMessage) {
+                // Create new message with enhanced styling
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'quantity-limit-message';
+                messageDiv.innerHTML = messageContent;
+
+                // Append to the wrapper (will appear at bottom)
+                quantityControlsWrapper.appendChild(messageDiv);
+
+                // Add a subtle animation to draw attention
+                setTimeout(() => {
+                    messageDiv.style.animation = 'slideInFromBottom 0.4s ease-out, pulse 2s infinite 0.5s';
+                }, 100);
+            } else {
+                // Update existing message content
+                existingMessage.innerHTML = messageContent;
+            }
+        } else {
+            // Remove message with fade out animation
+            if (existingMessage) {
+                existingMessage.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    existingMessage.remove();
+                }, 300);
+            }
+        }
+    }
+
+    // Add fadeOut animation to CSS
+    const additionalStyles = document.createElement('style');
+    additionalStyles.textContent = `
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+            }
+        }
+    `;
+    document.head.appendChild(additionalStyles);
+
+    // Function to show limit message when disabled button is clicked
+    function showLimitMessage(productId) {
+        const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+        if (!cartItem) return;
+
+        const currentQty = parseInt(cartItem.querySelector('.qty-input').value);
+        const isOutOfStock = cartItem.classList.contains('out-of-stock');
+        const productStock = parseInt(cartItem.dataset.productStock || 0);
+        const productName = cartItem.querySelector('.item-name').textContent;
+
+        if (currentQty >= 5) {
+            showSweetAlert('Maximum limit reached! You can only add up to 5 items per product.', 'error');
+        } else if (isOutOfStock || productStock === 0) {
+            showSweetAlert(`${productName} is currently out of stock.`, 'error');
+        } else if (currentQty >= productStock) {
+            showSweetAlert(`Only ${productStock} items of ${productName} available in stock. You already have the maximum available quantity in your cart.`, 'error');
+        } else {
+            // Fallback message
+            showSweetAlert('Cannot increase quantity at this time.', 'error');
+        }
+    }
+
+    // Update cart totals with subtotal based on regular prices
+    function updateCartTotals() {
+        let subtotal = 0; // Based on regular prices
+        let totalItemCount = 0; // Total quantity of all items
+        let totalDiscount = 0;
+        let availableItemsCount = 0;
+        let amountAfterDiscount = 0; // Amount customer actually pays
+
+        document.querySelectorAll('.cart-item').forEach(item => {
+            const isOutOfStock = item.classList.contains('out-of-stock');
+            const quantity = parseInt(item.querySelector('.qty-input').value);
+            const productId = item.dataset.productId;
+
+            // Count all items (sum of quantities)
+            totalItemCount += quantity;
+
+            if (!isOutOfStock) {
+                const regularPrice = parseFloat(item.dataset.regularPrice);
+                const salePrice = parseFloat(item.dataset.salePrice);
+                const itemTotal = parseFloat(item.querySelector('.item-total').textContent.replace('₹', ''));
+                
+                // Subtotal based on regular prices
+                subtotal += regularPrice * quantity;
+                
+                // Amount customer actually pays (sale price total)
+                amountAfterDiscount += itemTotal;
+                availableItemsCount++;
+
+                // Calculate proportional discount: (Regular Price - Sale Price) × Quantity
+                const itemDiscount = (regularPrice - salePrice) * quantity;
+                totalDiscount += Math.max(0, itemDiscount); // Ensure non-negative discount
+
+                // Update individual item discount display if needed
+                updateItemDiscountDisplay(item, regularPrice, salePrice, quantity);
+            }
+
+            // Update button states for each item
+            updateButtonStates(productId);
+        });
+
+        const shipping = amountAfterDiscount > 500 ? 0 : 50; // Free shipping based on amount after discount
+        const total = amountAfterDiscount + shipping; // Total = Amount after discount + Shipping
+
+        // Update summary
+        const summaryRows = document.querySelectorAll('.summary-row');
+        if (summaryRows.length >= 4) {
+            // Update subtotal with correct item count (total quantity)
+            summaryRows[0].querySelector('.summary-value').textContent = `₹${Math.round(subtotal)}`;
+            summaryRows[0].querySelector('.summary-label').textContent = `Subtotal (${totalItemCount} items)`;
+
+            // Update discount with calculated amount (proportional to quantity)
+            const discountValue = summaryRows[1].querySelector('.summary-value');
+            if (totalDiscount > 0) {
+                discountValue.innerHTML = `<span style="color: #059669;">-₹${Math.round(totalDiscount)}</span>`;
+            } else {
+                discountValue.innerHTML = '<span style="color: #059669;">₹0.00</span>';
+            }
+
+            // Update shipping
+            const shippingValue = summaryRows[2].querySelector('.summary-value');
+            if (shipping === 0) {
+                shippingValue.innerHTML = '<span style="color: #059669;">FREE</span>';
+            } else {
+                shippingValue.textContent = `₹${Math.round(shipping)}`;
+            }
+
+            // Update total
+            summaryRows[3].querySelector('.summary-value').textContent = `₹${Math.round(total)}`;
+        }
+
+        // Update checkout button with enhanced logic
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+
+            if (availableItemsCount === 0) {
+                checkoutBtn.disabled = true;
+                checkoutBtn.style.opacity = '0.5';
+                checkoutBtn.style.cursor = 'not-allowed';
+
+                if (outOfStockItems.length > 0) {
+                    checkoutBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cannot Checkout - All Items Out of Stock';
+                    checkoutBtn.onclick = showCheckoutUnavailableMessage;
+                } else {
+                    checkoutBtn.innerHTML = '<i class="bi bi-x-circle"></i> No Available Items';
+                }
+            } else {
+                checkoutBtn.disabled = false;
+                checkoutBtn.style.opacity = '1';
+                checkoutBtn.style.cursor = 'pointer';
+                checkoutBtn.innerHTML = `<i class="bi bi-credit-card"></i> Proceed to Checkout (${availableItemsCount} item${availableItemsCount > 1 ? 's' : ''})`;
+                checkoutBtn.onclick = proceedToCheckout;
+            }
+        }
+
+        // Update availability breakdown if it exists
+        updateAvailabilityBreakdown(availableItemsCount, totalItemCount - availableItemsCount);
+    }
+
+    // Function to update individual item discount display
+    function updateItemDiscountDisplay(item, regularPrice, salePrice, quantity) {
+        const discountPerItem = regularPrice - salePrice;
+        const totalItemDiscount = discountPerItem * quantity;
+        
+        // Find or create discount display element
+        let discountDisplay = item.querySelector('.item-discount-info');
+        
+        if (totalItemDiscount > 0) {
+            if (!discountDisplay) {
+                // Create discount display element
+                discountDisplay = document.createElement('div');
+                discountDisplay.className = 'item-discount-info';
+                discountDisplay.style.cssText = `
+                    font-size: 0.75rem;
+                    color: #059669;
+                    font-weight: 600;
+                    margin-top: 0.25rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                `;
+                
+                // Insert after item price
+                const itemDetails = item.querySelector('.item-details');
+                const itemPrice = itemDetails.querySelector('.item-price');
+                itemPrice.parentNode.insertBefore(discountDisplay, itemPrice.nextSibling);
+            }
+            
+            // Update discount text with proportional amount
+            const discountPercentage = Math.round((discountPerItem / regularPrice) * 100);
+            discountDisplay.innerHTML = `
+                <i class="bi bi-tag-fill"></i>
+                You save ₹${Math.round(totalItemDiscount)} (${discountPercentage}% off × ${quantity})
+            `;
+        } else if (discountDisplay) {
+            // Remove discount display if no discount
+            discountDisplay.remove();
+        }
+    }
+
+    // Function to update availability breakdown in cart summary
+    function updateAvailabilityBreakdown(availableCount, outOfStockCount) {
+        const breakdown = document.querySelector('.availability-breakdown');
+        if (!breakdown) return;
+
+        // Calculate quantities
+        let availableQuantity = 0;
+        let outOfStockQuantity = 0;
+
+        document.querySelectorAll('.cart-item').forEach(item => {
+            const quantity = parseInt(item.querySelector('.qty-input').value);
+            const isOutOfStock = item.classList.contains('out-of-stock');
+
+            if (isOutOfStock) {
+                outOfStockQuantity += quantity;
+            } else {
+                availableQuantity += quantity;
+            }
+        });
+
+        // Update the breakdown content
+        const availableItem = breakdown.querySelector('.breakdown-item.available .count');
+        const unavailableItem = breakdown.querySelector('.breakdown-item.unavailable .count');
+
+        if (availableItem) {
+            availableItem.textContent = `${availableCount} (${availableQuantity} items)`;
+        }
+
+        if (unavailableItem) {
+            unavailableItem.textContent = `${outOfStockCount} (${outOfStockQuantity} items)`;
+        }
+
+        // Hide breakdown if no out-of-stock items
+        if (outOfStockCount === 0) {
+            breakdown.style.transition = 'all 0.3s ease';
+            breakdown.style.opacity = '0';
+            breakdown.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                breakdown.style.display = 'none';
+            }, 300);
+        } else {
+            breakdown.style.display = 'block';
+            breakdown.style.opacity = '1';
+            breakdown.style.transform = 'translateY(0)';
+        }
+    }
+
+    // Toast notification system
+    function showToast(title, message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+    // Create container if it doesn't exist
+    const newContainer = document.createElement('div');
+    newContainer.id = 'toast-container';
+    newContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+    document.body.appendChild(newContainer);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+    success: 'bi bi-check-circle-fill',
+    error: 'bi bi-exclamation-circle-fill',
+    warning: 'bi bi-exclamation-triangle-fill',
+    info: 'bi bi-info-circle-fill'
+    };
+    
+    toast.innerHTML = `
+    <div class="toast-icon">
+    <i class="${icons[type]}"></i>
+    </div>
+    <div class="toast-content">
+    <div class="toast-title">${title}</div>
+    <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="removeToast(this.parentElement)">
+    <i class="bi bi-x"></i>
+    </button>
+    `;
+    
+    document.getElementById('toast-container').appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 100);
+    
+    // Auto remove
+    setTimeout(() => removeToast(toast), duration);
+    }
+    
+    function removeToast(toast) {
+    if (toast && toast.parentElement) {
+    toast.classList.remove('show');
+    setTimeout(() => {
+    if (toast.parentElement) {
+    toast.parentElement.removeChild(toast);
+    }
+    }, 300);
+    }
+    }
+    
+    // Helper function to update cart counter
+    function updateCartCounter(count) {
+        // Use unified cart state system
+        if (window.cartState) {
+            window.cartState.updateCount(count);
+        } else if (typeof updateCartCount === 'function') {
+            updateCartCount();
+        } else {
+            // Fallback to local update
+            const cartCounters = document.querySelectorAll('.cart-count');
+            cartCounters.forEach(counter => {
+                if (count > 0) {
+                    counter.textContent = count;
+                    counter.style.display = 'flex';
+                } else {
+                    counter.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    // Enhanced function to validate and update stock information for all cart items
+    async function validateCartStock() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        let stockIssuesDetected = false;
+        const stockIssues = [];
+
+        for (const item of cartItems) {
+            const productId = item.dataset.productId;
+            const currentQty = parseInt(item.querySelector('.qty-input').value);
+            const currentStock = parseInt(item.dataset.productStock || 0);
+            const productName = item.querySelector('.item-name').textContent;
+
+            // Check if item became out of stock
+            if (currentStock === 0 && !item.classList.contains('out-of-stock')) {
+                item.classList.add('out-of-stock');
+                item.dataset.isOutOfStock = 'true';
+                console.log(`Product ${productName} is now out of stock`);
+                stockIssuesDetected = true;
+            }
+
+            // Check if item came back in stock
+            if (currentStock > 0 && item.classList.contains('out-of-stock')) {
+                item.classList.remove('out-of-stock');
+                item.dataset.isOutOfStock = 'false';
+                console.log(`Product ${productName} is back in stock`);
+                stockIssuesDetected = true;
+            }
+
+            // Update button states based on current stock
+            updateButtonStates(productId);
+
+            // If current quantity exceeds stock, collect issue
+            if (currentQty > currentStock && currentStock > 0) {
+                stockIssues.push({
+                    name: productName,
+                    requested: currentQty,
+                    available: currentStock
+                });
+                console.warn(`Warning: ${productName} quantity (${currentQty}) exceeds available stock (${currentStock})`);
+            }
+        }
+
+        // Update cart totals and UI if stock status changed
+        if (stockIssuesDetected) {
+            updateCartTotals();
+
+            // Update out-of-stock banner
+            const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+            const banner = document.getElementById('outOfStockBanner');
+
+            if (outOfStockItems.length > 0 && !banner) {
+                // Need to add banner - reload page for simplicity
+                console.log('Stock status changed - page reload recommended');
+            } else if (outOfStockItems.length === 0 && banner) {
+                // Remove banner
+                banner.style.transition = 'all 0.3s ease';
+                banner.style.opacity = '0';
+                banner.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    banner.remove();
+                }, 300);
+            }
+        }
+
+        // Show stock issues if any
+        if (stockIssues.length > 0) {
+            let issueText = 'Stock level changes detected:\n\n';
+            stockIssues.forEach(issue => {
+                issueText += `• ${issue.name}: You have ${issue.requested}, but only ${issue.available} available\n`;
+            });
+
+            console.warn('Stock validation issues:', stockIssues);
+        }
+    }
+
+    // Page load animation and stock validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        const cartSummary = document.querySelector('.cart-summary');
+
+        // Animate cart items
+        cartItems.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            item.style.transition = 'all 0.6s ease';
+
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+
+        // Animate cart summary
+        if (cartSummary) {
+            cartSummary.style.opacity = '0';
+            cartSummary.style.transform = 'translateX(20px)';
+            cartSummary.style.transition = 'all 0.6s ease';
+
+            setTimeout(() => {
+                cartSummary.style.opacity = '1';
+                cartSummary.style.transform = 'translateX(0)';
+            }, 300);
+        }
+
+        // Validate stock information after page load
+        setTimeout(() => {
+            validateCartStock();
+        }, 500);
+
+        // Set up periodic stock validation (every 30 seconds)
+        setInterval(() => {
+            validateCartStockFromServer();
+        }, 30000);
+    });
+
+    // Function to validate cart stock from server
+    async function validateCartStockFromServer() {
+        try {
+            const response = await fetch('/cart/validate');
+            const data = await response.json();
+
+            if (data.success) {
+                let stockChangesDetected = false;
+                const currentOutOfStock = document.querySelectorAll('.cart-item.out-of-stock').length;
+                const serverOutOfStock = data.outOfStockCount;
+
+                // Check if stock status changed
+                if (currentOutOfStock !== serverOutOfStock) {
+                    stockChangesDetected = true;
+                    console.log('Stock status changes detected from server');
+
+                    // Show notification about stock changes
+                    if (serverOutOfStock > currentOutOfStock) {
+                        showSweetAlert('Some items in your cart are now out of stock. Please review your cart.', 'warning');
+                    } else if (serverOutOfStock < currentOutOfStock) {
+                        showSweetAlert('Some previously out-of-stock items are now available!', 'success');
+                    }
+
+                    // Reload page to reflect changes
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }
+
+                // Update stock data for existing items
+                data.availableItems.forEach(serverItem => {
+                    const cartItem = document.querySelector(`[data-product-id="${serverItem.productId}"]`);
+                    if (cartItem) {
+                        const currentStock = parseInt(cartItem.dataset.productStock);
+                        if (currentStock !== serverItem.stock) {
+                            cartItem.dataset.productStock = serverItem.stock;
+                            updateButtonStates(serverItem.productId);
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error validating cart stock from server:', error);
+        }
+    }
+
+    // Helper function to show stock warnings with visual feedback
+    function showStockWarning(cartItem, message) {
+        // Add visual warning class
+        cartItem.classList.add('stock-warning');
+
+        // Remove warning class after animation
+        setTimeout(() => {
+            cartItem.classList.remove('stock-warning');
+        }, 500);
+
+        // Show warning message
+        showSweetAlert(message, 'warning');
+    }
+
+    // Helper function to check if user can proceed with current cart
+    function canProceedToCheckout() {
+        const availableItems = document.querySelectorAll('.cart-item:not(.out-of-stock)');
+        const outOfStockItems = document.querySelectorAll('.cart-item.out-of-stock');
+
+        return {
+            canProceed: availableItems.length > 0,
+            availableCount: availableItems.length,
+            outOfStockCount: outOfStockItems.length,
+            totalItems: availableItems.length + outOfStockItems.length
+        };
+    }
+
+    // Add CSS animations for enhanced user experience
+    const style = document.createElement('style');
+    style.textContent = `
+        .toast {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            padding: 16px 20px;
+            min-width: 300px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            border-left-color: #10b981;
+        }
+        
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+        
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .toast.info {
+            border-left-color: #3b82f6;
+        }
+        
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .toast.success .toast-icon {
+            color: #10b981;
+        }
+        
+        .toast.error .toast-icon {
+            color: #ef4444;
+        }
+        
+        .toast.warning .toast-icon {
+            color: #f59e0b;
+        }
+        
+        .toast.info .toast-icon {
+            color: #3b82f6;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #111827;
+        }
+        
+        .toast-message {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toast-close:hover {
+            color: #6b7280;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideInFromBottom {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .cart-item.out-of-stock {
+            animation: slideInFromBottom 0.5s ease-out;
+        }
+
+        .out-of-stock-banner {
+            animation: slideInFromBottom 0.6s ease-out;
+        }
+
+        .btn-remove-unavailable:active {
+            animation: pulse 0.2s ease-out;
+        }
+
+        .quantity-limit-message {
+            animation: slideInFromBottom 0.4s ease-out;
+        }
+
+        .cart-item.stock-warning {
+            animation: shake 0.5s ease-out;
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+<!-- Include Footer Content -->
+ <%- include("../partials/footer") %>
+</body>
+</html>

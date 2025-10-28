@@ -7,6 +7,8 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
+const Wishlist = require('../../models/wishlist-schema');
+const Cart = require('../../models/cart-schema');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -22,7 +24,7 @@ const showSignup = (req, res) => {
   });
 };
 
-//  Load home page with proper product filtering
+// Load home page with proper product filtering and wishlist count
 const loadHome = async (req, res) => {
   try {
     const navLinks = [
@@ -32,9 +34,8 @@ const loadHome = async (req, res) => {
       { href: '#contact', text: 'Contact', active: false }
     ];
 
-    //  Get featured products with proper filtering
+    // Get featured products with proper filtering
     const featuredProducts = await Product.aggregate([
-      // Join with categories
       {
         $lookup: {
           from: "categories",
@@ -43,14 +44,12 @@ const loadHome = async (req, res) => {
           as: "categoryData"
         }
       },
-      //   Filter products and categories
       {
         $match: {
           isListed: true,
           isDeleted: false,        
           isBlocked: false,
           status: "Available",
-          //  Only products from active categories
           "categoryData.isListed": true,
           "categoryData.isDeleted": false
         }
@@ -61,7 +60,6 @@ const loadHome = async (req, res) => {
 
     // Add price calculations for home page products
     featuredProducts.forEach(product => {
-      // Convert categoryData array to single object
       if (product.categoryData && product.categoryData.length > 0) {
         product.category = product.categoryData[0];
       }
@@ -77,36 +75,68 @@ const loadHome = async (req, res) => {
         product.discountAmount = 0;
       }
 
-      // Check if product is new (created within last 30 days)
       const now = new Date();
       const createdAt = new Date(product.createdAt);
       const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
       product.isNew = diffDays <= 30;
     });
 
-    //  Get only active categories for any home page category sections
+    // Get only active categories for any home page category sections
     const activeCategories = await Category.find({
       isListed: true,
       isDeleted: false
     }).sort({ name: 1 }).limit(6);
 
+    //  Get user cart and wishlist data for both regular and Google OAuth users
+    let userWishlistIds = [];
+    let wishlistCount = 0;
+    let cartCount = 0;
+
+    const userId = req.session.userId || req.session.googleUserId; 
+
+    if (userId) {
+      // Get cart count
+      const cart = await Cart.findOne({ userId: userId }).lean();
+      if (cart && cart.items) {
+        cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      }
+
+      // Get wishlist count
+      const wishlist = await Wishlist.findOne({ userId: userId }).lean();
+      if (wishlist && wishlist.products) {
+        userWishlistIds = wishlist.products.map(item => item.productId.toString());
+        wishlistCount = wishlist.products.length;
+      }
+    }
+
     res.render('user/home', {
-      user: req.user || null,
+      user: res.locals.user || null,  
       navLinks,
-      featuredProducts,           
-      activeCategories,          
-      isAuthenticated: !!req.session.userId,
+      featuredProducts,
+      activeCategories,
+      userWishlistIds,
+      wishlistCount,
+      cartCount,
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId), 
       currentPage: 'home'
     });
 
   } catch (error) {
     console.error('Error in loadHome:', error.message);
     res.status(500).render('error', {
-      message: 'Error loading home page',
-      user: req.user || null
+      error: {
+        status: 500,
+        message: 'Error loading home page: ' + error.message
+      },
+      message: error.message,
+      user: res.locals.user || null,  
+      cartCount: 0,
+      wishlistCount: 0,
+      isAuthenticated: !!(req.session.userId || req.session.googleUserId) 
     });
   }
 };
+
 
 // Handle signup
 const signup = async (req, res) => {
@@ -259,7 +289,8 @@ const resendOTP = async (req, res) => {
 
 // Show login page
 const showLogin = async (req, res) => {
-  if (req.session.userId) return res.redirect('/home');
+  //  Check both regular and Google OAuth authentication
+  if (req.session.userId || req.session.googleUserId) return res.redirect('/home');
   const blocked = req.query.blocked === 'true';
   return res.render('user/login', { error: null, blocked });
 };
@@ -301,6 +332,7 @@ const login = async (req, res) => {
 
         req.session.userId = user._id;
         req.session.email = user.email;
+        req.session.user = user;
         req.session.loginTime = new Date();
 
         req.session.save((err) => {

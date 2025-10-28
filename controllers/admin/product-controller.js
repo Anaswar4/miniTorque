@@ -170,8 +170,8 @@ const getEditProduct = async (req, res) => {
         const productId = req.params.id;
         const product = await Product.findById(productId).populate('category');
         const categories = await Category.find({
-            isListed: true,           //  Only active categories
-            isDeleted: false          //  Only non-deleted categories
+            isListed: true,           
+            isDeleted: false          
         }).sort({ name: 1 });
         
         if (!product || product.isDeleted) {

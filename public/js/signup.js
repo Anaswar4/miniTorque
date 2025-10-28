@@ -53,9 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const classes = ["very-weak", "weak", "fair", "strong"];
-    strengthValue.textContent = ["Very Weak", "Weak", "Fair", "Strong"][result.score - 1];
-    strengthFill.classList.add(classes[result.score - 1]);
-    strengthValue.classList.add(classes[result.score - 1]);
+    const labels = ["Very Weak", "Weak", "Fair", "Strong"];
+    const index = Math.max(0, result.score - 1); // Ensure index is not negative
+    strengthValue.textContent = labels[index];
+    strengthFill.classList.add(classes[index]);
+    strengthValue.classList.add(classes[index]);
 
     updateRequirement(requirements.length, result.hasLength);
     updateRequirement(requirements.uppercase, result.hasUpper);

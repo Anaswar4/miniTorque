@@ -9,6 +9,17 @@ const authMiddleware = {
   try {
     // Check if admin session exists
     if (req.session && req.session.admin_id) {
+      // Check for session timeout (24 hours)
+      const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
+      if (
+        req.session.loginTime &&
+        Date.now() - new Date(req.session.loginTime).getTime() > sessionTimeout
+      ) {
+        return req.session.destroy(() => {
+          res.redirect('/admin/admin-login?expired=true');
+        });
+      }
+
       const admin = await User.findById(req.session.admin_id);
 
       // Validate admin user and ensure they are not blocked
@@ -118,15 +129,15 @@ isUserAuthenticated : async (req, res, next) => {
 redirectIfAuthenticated : async (req, res, next) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
-    
+
     if (userId) {
       const user = await User.findById(userId);
-      
-      // If user exists and is not blocked, redirect to dashboard
+
+      // If user exists and is not blocked, redirect to home (consistent with user-middleware)
       if (user && !user.isBlocked) {
-        return res.redirect('/dashboard');
+        return res.redirect('/home');
       }
-      
+
       // If user is blocked or doesn't exist, clear only user session data
       if (req.session.userId) {
         delete req.session.userId;
@@ -140,8 +151,11 @@ redirectIfAuthenticated : async (req, res, next) => {
       if (req.session.loginTime) {
         delete req.session.loginTime;
       }
+      if (req.session.user) {
+        delete req.session.user;
+      }
     }
-    
+
     next();
   } catch (error) {
     console.error('Redirect Auth Middleware Error:', error);
@@ -219,9 +233,6 @@ validateSession : async (req, res, next) => {
     next();
   }
 },
-
-
-
 preventCache : (req, res, next) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');

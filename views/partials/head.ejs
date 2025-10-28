@@ -16,8 +16,8 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
   <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-  
-<style>
+
+  <style>
     .dropdown-menu {
       border-radius: 15px;
       padding: 10px 0;
@@ -170,8 +170,8 @@
 
     /*  Square images and better text handling */
     .search-result-item img {
-      width: 45px;                    
-      height: 45px;                   
+      width: 45px;
+      height: 45px;
       object-fit: cover;
       border-radius: 0.25rem;
       margin-right: 15px;
@@ -180,9 +180,9 @@
     .search-result-item .title {
       font-size: 0.9rem;
       font-weight: 500;
-      white-space: nowrap;            
-      overflow: hidden;               
-      text-overflow: ellipsis;        
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .search-result-item .author {
@@ -349,10 +349,10 @@
     }
 
     /* Search input focus with clear button */
-    .search-input input:focus + .search-icon + .search-clear-btn {
+    .search-input input:focus+.search-icon+.search-clear-btn {
       color: #dc3545;
     }
-</style>
+  </style>
 
 </head>
 
@@ -385,33 +385,37 @@
         <div class="d-flex align-items-center flex-column flex-lg-row">
           <div class="mobile-search">
             <div class="search-input">
-              <input type="text" id="mobileSearchInput" name="mobileSearch" class="form-control ps-4 search-field" placeholder="Search..."
-                style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem" autocomplete="off" />
+              <input type="text" id="mobileSearchInput" name="mobileSearch" class="form-control ps-4 search-field"
+                placeholder="Search..." style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem"
+                autocomplete="off" />
               <div class="search-icon">
                 <i class="ri-search-line"></i>
               </div>
               <!--  NEW: Clear button for mobile -->
-              <button type="button" class="search-clear-btn" id="mobileClearBtn" title="Clear search" style="display: none;">
+              <button type="button" class="search-clear-btn" id="mobileClearBtn" title="Clear search"
+                style="display: none;">
                 <i class="ri-close-line"></i>
               </button>
               <div class="search-results" id="mobileSearchResults"></div>
             </div>
           </div>
           <div class="search-input d-none d-lg-block me-3">
-            <input type="text" id="desktopSearchInput" name="desktopSearch" class="form-control ps-4 search-field" placeholder="Search..."
-              style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem" autocomplete="off" />
+            <input type="text" id="desktopSearchInput" name="desktopSearch" class="form-control ps-4 search-field"
+              placeholder="Search..." style="border-radius: 0.5rem; padding-left: 2.5rem; padding-right: 2.5rem"
+              autocomplete="off" />
             <div class="search-icon">
               <i class="ri-search-line"></i>
             </div>
             <!--  Clear button for desktop -->
-            <button type="button" class="search-clear-btn" id="desktopClearBtn" title="Clear search" style="display: none;">
+            <button type="button" class="search-clear-btn" id="desktopClearBtn" title="Clear search"
+              style="display: none;">
               <i class="ri-close-line"></i>
             </button>
             <div class="search-results" id="desktopSearchResults"></div>
           </div>
           <div class="header-icons">
-           
-            <% if (typeof user === 'undefined' || !user) { %>
+
+            <% if (typeof user==='undefined' || !user) { %>
               <!-- Not authenticated -->
               <a href="/login" class="icon-btn" title="Wishlist">
                 <i class="ri-heart-line fs-5"></i>
@@ -424,61 +428,69 @@
                 <i class="ri-shopping-bag-line fs-5"></i>
                 <span class="count cart-count">0</span>
               </a>
-            <% } else { %>
-              <!-- Authenticated -->
-              <a href="/wishlist" class="icon-btn" title="Wishlist">
-                <i class="ri-heart-line fs-5"></i>
-                <span class="count wishlist-count" data-count="<%= locals.wishlistCount || 0 %>">
-                  <%= locals.wishlistCount || 0 %>
-                </span>
-              </a>
-              <!-- User Dropdown -->
-              <div class="dropdown user-dropdown">
-                <button class="icon-btn" type="button" 
-                        id="userDropdown" title="Account"
-                        data-user-authenticated="true">
-                  <i class="ri-user-line fs-5"></i>
-                </button>
-                <ul class="dropdown-menu account-dropdown dropdown-menu-end" aria-labelledby="userDropdown">
-                  <!-- User Information Header -->
-                  <li class="user-info-header">
-                    <div class="d-flex align-items-center p-3">
-                      <div class="user-avatar me-3">
-                        <%= (user.fullName || user.name || user.displayName || user.googleName || 'User').charAt(0).toUpperCase() %>
-                      </div>
-                      <div class="user-details">
-                        <div class="user-name">
-                          <%= user.fullName || user.name || user.displayName || user.googleName || 'User' %>
+              <% } else { %>
+                <!-- Authenticated -->
+                 <!-- Wishlist -->
+                <a href="/wishlist" class="icon-btn" title="Wishlist">
+                  <i class="ri-heart-line fs-5"></i>
+                  <span class="count wishlist-count" data-count="<%= wishlistCount || 0 %>">
+                    <%= wishlistCount || 0 %>
+                  </span>
+                </a>
+                <!-- User Dropdown -->
+                <div class="dropdown user-dropdown">
+                  <button class="icon-btn" type="button" id="userDropdown" title="Account"
+                    data-user-authenticated="true">
+                    <i class="ri-user-line fs-5"></i>
+                  </button>
+                  <ul class="dropdown-menu account-dropdown dropdown-menu-end" aria-labelledby="userDropdown">
+                    <!-- User Information Header -->
+                    <li class="user-info-header">
+                      <div class="d-flex align-items-center p-3">
+                        <div class="user-avatar me-3">
+                          <%= (user.fullName || user.name || user.displayName || user.googleName || 'User'
+                            ).charAt(0).toUpperCase() %>
                         </div>
-                        <div class="user-email">
-                          <%= user.email || 'No email provided' %>
+                        <div class="user-details">
+                          <div class="user-name">
+                            <%= user.fullName || user.name || user.displayName || user.googleName || 'User' %>
+                          </div>
+                          <div class="user-email">
+                            <%= user.email || 'No email provided' %>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  <!-- Menu Items -->
-                  <li>
-                    <a class="dropdown-item" href="/profile">
-                      <i class="ri-user-3-line"></i>My Account
-                    </a>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li>
-                    <a class="dropdown-item logout-btn" href="/logout">
-                      <i class="ri-logout-box-line"></i>Logout
-                    </a>
-                  </li>
-                </ul>
-              </div>
+                    </li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <!-- Menu Items -->
+                    <li>
+                      <a class="dropdown-item" href="/profile">
+                        <i class="ri-user-3-line"></i>My Account
+                      </a>
+                    </li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                      <a class="dropdown-item logout-btn" href="/logout">
+                        <i class="ri-logout-box-line"></i>Logout
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                
+                 <!-- Cart -->
+                <a href="/cart" class="icon-btn" title="Cart">
+                  <i class="ri-shopping-bag-line fs-5"></i>
+                  <span class="count cart-count" data-count="<%= cartCount || 0 %>">
+                    <%= cartCount || 0 %>
+                  </span>
+                </a>
 
-              <a href="/cart" class="icon-btn cart-link" title="Cart">
-                <i class="ri-shopping-bag-line fs-5"></i>
-                <span class="count cart-count" data-count="<%= locals.cartCount || 0 %>">
-                  <%= locals.cartCount || 0 %>
-                </span>
-              </a>
-            <% } %>
+                
+                <% } %>
           </div>
         </div>
       </div>
@@ -486,11 +498,12 @@
   </nav>
 
   <!-- Bootstrap JS - load first -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"></script>
 
   <!-- SweetAlert2 JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       // Search functionality
@@ -511,12 +524,12 @@
       async function fetchSearchResults(query) {
         try {
           //  existing API route
-          const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=10`);
+         const response = await fetch(`/navbar-search?q=${encodeURIComponent(query)}&limit=10`);
           if (!response.ok) throw new Error("Network response was not ok");
-          const data = await response.json();
-          
+          const products = await response.json();
+
           //  Return the products array from your API response
-          return data.success ? data.products : [];
+          return Array.isArray(products) ? products : [];
         } catch (error) {
           console.error("Error fetching search results:", error);
           return [];
@@ -533,28 +546,27 @@
 
         products.forEach((product) => {
           const item = document.createElement("a");
-          //  Update href to match your route structure (adjust as needed)
-          item.href = `#`; // Or `/product/${product._id}` if you have that route
+          item.href = `/product/${product._id}`;
           item.classList.add("search-result-item");
-          
-          //  Use your actual product schema fields
+
+          //actual product schema fields
           item.innerHTML = `
-              <img src="/uploads/products/${product.mainImage}" 
-                   alt="${product.productName}" 
-                   onerror="this.src='/assets/placeholder.jpg'" />
-              <div>
-                <div class="title">${product.productName}</div>
-                <div class="author">${product.brand}</div>
-                <div class="price">₹${product.salePrice.toFixed(2)}</div>
-              </div>
-            `;
-          
+          <img src="/uploads/products/${product.mainImage}" 
+               alt="${product.productName}" 
+               onerror="this.src='/assets/placeholder.jpg'" />
+          <div>
+            <div class="title">${product.productName}</div>
+            <div class="brand">${product.brand}</div>
+            
+          </div>
+        `;
+
           // Add click handler to view product
           item.addEventListener('click', (e) => {
             e.preventDefault();
-            viewProduct(product._id); // Use your existing viewProduct function
+            viewProduct(product._id); // Use existing viewProduct function
           });
-          
+
           resultsContainer.appendChild(item);
         });
         resultsContainer.classList.add("show");
@@ -574,14 +586,13 @@
       function toggleClearButton(inputField, clearBtn) {
         const hasValue = inputField.value.trim().length > 0;
         clearBtn.style.display = hasValue ? 'block' : 'none';
-        
+
         if (hasValue) {
           inputField.classList.add('has-clear');
         } else {
           inputField.classList.remove('has-clear');
         }
       }
-
 
       //  Placeholder viewProduct function
       function viewProduct(productId) {
@@ -598,7 +609,7 @@
         // Input event with clear button toggle
         field.addEventListener("input", debounce(async function () {
           const query = this.value.trim();
-          
+
           // Toggle clear button
           toggleClearButton(this, clearBtn);
 
@@ -623,8 +634,8 @@
         // Blur event
         field.addEventListener("blur", function (e) {
           setTimeout(() => {
-            if (!resultsContainer.contains(e.relatedTarget) && 
-                !clearBtn.contains(e.relatedTarget)) {
+            if (!resultsContainer.contains(e.relatedTarget) &&
+              !clearBtn.contains(e.relatedTarget)) {
               resultsContainer.classList.remove("show");
             }
           }, 200);
@@ -659,7 +670,7 @@
         }
       });
 
-      // Active page highlighting
+      //  Active page highlighting with safe URL handling
       function setActiveNavLink() {
         const currentPath = window.location.pathname;
         const navLinks = document.querySelectorAll('.nav-link');
@@ -669,25 +680,52 @@
 
         // Add active class to current page link
         navLinks.forEach(link => {
-          const linkPath = new URL(link.href).pathname;
+          const href = link.getAttribute('href');
 
-          // Exact match for home page
-          if (currentPath === '/' && linkPath === '/') {
-            link.classList.add('active');
+          // Skip invalid, empty, or hash-only hrefs
+          if (!href || !href.trim() || href === '#') {
+            return;
           }
-          // For other pages, check if current path starts with link path
-          else if (currentPath !== '/' && linkPath !== '/' && currentPath.startsWith(linkPath)) {
-            link.classList.add('active');
-          }
-          // Special cases for specific routes
-          else if (currentPath.includes('/products') && linkPath === '/shopPage') {
-            link.classList.add('active');
-          }
-          else if (currentPath === '/about' && linkPath === '/about') {
-            link.classList.add('active');
-          }
-          else if (currentPath === '/contact' && linkPath === '/contact') {
-            link.classList.add('active');
+
+          try {
+            let linkPath;
+
+            // Handle different URL types safely
+            if (href.startsWith('/')) {
+              // Relative paths like "/shopPage"
+              linkPath = href;
+            } else if (href.includes('://')) {
+              // Absolute URLs
+              const url = new URL(href);
+              linkPath = url.pathname;
+            } else {
+              // Other relative paths
+              const url = new URL(href, window.location.origin);
+              linkPath = url.pathname;
+            }
+
+            // Exact match for home page
+            if (currentPath === '/' && linkPath === '/') {
+              link.classList.add('active');
+            }
+            // For other pages, check if current path starts with link path
+            else if (currentPath !== '/' && linkPath !== '/' && currentPath.startsWith(linkPath)) {
+              link.classList.add('active');
+            }
+            // Special cases for specific routes
+            else if (currentPath.includes('/products') && linkPath === '/shopPage') {
+              link.classList.add('active');
+            }
+            else if (currentPath === '/about' && linkPath === '/about') {
+              link.classList.add('active');
+            }
+            else if (currentPath === '/contact' && linkPath === '/contact') {
+              link.classList.add('active');
+            }
+
+          } catch (error) {
+            console.warn('Invalid URL in navigation:', href, error);
+            // Skip this link and continue
           }
         });
       }
@@ -698,30 +736,30 @@
       // User dropdown functionality - improved detection and initialization
       function initializeUserDropdown() {
         console.log('Initializing dropdown...');
-        
+
         // Debug: Check if elements exist
         console.log('Looking for userDropdown element...');
         const userDropdownBtn = document.getElementById('userDropdown');
         console.log('userDropdown element:', userDropdownBtn);
-        
+
         // Debug: Check all elements with user-dropdown class
         const userDropdownContainer = document.querySelector('.user-dropdown');
         console.log('user-dropdown container:', userDropdownContainer);
-        
+
         // Debug: Check authentication section
         const headerIcons = document.querySelector('.header-icons');
         console.log('header-icons container:', headerIcons);
         console.log('header-icons innerHTML:', headerIcons ? headerIcons.innerHTML : 'not found');
-        
+
         if (!userDropdownBtn) {
           console.log('User dropdown button not found - checking if user is authenticated...');
-          
+
           // Alternative check - look for any authenticated user elements
           const wishlistLink = document.querySelector('a[href="/wishlist"]');
           const cartLink = document.querySelector('a[href="/cart"]');
           console.log('Wishlist link found:', !!wishlistLink);
           console.log('Cart link found:', !!cartLink);
-          
+
           if (wishlistLink || cartLink) {
             console.log('User appears to be authenticated but dropdown button is missing from DOM');
           } else {
@@ -733,7 +771,7 @@
         // Check if user is authenticated by data attribute
         const isAuthenticated = userDropdownBtn.getAttribute('data-user-authenticated') === 'true';
         console.log('Authentication status from data attribute:', isAuthenticated);
-        
+
         if (!isAuthenticated) {
           console.log('User not authenticated according to data attribute');
           return;
@@ -806,8 +844,6 @@
             e.stopPropagation();
           }
         });
-
-        console.log('Dropdown functionality initialized successfully');
       }
 
       // Initialize user dropdown
@@ -852,7 +888,492 @@
         });
       });
     });
+    document.addEventListener("DOMContentLoaded", function () {
+      //  GLOBAL STATE MANAGEMENT SYSTEM FOR REAL-TIME SYNCHRONIZATION
+      window.globalState = {
+        wishlist: {
+          userWishlistIds: [],
+          initialized: false
+        },
+        cart: {
+          count: 0,
+          initialized: false
+        },
+
+        // Initialize all states
+        async init(serverWishlistIds = []) {
+          await this.initWishlist(serverWishlistIds);
+          await this.initCart();
+          this.setupCrossPageCommunication();
+        },
+
+        // Initialize wishlist state
+        async initWishlist(serverWishlistIds = []) {
+          if (this.wishlist.initialized) return;
+
+          if (serverWishlistIds.length > 0) {
+            this.wishlist.userWishlistIds = [...serverWishlistIds];
+            this.wishlist.initialized = true;
+            console.log('Wishlist state initialized from server:', this.wishlist.userWishlistIds);
+          } else {
+            await this.fetchWishlistIds();
+          }
+        },
+
+        // Initialize cart state
+        async initCart() {
+          if (this.cart.initialized) return;
+
+          try {
+            const response = await fetch('/cart/count');
+            if (response.ok) {
+              const data = await response.json();
+              this.cart.count = data.count || 0;
+              this.cart.initialized = true;
+              console.log('Cart state initialized:', this.cart.count);
+            }
+          } catch (error) {
+            console.error('Failed to initialize cart state:', error);
+            this.cart.count = 0;
+            this.cart.initialized = true;
+          }
+        },
+
+        // Setup cross-page communication using localStorage events
+        setupCrossPageCommunication() {
+          // Listen for storage events (cross-page communication)
+          window.addEventListener('storage', (e) => {
+            if (e.key === 'miniTorque_wishlist_update') {
+              const data = JSON.parse(e.newValue || '{}');
+              this.handleWishlistUpdate(data.productId, data.action);
+            } else if (e.key === 'miniTorque_cart_update') {
+              const data = JSON.parse(e.newValue || '{}');
+              this.handleCartUpdate(data.count);
+            }
+          });
+
+          console.log('Cross-page communication setup complete');
+        },
+
+        // Broadcast wishlist update to other pages
+        broadcastWishlistUpdate(productId, action) {
+          const data = { productId, action, timestamp: Date.now() };
+          localStorage.setItem('miniTorque_wishlist_update', JSON.stringify(data));
+          // Remove after a short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_wishlist_update');
+          }, 100);
+        },
+
+        // Broadcast cart update to other pages
+        broadcastCartUpdate(count) {
+          const data = { count, timestamp: Date.now() };
+          localStorage.setItem('miniTorque_cart_update', JSON.stringify(data));
+          // Remove after a short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_cart_update');
+          }, 100);
+        },
+
+        // Handle wishlist update from other pages
+        handleWishlistUpdate(productId, action) {
+          if (action === 'added') {
+            this.addToWishlist(productId, false); // false = don't broadcast again
+          } else if (action === 'removed') {
+            this.removeFromWishlist(productId, false); // false = don't broadcast again
+          }
+        },
+
+        // Handle cart update from other pages
+        handleCartUpdate(count) {
+          this.cart.count = count;
+          this.updateCartCounters();
+        },
+
+        // Fetch current wishlist IDs from server
+        async fetchWishlistIds() {
+          try {
+            const response = await fetch('/wishlist/ids');
+            if (response.ok) {
+              const data = await response.json();
+              this.wishlist.userWishlistIds = data.wishlistIds || [];
+              this.wishlist.initialized = true;
+              console.log('Wishlist IDs fetched:', this.wishlist.userWishlistIds);
+            }
+          } catch (error) {
+            console.error('Failed to fetch wishlist IDs:', error);
+            this.wishlist.userWishlistIds = [];
+            this.wishlist.initialized = true;
+          }
+        },
+
+        // Check if product is in wishlist
+        isInWishlist(productId) {
+          return this.wishlist.userWishlistIds.includes(productId.toString());
+        },
+
+        // Add product to wishlist state
+        addToWishlist(productId, broadcast = true) {
+          const id = productId.toString();
+          if (!this.wishlist.userWishlistIds.includes(id)) {
+            this.wishlist.userWishlistIds.push(id);
+            this.syncWishlistButtons(id, true);
+            console.log('Added to wishlist state:', id);
+
+            // Broadcast to other pages
+            if (broadcast) {
+              this.broadcastWishlistUpdate(id, 'added');
+            }
+          }
+        },
+
+        // Remove product from wishlist state
+        removeFromWishlist(productId, broadcast = true) {
+          const id = productId.toString();
+          const index = this.wishlist.userWishlistIds.indexOf(id);
+          if (index > -1) {
+            this.wishlist.userWishlistIds.splice(index, 1);
+            this.syncWishlistButtons(id, false);
+            console.log('Removed from wishlist state:', id);
+
+            // Broadcast to other pages
+            if (broadcast) {
+              this.broadcastWishlistUpdate(id, 'removed');
+            }
+          }
+        },
+
+        // Broadcast wishlist update to other pages
+        broadcastWishlistUpdate(productId, action) {
+          const data = {
+            type: 'wishlist_update',
+            productId: productId.toString(),
+            action: action,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('miniTorque_wishlist_sync', JSON.stringify(data));
+
+          // Remove after short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_wishlist_sync');
+          }, 100);
+        },
+
+        // Handle wishlist update from other pages
+        handleWishlistUpdate(productId, action) {
+          if (action === 'added') {
+            this.addToWishlist(productId, false); // false = don't broadcast again
+          } else if (action === 'removed') {
+            this.removeFromWishlist(productId, false); // false = don't broadcast again
+          }
+        },
+
+        // Update cart count and broadcast
+        updateCartCount(count, broadcast = true) {
+          this.cart.count = count;
+          this.updateCartCounters();
+
+          // Broadcast to other pages
+          if (broadcast) {
+            this.broadcastCartUpdate(count);
+          }
+        },
+
+        // Update all cart counter elements
+        updateCartCounters() {
+          const cartCountElements = document.querySelectorAll('.cart-count');
+          cartCountElements.forEach(elem => {
+            elem.textContent = this.cart.count;
+            elem.dataset.count = this.cart.count;
+            elem.style.display = this.cart.count > 0 ? 'flex' : 'none';
+          });
+
+          // Also update any legacy cart counter elements
+          const legacyCounters = document.querySelectorAll('#cartCount');
+          legacyCounters.forEach(elem => {
+            elem.textContent = this.cart.count;
+            elem.style.display = this.cart.count > 0 ? 'flex' : 'none';
+          });
+
+          console.log('Cart counters updated:', this.cart.count);
+        },
+
+        // Sync all wishlist buttons for a specific product across all pages
+        syncWishlistButtons(productId, isActive) {
+          const selectors = [
+            `button.wishlist-icon[data-product-id="${productId}"]`,
+            `button.btn-wishlist[data-product-id="${productId}"]`,
+            `button.btn-wishlist-home[data-product-id="${productId}"]`
+          ];
+
+          selectors.forEach(selector => {
+            const buttons = document.querySelectorAll(selector);
+            buttons.forEach(button => {
+              if (isActive) {
+                button.classList.add('active');
+                button.title = 'Remove from Wishlist';
+                const icon = button.querySelector('i');
+                if (icon) {
+                  icon.className = 'fas fa-heart';
+                  if (button.classList.contains('wishlist-icon')) {
+                    icon.classList.add('text-danger');
+                  }
+                }
+              } else {
+                button.classList.remove('active');
+                button.title = 'Add to Wishlist';
+                const icon = button.querySelector('i');
+                if (icon) {
+                  icon.className = 'far fa-heart';
+                  icon.classList.remove('text-danger');
+                }
+              }
+            });
+          });
+
+          console.log(`Synced ${document.querySelectorAll(selectors.join(', ')).length} wishlist buttons for product ${productId}`);
+        },
+
+        // Sync all wishlist buttons on page load
+        syncAllWishlistButtons() {
+          this.wishlist.userWishlistIds.forEach(productId => {
+            this.syncWishlistButtons(productId, true);
+          });
+          console.log('Synced all wishlist buttons on page load');
+        }
+      };
+
+      // Legacy compatibility - maintain old wishlistState reference
+      window.wishlistState = {
+        init: (serverWishlistIds) => window.globalState.initWishlist(serverWishlistIds),
+        isInWishlist: (productId) => window.globalState.isInWishlist(productId),
+        addToWishlist: (productId) => window.globalState.addToWishlist(productId),
+        removeFromWishlist: (productId) => window.globalState.removeFromWishlist(productId),
+        syncWishlistButtons: (productId, isActive) => window.globalState.syncWishlistButtons(productId, isActive),
+        syncAllWishlistButtons: () => window.globalState.syncAllWishlistButtons()
+      };
+
+      //  ENHANCED GLOBAL UPDATE FUNCTIONS WITH REAL-TIME SYNC
+      window.updateWishlistCount = async function () {
+        try {
+          const response = await fetch('/wishlist/count');
+          if (response.ok) {
+            const data = await response.json();
+            const wishlistCountElements = document.querySelectorAll('.wishlist-count');
+            wishlistCountElements.forEach(elem => {
+              elem.textContent = data.count;
+              elem.dataset.count = data.count;
+              // Show/hide badge based on count
+              elem.style.display = data.count > 0 ? 'flex' : 'none';
+            });
+            console.log('Wishlist count updated:', data.count);
+          }
+        } catch (error) {
+          console.error('Failed to update wishlist count:', error);
+        }
+      };
+
+      //  UNIFIED CART STATE MANAGEMENT SYSTEM
+      window.cartState = {
+        count: 0,
+        initialized: false,
+
+        // Initialize cart state
+        async init() {
+          if (this.initialized) return;
+
+          try {
+            const response = await fetch('/cart/count');
+            if (response.ok) {
+              const data = await response.json();
+              this.count = data.count || 0;
+              this.initialized = true;
+              this.updateAllCounters();
+              console.log('Cart state initialized:', this.count);
+            }
+          } catch (error) {
+            console.error('Failed to initialize cart state:', error);
+            this.count = 0;
+            this.initialized = true;
+          }
+        },
+
+        // Update cart count and broadcast to other pages
+        async updateCount(newCount = null) {
+          if (newCount !== null) {
+            this.count = newCount;
+          } else {
+            // Fetch latest count from server
+            try {
+              const response = await fetch('/cart/count');
+              if (response.ok) {
+                const data = await response.json();
+                this.count = data.count || 0;
+              }
+            } catch (error) {
+              console.error('Failed to fetch cart count:', error);
+              return;
+            }
+          }
+
+          // Update all counter elements on current page
+          this.updateAllCounters();
+
+          // Broadcast to other pages
+          this.broadcastUpdate();
+
+          console.log('Cart count updated and synced:', this.count);
+        },
+
+        // Update all cart counter elements on current page
+        updateAllCounters() {
+          // Update navbar cart counters
+          const cartCountElements = document.querySelectorAll('.cart-count');
+          cartCountElements.forEach(elem => {
+            elem.textContent = this.count;
+            elem.dataset.count = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+
+          // Update legacy cart counter elements
+          const legacyCounters = document.querySelectorAll('#cartCount');
+          legacyCounters.forEach(elem => {
+            elem.textContent = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+
+          // Update any other cart counter selectors
+          const otherCounters = document.querySelectorAll('[data-cart-counter]');
+          otherCounters.forEach(elem => {
+            elem.textContent = this.count;
+            elem.style.display = this.count > 0 ? 'flex' : 'none';
+          });
+        },
+
+        // Broadcast cart update to other pages
+        broadcastUpdate() {
+          const data = {
+            type: 'cart_update',
+            count: this.count,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('miniTorque_cart_sync', JSON.stringify(data));
+
+          // Remove after short delay to allow other pages to receive it
+          setTimeout(() => {
+            localStorage.removeItem('miniTorque_cart_sync');
+          }, 100);
+        },
+
+        // Handle cart update from other pages
+        handleExternalUpdate(data) {
+          if (data.count !== this.count) {
+            this.count = data.count;
+            this.updateAllCounters();
+            console.log('Cart count synced from other page:', this.count);
+          }
+        }
+      };
+
+      //  ENHANCED GLOBAL CART COUNT UPDATE FUNCTION WITH REAL-TIME SYNC
+      window.updateCartCount = async function () {
+        await window.cartState.updateCount();
+      };
+
+      //  UNIVERSAL TOAST FUNCTION - ACCESSIBLE FROM ALL PAGES
+      window.showToast = function (message, type = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+          document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+      background:${type === 'success' ? '#4caf50' : '#f44336'};
+      color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+      font-size:14px;font-weight:500;max-width:350px;display:flex;align-items:center;gap:8px;
+      opacity:0;transform:translateX(100%);transition:all .3s ease;
+    `;
+        toast.innerHTML = `<i class="ri-${type === 'success' ? 'check' : 'close'}-circle-line"></i><span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(0)';
+        }, 10);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => toast.remove(), 300);
+        }, type === 'success' ? 3000 : 5000);
+      };
+
+      //  SETUP CROSS-PAGE COMMUNICATION FOR CART AND WISHLIST UPDATES
+      window.addEventListener('storage', function(e) {
+        console.log(' Storage event received:', e.key, e.newValue);
+
+        if (e.key === 'miniTorque_cart_sync') {
+          try {
+            const data = JSON.parse(e.newValue || '{}');
+            if (data.type === 'cart_update' && window.cartState) {
+              console.log(' Syncing cart from other page:', data.count);
+              window.cartState.handleExternalUpdate(data);
+            }
+          } catch (error) {
+            console.error('Error handling cart sync:', error);
+          }
+        } else if (e.key === 'miniTorque_wishlist_sync') {
+          try {
+            const data = JSON.parse(e.newValue || '{}');
+            if (data.type === 'wishlist_update' && window.globalState) {
+              console.log(' Syncing wishlist from other page:', data.productId, data.action);
+              window.globalState.handleWishlistUpdate(data.productId, data.action);
+            }
+          } catch (error) {
+            console.error('Error handling wishlist sync:', error);
+          }
+        }
+      });
+
+      //  DEBUG FUNCTION FOR TESTING CROSS-PAGE SYNC
+      window.testSync = function() {
+        console.log(' Testing cross-page synchronization...');
+        console.log('Cart State:', window.cartState ? window.cartState.count : 'Not initialized');
+        console.log('Wishlist State:', window.globalState ? window.globalState.wishlist.userWishlistIds : 'Not initialized');
+
+        // Test cart sync
+        if (window.cartState) {
+          window.cartState.broadcastUpdate();
+          console.log(' Cart sync test broadcast sent');
+        }
+
+        // Test wishlist sync
+        if (window.globalState) {
+          window.globalState.broadcastWishlistUpdate('test-product-id', 'added');
+          console.log(' Wishlist sync test broadcast sent');
+        }
+      };
+
+      // Initialize cart state and update counts on page load
+      window.cartState.init().then(() => {
+        // Initialize global state for wishlist
+        if (window.globalState) {
+          window.globalState.init().then(() => {
+            updateWishlistCount();
+          });
+        } else {
+          updateWishlistCount();
+        }
+      });
+    });
   </script>
+
 </body>
 
 </html>
+
+

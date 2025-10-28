@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     },
     minlength: [8, 'Password must be at least 8 characters long'],
   },
+   profilePhoto: {
+    type: String,
+    default: null,
+  },
   googleId: {
     type: String,
     default: null,

@@ -42,7 +42,7 @@
         return res.status(400).json({ message: 'Category name is required.' });
         }
 
-        // ✅ Moved logic here: Check for case-insensitive duplicate name
+        //  Check for case-insensitive duplicate name
         const existingCategory = await Category.findOne({
         name: new RegExp(`^${name.trim()}$`, 'i'),
         $or: [
@@ -88,7 +88,7 @@
         return res.status(400).json({ message: 'Category name is required.' });
         }
 
-        // ✅ Moved logic here: Check if another category with same name exists
+        //  Check if another category with same name exists
         const existingCategory = await Category.findOne({
         name: new RegExp(`^${name.trim()}$`, 'i'),
         _id: { $ne: id },

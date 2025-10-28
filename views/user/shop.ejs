@@ -1,854 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
 
-<style>
-/* ====== RESET ====== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
-}
+<head>
+    <meta charset="UTF-8">
+    <title>Shop | MiniTorque</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-/* ====== SHOP HEADER ====== */
-.shop-header {
-    background: #fff;
-    padding: 40px 0;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
+    <%- include("../partials/head") %>
 
-/* ====== FILTERS ====== */
-.filters-container {
-    position: sticky;
-    top: 90px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-}
+        <style>
+            /* ====== RESET ====== */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-.filter-group {
-    margin-bottom: 20px;
-}
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                background: #f8f9fa;
+                color: #333;
+            }
 
-.filter-label {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
-    display: block;
-    font-size: 14px;
-}
+            /* ====== SHOP HEADER ====== */
+            .shop-header {
+                background: #fff;
+                padding: 40px 0;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, .05);
+            }
 
-.filter-select, .form-control {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #333;
-    background: #fff;
-    transition: border-color 0.2s ease;
-}
+            /* ====== FILTERS ====== */
+            .filters-container {
+                position: sticky;
+                top: 90px;
+                background: #fff;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, .05);
+            }
 
-.filter-select:focus, .form-control:focus {
-    outline: none;
-    border-color: #dc3545;
-    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
-}
+            .filter-group {
+                margin-bottom: 20px;
+            }
 
-.form-control.error {
-    border-color: #dc3545;
-    background-color: #fff5f5;
-}
+            .filter-label {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 8px;
+                display: block;
+                font-size: 14px;
+            }
 
-.error-message {
-    color: #dc3545;
-    font-size: 12px;
-    margin-top: 4px;
-    display: none;
-}
+            .filter-select,
+            .form-control {
+                width: 100%;
+                padding: 10px 15px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 14px;
+                color: #333;
+                background: #fff;
+                transition: border-color .2s ease;
+            }
 
-.form-check {
-    margin-bottom: 8px;
-}
+            .filter-select:focus,
+            .form-control:focus {
+                outline: none;
+                border-color: #dc3545;
+                box-shadow: 0 0 0 2px rgba(220, 53, 69, .1);
+            }
 
-.form-check-input:checked {
-    background-color: #dc3545;
-    border-color: #dc3545;
-}
+            .form-control.error {
+                border-color: #dc3545;
+                background: #fff5f5;
+            }
 
-/* ====== PRODUCT CARDS ====== */
-.product-card {
-    transition: all 0.3s ease;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    background: #fff;
-    border: none;
-    height: 100%;
-}
+            .error-message {
+                color: #dc3545;
+                font-size: 12px;
+                margin-top: 4px;
+                display: none;
+            }
 
-.product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
+            .validation-message {
+                font-size: 12px;
+                margin-top: 4px;
+                display: none;
+            }
 
-.product-image-container {
-    position: relative;
-    overflow: hidden;
-    height: 250px;
-}
+            .validation-message.show {
+                display: block;
+            }
 
-.product-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-}
+            .validation-message.error {
+                color: #dc3545;
+            }
 
-.product-card:hover .product-image {
-    transform: scale(1.05);
-}
+            .validation-message.success {
+                color: #28a745;
+            }
 
-.product-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: #dc3545;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    z-index: 2;
-}
+            .validation-message.warning {
+                color: #ffc107;
+            }
 
-.wishlist-icon {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 35px;
-    height: 35px;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 3;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+            .validation-message.info {
+                color: #000000;
+            }
 
-.wishlist-icon:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+            .form-check {
+                margin-bottom: 8px;
+            }
 
-.wishlist-icon i {
-    font-size: 16px;
-    color: #666;
-    transition: all 0.3s ease;
-}
+            .form-check-input {
+                border-color: #000;
+            }
 
-.wishlist-icon:hover i {
-    color: #dc3545;
-    transform: scale(1.1);
-}
+            .form-check-input:checked {
+                background-color: #fff;
+                border-color: #000;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23000'/%3e%3c/svg%3e");
+            }
 
-.product-info {
-    padding: 15px;
-}
+            .form-check-input:focus {
+                border-color: #000;
+                box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25);
+            }
 
-.product-brand {
-    color: #6c757d;
-    font-size: 13px;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-}
+            /* ====== PRODUCTS ====== */
+            .product-card {
+                transition: .3s;
+                border-radius: .5rem;
+                overflow: hidden;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, .05);
+                background: #fff;
+                height: 100%;
+            }
 
-.product-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 10px;
-    line-height: 1.4;
-    height: 2.8em;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
+            .product-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
+            }
 
-.product-price {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 0;
-}
+            .product-image-container {
+                position: relative;
+                overflow: hidden;
+                height: 250px;
+            }
 
-.price-section {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+            .product-image {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: .3s;
+                cursor: pointer;
+            }
 
-.current-price {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-}
+            .product-card:hover .product-image {
+                transform: scale(1.05);
+            }
 
-.original-price {
-    font-size: 14px;
-    color: #6c757d;
-    text-decoration: line-through;
-}
+            .product-badge {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                background: #dc3545;
+                color: #fff;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 2;
+            }
 
-.add-to-cart {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
-    background-color: #000;
-    color: #fff;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    flex-shrink: 0;
-}
+            .wishlist-icon {
+                position: absolute;
+                bottom: 10px;
+                right: 10px;
+                width: 35px;
+                height: 35px;
+                background: rgba(255, 255, 255, .9);
+                border: none;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: .3s;
+                z-index: 3;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+            }
 
-.add-to-cart:hover {
-    background-color: #333;
-    color: #fff;
-    transform: scale(1.1);
-}
+            .wishlist-icon:hover {
+                background: #fff;
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+            }
 
-.add-to-cart:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-}
+            .wishlist-icon i {
+                font-size: 16px;
+                color: #666;
+                transition: .3s;
+            }
 
-/* ====== PAGINATION ====== */
-.pagination {
-    justify-content: center;
-}
+            .wishlist-icon:hover i {
+                color: #dc3545;
+                transform: scale(1.1);
+            }
 
-.page-item {
-    margin: 0 2px;
-}
+            .wishlist-icon.active i {
+                color: #dc3545;
+            }
 
-.page-link {
-    color: #333;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 8px 12px;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
+            .product-info {
+                padding: 15px;
+            }
 
-.page-item.active .page-link {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    color: white;
-}
+            .product-brand {
+                color: #6c757d;
+                font-size: 13px;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+            }
 
-.page-link:hover {
-    color: #dc3545;
-    border-color: #dc3545;
-    background-color: #f8f9fa;
-}
+            .product-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 10px;
+                line-height: 1.4;
+                height: 2.8em;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
 
-.page-item.disabled .page-link {
-    color: #6c757d;
-    border-color: #dee2e6;
-    background-color: #f8f9fa;
-    cursor: not-allowed;
-}
+            .product-price {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
 
-.page-item.disabled .page-link:hover {
-    color: #6c757d;
-    border-color: #dee2e6;
-    background-color: #f8f9fa;
-}
+            .price-section {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-/* ====== RESPONSIVE ====== */
-@media (max-width: 991.98px) {
-    .filters-container {
-        position: relative;
-        top: 0;
-    }
-}
+            .current-price {
+                font-size: 18px;
+                font-weight: bold;
+                color: #333;
+            }
 
-@media (max-width: 480px) {
-    .product-image-container {
-        height: 200px;
-    }
-    
-    .shop-header {
-        padding: 20px 0;
-    }
-    
-    .pagination {
-        flex-wrap: wrap;
-    }
-    
-    .page-item {
-        margin: 2px;
-    }
-    
-    .page-link {
-        padding: 6px 10px;
-        font-size: 14px;
-    }
-}
-</style>
+            .original-price {
+                font-size: 14px;
+                color: #6c757d;
+                text-decoration: line-through;
+            }
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            .add-to-cart {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 9999px;
+                background: #000;
+                color: #fff;
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: .3s;
+                cursor: pointer;
+            }
 
-<%- include("../partials/head") %>
+            .add-to-cart:hover {
+                background: #333;
+                transform: scale(1.1);
+            }
 
-<!-- Shop Header -->
-<section class="shop-header">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6">
-                <h1 class="display-5 fw-bold mb-3">Shop Collection</h1>
-                <p class="text-muted mb-0">Premium diecast models from the world's finest automotive brands.</p>
-            </div>
-            <div class="col-lg-6">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb justify-content-lg-end mb-0">
-                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Shop</li>
-                    </ol>
-                </nav>
+            .add-to-cart:disabled {
+                background: #6c757d;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            /* ====== PAGINATION ====== */
+            .pagination {
+                justify-content: center;
+            }
+
+            .page-item {
+                margin: 0 2px;
+            }
+
+            .page-link {
+                color: #333;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 8px 12px;
+                transition: .2s;
+            }
+
+            .page-item.active .page-link {
+                background: #dc3545;
+                border-color: #dc3545;
+                color: #fff;
+            }
+
+            .page-link:hover {
+                color: #dc3545;
+                border-color: #dc3545;
+                background: #f8f9fa;
+            }
+
+            .page-item.disabled .page-link {
+                color: #6c757d;
+                border-color: #dee2e6;
+                background: #f8f9fa;
+                cursor: not-allowed;
+            }
+
+            /* ====== RESPONSIVE ====== */
+            @media (max-width:991.98px) {
+                .filters-container {
+                    position: relative;
+                    top: 0;
+                }
+            }
+
+            @media (max-width:480px) {
+                .product-image-container {
+                    height: 200px;
+                }
+
+                .shop-header {
+                    padding: 20px 0;
+                }
+
+                .pagination {
+                    flex-wrap: wrap;
+                }
+
+                .page-item {
+                    margin: 2px;
+                }
+
+                .page-link {
+                    padding: 6px 10px;
+                    font-size: 14px;
+                }
+            }
+        </style>
+</head>
+
+<body>
+
+    <!-- ====================  SHOP HEADER  ==================== -->
+    <section class="shop-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-5 fw-bold mb-3">Shop Collection</h1>
+                    <p class="text-muted mb-0">Premium diecast models from the world's finest automotive brands.</p>
+                </div>
+                <div class="col-lg-6">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-lg-end mb-0">
+                            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Shop</li>
+                        </ol>
+                    </nav>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Shop Content -->
-<section class="py-5 bg-white">
-    <div class="container">
-        <div class="row g-4">
-            <!-- Filters Sidebar -->
-            <div class="col-lg-3">
-                <div class="filters-container">
-                    <h3 class="fs-5 fw-bold mb-4">Filters</h3>
-                    
-                    <!--  form validation -->
-                    <form method="GET" action="/shopPage" id="filtersForm" novalidate>
-                        <!-- Search Filter -->
-                        <div class="filter-group">
-                            <label class="filter-label">Search Products</label>
-                            <input type="text" name="search" class="form-control" 
-                                   placeholder="Search by name or brand..." 
-                                   value="<%= filters.search %>"
-                                   maxlength="100">
-                        </div>
+    <!-- ====================  SHOP CONTENT  ==================== -->
+    <section class="py-5 bg-white">
+        <div class="container">
+            <div class="row g-4">
+                <!-- =====  FILTER SIDEBAR  ===== -->
+                <div class="col-lg-3">
+                    <div class="filters-container">
+                        <h3 class="fs-5 fw-bold mb-4">Filters</h3>
 
-                        <!-- Category Filter -->
-                        <div class="filter-group">
-                            <label class="filter-label">Categories</label>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="category" 
-                                       value="all" id="allCategories" 
-                                       <%= !filters.category || filters.category === 'all' ? 'checked' : '' %>>
-                                <label class="form-check-label" for="allCategories">
-                                    All Categories
-                                </label>
+                        <form method="GET" action="/shopPage" id="filterForm" novalidate>
+                            <!-- Search -->
+                            <div class="filter-group">
+                                <label class="filter-label">Search Products</label>
+                                <input type="text" name="search" class="form-control"
+                                    placeholder="Search by name or brand..." value="<%= filters.search %>"
+                                    maxlength="100">
                             </div>
-                            <% if (categories && categories.length > 0) { %>
-                                <% categories.forEach(category => { %>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="radio" name="category" 
-                                               value="<%= category._id %>" id="cat_<%= category._id %>"
-                                               <%= filters.category === category._id.toString() ? 'checked' : '' %>>
-                                        <label class="form-check-label" for="cat_<%= category._id %>">
-                                            <%= category.name %>
-                                        </label>
-                                    </div>
-                                <% }) %>
-                            <% } %>
-                        </div>
 
-                        <!--  Price range Filter  -->
-                        <div class="filter-group">
-                            <label class="filter-label">Price Range (Optional)</label>
+                            <!-- Categories -->
+                            <div class="filter-group">
+                                <label class="filter-label">Categories</label>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="category" value="all"
+                                        id="allCategories" <%=!filters.category || filters.category==='all' ? 'checked'
+                                        : '' %>>
+                                    <label class="form-check-label" for="allCategories">All Categories</label>
+                                </div>
+                                <% if (categories && categories.length){ %>
+                                    <% categories.forEach(cat=>{ %>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="category"
+                                                value="<%= cat._id %>" id="cat_<%= cat._id %>"
+                                                <%=filters.category===cat._id.toString() ? 'checked' : '' %>
+                                            <label class="form-check-label" for="cat_<%= cat._id %>">
+                                                <%= cat.name %>
+                                            </label>
+                                        </div>
+                                        <% }) %>
+                                            <% } %>
+                            </div>
+
+                            <!-- Price -->
+                            <div class="filter-group">
+                                <label class="filter-label">Price Range (Optional)</label>
+                                <div class="d-flex gap-2">
+                                    <div class="flex-fill">
+                                        <input type="number" name="minPrice" id="minPriceInput" class="form-control"
+                                            placeholder="Min ₹" min="0" max="999999" step="1"
+                                            value="<%= filters.minPrice %>">
+                                        <div id="minPriceMessage" class="validation-message"></div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <input type="number" name="maxPrice" id="maxPriceInput" class="form-control"
+                                            placeholder="Max ₹" min="0" max="999999" step="1"
+                                            value="<%= filters.maxPrice %>">
+                                        <div id="maxPriceMessage" class="validation-message"></div>
+                                    </div>
+                                </div>
+                                <div id="priceRangeMessage" class="validation-message"></div>
+                                <small class="text-muted mt-1">Leave empty to show all prices</small>
+                            </div>
+
+                            <!-- Availability -->
+                            <div class="filter-group">
+                                <label class="filter-label">Availability</label>
+                                <select name="availability" class="filter-select">
+                                    <option value="">All Products</option>
+                                    <option value="in-stock" <%=filters.availability==='in-stock' ? 'selected' : '' %>
+                                        >In Stock</option>
+                                    <option value="on-sale" <%=filters.availability==='on-sale' ? 'selected' : '' %>>On
+                                        Sale</option>
+                                </select>
+                            </div>
+
+                            <!-- Sort -->
+                            <div class="filter-group">
+                                <label class="filter-label">Sort By</label>
+                                <select name="sort" class="filter-select">
+                                    <option value="newest" <%=filters.sort==='newest' ? 'selected' :'' %>>Newest First
+                                    </option>
+                                    <option value="oldest" <%=filters.sort==='oldest' ? 'selected' :'' %>>Oldest First
+                                    </option>
+                                    <option value="price-low" <%=filters.sort==='price-low' ? 'selected' :'' %>>Price:
+                                        Low to High</option>
+                                    <option value="price-high" <%=filters.sort==='price-high' ? 'selected' :'' %>>Price:
+                                        High to Low</option>
+                                    <option value="name-az" <%=filters.sort==='name-az' ? 'selected' :'' %>>Name: A to Z
+                                    </option>
+                                    <option value="name-za" <%=filters.sort==='name-za' ? 'selected' :'' %>>Name: Z to A
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Buttons -->
                             <div class="d-flex gap-2">
-                                <div class="flex-fill">
-                                    <input type="number" name="minPrice" id="minPrice" class="form-control" 
-                                           placeholder="Min ₹" min="0" max="999999" step="1"
-                                           value="<%= filters.minPrice %>">
-                                    <div class="error-message" id="minPriceError">Invalid minimum price</div>
-                                </div>
-                                <div class="flex-fill">
-                                    <input type="number" name="maxPrice" id="maxPrice" class="form-control" 
-                                           placeholder="Max ₹" min="0" max="999999" step="1"
-                                           value="<%= filters.maxPrice %>">
-                                    <div class="error-message" id="maxPriceError">Invalid maximum price</div>
-                                </div>
+                                <button type="submit" class="btn btn-dark flex-fill" id="applyFiltersBtn">
+                                    <i class="fas fa-filter me-1"></i>Apply Filters
+                                </button>
+                                <a href="/shopPage" class="btn btn-outline-secondary flex-fill text-center">
+                                    <i class="fas fa-refresh me-1"></i>Reset
+                                </a>
                             </div>
-                            <small class="text-muted mt-1">Leave empty to show all prices</small>
-                        </div>
-
-                        <!-- Availability Filter -->
-                        <div class="filter-group">
-                            <label class="filter-label">Availability</label>
-                            <select name="availability" class="filter-select">
-                                <option value="">All Products</option>
-                                <option value="in-stock" <%= filters.availability === 'in-stock' ? 'selected' : '' %>>
-                                    In Stock
-                                </option>
-                                <option value="on-sale" <%= filters.availability === 'on-sale' ? 'selected' : '' %>>
-                                    On Sale
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Sort By -->
-                        <div class="filter-group">
-                            <label class="filter-label">Sort By</label>
-                            <select name="sort" class="filter-select">
-                                <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>
-                                    Newest First
-                                </option>
-                                <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>
-                                    Oldest First
-                                </option>
-                                <option value="price-low" <%= filters.sort === 'price-low' ? 'selected' : '' %>>
-                                    Price: Low to High
-                                </option>
-                                <option value="price-high" <%= filters.sort === 'price-high' ? 'selected' : '' %>>
-                                    Price: High to Low
-                                </option>
-                                <option value="name-az" <%= filters.sort === 'name-az' ? 'selected' : '' %>>
-                                    Name: A to Z
-                                </option>
-                                <option value="name-za" <%= filters.sort === 'name-za' ? 'selected' : '' %>>
-                                    Name: Z to A
-                                </option>
-                            </select>
-                        </div>
-
-                        <!-- Filter Buttons -->
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-dark flex-fill" id="applyFiltersBtn">
-                                <i class="fas fa-filter me-1"></i>Apply Filters
-                            </button>
-                            <a href="/shopPage" class="btn btn-outline-secondary flex-fill text-center">
-                                <i class="fas fa-refresh me-1"></i>Reset
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Products Grid -->
-            <div class="col-lg-9">
-                <!-- Products Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-                    <div class="products-count mb-2 mb-md-0">
-                        <span class="fw-medium">
-                            Showing 
-                            <% if (products && products.length > 0) { %>
-                                <% const startItem = (pagination.currentPage - 1) * 12 + 1; %>
-                                <% const endItem = Math.min(pagination.currentPage * 12, totalProducts); %>
-                                <%= startItem %> to <%= endItem %>
-                            <% } else { %>
-                                0
-                            <% } %>
-                            of <%= totalProducts %> products
-                        </span>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <span class="me-2 text-muted d-none d-sm-block">View:</span>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm active" title="Grid View">
-                                <i class="fas fa-th"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" title="List View">
-                                <i class="fas fa-list"></i>
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
-                <!-- Products Grid -->
-                <div class="row g-4" id="productGrid">
-                    <% if (products && products.length > 0) { %>
-                        <% products.forEach(product => { %>
-                            <div class="col-6 col-md-4 col-lg-3">
-                                <div class="product-card">
-                                    <div class="product-image-container">
-                                        <% if (product.productOffer && product.productOffer > 0) { %>
-                                            <div class="product-badge"><%= product.productOffer %>% OFF</div>
-                                        <% } %>
-                                        
-                                        <!-- Wishlist Icon -->
-                                        <button class="wishlist-icon" onclick="toggleWishlist('<%= product._id %>', this)" title="Add to Wishlist">
-                                            <i class="far fa-heart"></i>
-                                        </button>
-                                        
-                                        <img src="/uploads/products/<%= product.mainImage %>" 
-                                             class="product-image" 
-                                             alt="<%= product.productName %>"
-                                             onerror="this.src='/assets/placeholder.jpg'"
-                                             onclick="viewProduct('<%= product._id %>')">
-                                    </div>
-                                    <div class="product-info">
-                                        <div class="product-brand"><%= product.brand %></div>
-                                        <h5 class="product-title" title="<%= product.productName %>"><%= product.productName %></h5>
-                                        <div class="product-price">
-                                            <div class="price-section">
-                                                <% if (product.productOffer && product.productOffer > 0) { %>
-                                                    <% const finalPrice = (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) %>
-                                                    <span class="current-price">₹<%= finalPrice %></span>
-                                                    <span class="original-price">₹<%= product.salePrice.toFixed(2) %></span>
-                                                <% } else { %>
-                                                    <span class="current-price">₹<%= product.salePrice.toFixed(2) %></span>
+                <!-- =====  PRODUCT GRID  ===== -->
+                <div class="col-lg-9">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap products-header">
+                        <div class="products-count mb-2 mb-md-0">
+                            <span class="fw-medium">
+                                Showing
+                                <% if (products && products.length){ %>
+                                    <% const startItem=(pagination.currentPage-1)*12+1; %>
+                                        <% const endItem=Math.min(pagination.currentPage*12,totalProducts); %>
+                                            <%= startItem %> to <%= endItem %>
+                                                    <% } else { %>0<% } %>
+                                                            of <%= totalProducts %> products
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-2 text-muted d-none d-sm-block">View:</span>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm active"><i
+                                        class="fas fa-th"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"><i
+                                        class="fas fa-list"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grid -->
+                    <div class="row g-4" id="productGrid">
+                        <% if (products && products.length){ %>
+                            <% products.forEach(product=>{ %>
+                                <div class="col-6 col-md-4 col-lg-3">
+                                    <div class="product-card">
+                                        <div class="product-image-container">
+                                            <% if (product.productOffer && product.productOffer>0){ %>
+                                                <div class="product-badge">
+                                                    <%= product.productOffer %>% OFF
+                                                </div>
                                                 <% } %>
+
+                                                    <!--  UPDATED WISHLIST BUTTON -->
+                                                    <button
+                                                        class="wishlist-icon <%= userWishlistIds.includes(product._id.toString()) ? 'active' : '' %>"
+                                                        data-product-id="<%= product._id %>"
+                                                        onclick="toggleWishlistFromShop('<%= product._id %>', this)"
+                                                        title="<%= userWishlistIds.includes(product._id.toString()) ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
+                                                        <i
+                                                            class="<%= userWishlistIds.includes(product._id.toString()) ? 'fas fa-heart text-danger' : 'far fa-heart' %>"></i>
+                                                    </button>
+
+                                                    <img src="/uploads/products/<%= product.mainImage %>"
+                                                        class="product-image" alt="<%= product.productName %>"
+                                                        onerror="this.src='/assets/placeholder.jpg'"
+                                                        onclick="viewProduct('<%= product._id %>')">
+                                        </div>
+                                        <div class="product-info">
+                                            <div class="product-brand">
+                                                <%= product.brand %>
                                             </div>
-                                            <button class="add-to-cart" 
-                                                    onclick="addToCart('<%= product._id %>')"
-                                                    <%= product.quantity === 0 ? 'disabled' : '' %>
-                                                    title="<%= product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' %>">
-                                                <i class="fas fa-<%= product.quantity === 0 ? 'times' : 'plus' %>"></i>
-                                            </button>
+                                            <h5 class="product-title" title="<%= product.productName %>">
+                                                <%= product.productName %>
+                                            </h5>
+                                            <div class="product-price">
+                                                <div class="price-section">
+                                                    <% if (product.productOffer && product.productOffer>0){ %>
+                                                        <% const
+                                                            finalPrice=(product.salePrice*(1-product.productOffer/100)).toFixed(2);
+                                                            %>
+                                                            <span class="current-price">₹<%= finalPrice %></span>
+                                                            <span class="original-price">₹<%=
+                                                                    product.salePrice.toFixed(2) %></span>
+                                                            <% } else { %>
+                                                                <span class="current-price">₹<%=
+                                                                        product.salePrice.toFixed(2) %></span>
+                                                                <% } %>
+                                                </div>
+                                                <button class="add-to-cart" onclick="addToCart('<%= product._id %>')"
+                                                    <%=product.quantity===0 ? 'disabled' : '' %>
+                                                    title="<%= product.quantity===0 ? 'Out of Stock' : 'Add to Cart' %>
+                                                        ">
+                                                        <i
+                                                            class="fas fa-<%= product.quantity === 0 ? 'times' : 'plus' %>"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        <% }) %>
-                    <% } else { %>
-                        <div class="col-12 text-center py-5">
-                            <i class="fas fa-search fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
-                            <h3 class="mb-3">No Products Found</h3>
-                            <p class="text-muted mb-4">We couldn't find any products matching your criteria.</p>
-                            <a href="/shopPage" class="btn btn-primary">
-                                <i class="fas fa-refresh me-2"></i>Clear All Filters
-                            </a>
-                        </div>
-                    <% } %>
-                </div>
+                                <% }) %>
+                                    <% } else { %>
+                                        <div class="col-12 text-center py-5">
+                                            <i class="fas fa-search fa-3x text-muted mb-3" style="opacity:.3;"></i>
+                                            <h3 class="mb-3">No Products Found</h3>
+                                            <p class="text-muted mb-4">We couldn't find any products matching your
+                                                criteria.</p>
+                                            <a href="/shopPage" class="btn btn-primary"><i
+                                                    class="fas fa-refresh me-2"></i>Clear All Filters</a>
+                                        </div>
+                                        <% } %>
+                    </div>
 
-                <!-- Pagination -->
-                <% if (pagination && pagination.totalPages > 1) { %>
-                    <div class="d-flex justify-content-center mt-5">
-                        <nav aria-label="Product pagination">
-                            <ul class="pagination">
-                                <!-- Previous Button -->
-                                <li class="page-item <%= pagination.hasPrevPage ? '' : 'disabled' %>">
-                                    <a class="page-link" 
-                                       href="<%= pagination.hasPrevPage ? `?page=${pagination.prevPage}${queryString}` : '#' %>" 
-                                       aria-label="Previous Page"
-                                       <%= !pagination.hasPrevPage ? 'tabindex="-1"' : '' %>>
-                                        <i class="fas fa-chevron-left"></i>
-                                    </a>
-                                </li>
 
-                                <!-- First page if not in range -->
-                                <% if (pagination.currentPage > 3 && pagination.totalPages > 5) { %>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=1<%= queryString %>">1</a>
-                                    </li>
-                                    <% if (pagination.currentPage > 4) { %>
-                                        <li class="page-item disabled">
-                                            <span class="page-link">...</span>
-                                        </li>
-                                    <% } %>
-                                <% } %>
-
-                                <!-- Page numbers -->
-                                <% if (pagination.pages && pagination.pages.length > 0) { %>
-                                    <% pagination.pages.forEach(page => { %>
-                                        <li class="page-item <%= page === pagination.currentPage ? 'active' : '' %>">
-                                            <a class="page-link" 
-                                               href="?page=<%= page %><%= queryString %>"
-                                               <% if (page === pagination.currentPage) { %>
-                                                   aria-current="page"
-                                               <% } %>>
-                                                <%= page %>
-                                            </a>
-                                        </li>
-                                    <% }) %>
-                                <% } %>
-
-                                <!-- Last page if not in range -->
-                                <% if (pagination.currentPage < pagination.totalPages - 2 && pagination.totalPages > 5) { %>
-                                    <% if (pagination.currentPage < pagination.totalPages - 3) { %>
-                                        <li class="page-item disabled">
-                                            <span class="page-link">...</span>
-                                        </li>
-                                    <% } %>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=<%= pagination.totalPages %><%= queryString %>">
-                                            <%= pagination.totalPages %>
+                    <!-- Pagination -->
+                    <% if (pagination && pagination.totalPages> 1) { %>
+                        <div class="d-flex justify-content-center mt-5">
+                            <nav aria-label="Product pagination">
+                                <ul class="pagination">
+                                    <!-- Previous Page Button -->
+                                    <li class="page-item <%= pagination.hasPrevPage ? '' : 'disabled' %>">
+                                        <a class="page-link"
+                                            href="<%= pagination.hasPrevPage ? `?page=${pagination.prevPage}${queryString}` : '#' %>"
+                                            aria-label="Previous Page" <%=!pagination.hasPrevPage ? 'tabindex="-1"' : ''
+                                            %>>
+                                            <i class="fas fa-chevron-left"></i>
                                         </a>
                                     </li>
+
+                                    <!-- First page and ellipsis logic -->
+                                    <% if (pagination.currentPage> 3 && pagination.totalPages > 5) { %>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1<%= queryString %>">1</a>
+                                        </li>
+                                        <% if (pagination.currentPage> 4) { %>
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                            <% } %>
+                                                <% } %>
+
+                                                    <!-- Page numbers -->
+                                                    <% pagination.pages.forEach(pg=> { %>
+                                                        <li
+                                                            class="page-item <%= pg === pagination.currentPage ? 'active' : '' %>">
+                                                            <a class="page-link"
+                                                                href="?page=<%= pg %><%= queryString %>"
+                                                                <%=pg===pagination.currentPage ? 'aria-current="page"'
+                                                                : '' %>>
+                                                                <%= pg %>
+                                                            </a>
+                                                        </li>
+                                                        <% }) %>
+
+                                                            <!-- Last page and ellipsis logic -->
+                                                            <% if (pagination.currentPage < pagination.totalPages - 2 &&
+                                                                pagination.totalPages> 5) { %>
+                                                                <% if (pagination.currentPage < pagination.totalPages -
+                                                                    3) { %>
+                                                                    <li class="page-item disabled">
+                                                                        <span class="page-link">...</span>
+                                                                    </li>
+                                                                    <% } %>
+                                                                        <li class="page-item">
+                                                                            <a class="page-link"
+                                                                                href="?page=<%= pagination.totalPages %><%= queryString %>">
+                                                                                <%= pagination.totalPages %>
+                                                                            </a>
+                                                                        </li>
+                                                                        <% } %>
+
+                                                                            <!-- Next Page Button -->
+                                                                            <li
+                                                                                class="page-item <%= pagination.hasNextPage ? '' : 'disabled' %>">
+                                                                                <a class="page-link"
+                                                                                    href="<%= pagination.hasNextPage ? `?page=${pagination.nextPage}${queryString}` : '#' %>"
+                                                                                    aria-label="Next Page"
+                                                                                    <%=!pagination.hasNextPage
+                                                                                    ? 'tabindex="-1"' : '' %>>
+                                                                                    <i class="fas fa-chevron-right"></i>
+                                                                                </a>
+                                                                            </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        <% } %>
+
+                            <!-- Optional: Show results info when there are products -->
+                            <% if (products && products.length> 0) { %>
+                                <div class="d-flex justify-content-center mt-3">
+                                    <small class="text-muted">
+                                        <% if (pagination && pagination.totalProducts> 0) { %>
+                                            Showing <%= (pagination.currentPage - 1) * 12 + 1 %> to
+                                                <%= Math.min(pagination.currentPage * 12, pagination.totalProducts) %>
+                                                    of <%= pagination.totalProducts %> products
+                                                        <% } else { %>
+                                                            Showing <%= products.length %> product<%= products.length
+                                                                    !==1 ? 's' : '' %>
+                                                                    <% } %>
+                                    </small>
+                                </div>
                                 <% } %>
 
-                                <!-- Next Button -->
-                                <li class="page-item <%= pagination.hasNextPage ? '' : 'disabled' %>">
-                                    <a class="page-link" 
-                                       href="<%= pagination.hasNextPage ? `?page=${pagination.nextPage}${queryString}` : '#' %>" 
-                                       aria-label="Next Page"
-                                       <%= !pagination.hasNextPage ? 'tabindex="-1"' : '' %>>
-                                        <i class="fas fa-chevron-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                <% } else if (pagination && pagination.totalPages === 1) { %>
-                    <!-- Show pagination even with 1 page for consistency -->
-                    <div class="d-flex justify-content-center mt-5">
-                        <nav aria-label="Product pagination">
-                            <ul class="pagination">
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
-                                </li>
-                                <li class="page-item active">
-                                    <span class="page-link" aria-current="page">1</span>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                <% } %>
+                                   
+
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Footer -->
-<%- include("../partials/footer") %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-//  form validation and filtering
-document.addEventListener('DOMContentLoaded', function() {
-    // Form validation
-    const form = document.getElementById('filtersForm');
-    const minPriceInput = document.getElementById('minPrice');
-    const maxPriceInput = document.getElementById('maxPrice');
-    const applyBtn = document.getElementById('applyFiltersBtn');
+/* ------------------------------------------------------------------
+   TOAST NOTIFICATIONS
+------------------------------------------------------------------ */
+function showToast(msg, type = 'success') {
+    let box = document.getElementById('toast-container');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'toast-container';
+        box.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(box);
+    }
 
-    // Price validation function
-    function validatePrices() {
-        let isValid = true;
-        const minPrice = parseFloat(minPriceInput.value) || 0;
-        const maxPrice = parseFloat(maxPriceInput.value) || 999999;
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background:${type === 'success' ? '#4caf50' : '#f44336'};
+        color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+        font-size:14px;font-weight:500;max-width:350px;display:flex;align-items:center;gap:8px;
+        opacity:0;transform:translateX(100%);transition:all .3s ease;`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${msg}</span>`;
+
+    box.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, type === 'success' ? 3000 : 5000);
+}
+
+/* GLOBAL STATE MANAGEMENT */
+window.shopState = {
+    wishlistIds: <%- JSON.stringify(userWishlistIds || []) %>, 
+    cartCount: <%= cartCount || 0 %>,
+    wishlistCount: <%= wishlistCount || 0 %>,
+    isAuthenticated: <%= isAuthenticated ? 'true' : 'false' %>
+};
+
+/* ------------------------------------------------------------------
+   WISHLIST FUNCTIONS
+------------------------------------------------------------------ */
+async function toggleWishlistFromShop(productId, btn) {
+    if (!productId) {
+        showToast('Product ID is required', 'error');
+        return;
+    }
+
+    if (!window.shopState.isAuthenticated) {
+        showToast('Please login to manage your wishlist', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/wishlist/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ productId })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update button state immediately
+            const icon = btn.querySelector('i');
+            if (result.action === 'added') {
+                btn.classList.add('active');
+                icon.className = 'fas fa-heart text-danger';
+                btn.title = 'Remove from Wishlist';
+                // Add to local state
+                if (!window.shopState.wishlistIds.includes(productId)) {
+                    window.shopState.wishlistIds.push(productId);
+                }
+            } else {
+                btn.classList.remove('active');
+                icon.className = 'far fa-heart';
+                btn.title = 'Add to Wishlist';
+                // Remove from local state
+                window.shopState.wishlistIds = window.shopState.wishlistIds.filter(id => id !== productId);
+            }
+
+            // Update navbar wishlist count
+            updateWishlistCount(result.wishlistCount);
+            showToast(result.message, 'success');
+        } else {
+            showToast(result.message || 'Failed to update wishlist', 'error');
+        }
+    } catch (err) {
+        console.error('Error toggling wishlist:', err);
+        showToast('Please login to manage your wishlist', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Alias for older calls
+function toggleWishlist(id, el) {
+    toggleWishlistFromShop(id, el);
+}
+
+/* ------------------------------------------------------------------
+   CART FUNCTIONS
+------------------------------------------------------------------ */
+async function addToCart(productId) {
+    if (!productId) {
+        showToast('Product ID is required', 'error');
+        return;
+    }
+
+    if (!window.shopState.isAuthenticated) {
+        showToast('Please login to add items to cart', 'error');
+        return;
+    }
+
+    // Get the button that was clicked
+    const button = event?.target?.closest('.add-to-cart');
+    const originalContent = button?.innerHTML;
+
+    try {
+        // Show loading state
+        if (button) {
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+        }
+
+        const response = await fetch('/api/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ productId, quantity: 1 })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success state
+            if (button) {
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.style.backgroundColor = '#28a745';
+
+                setTimeout(() => {
+                    button.innerHTML = originalContent;
+                    button.style.backgroundColor = '';
+                    button.disabled = false;
+                }, 1500);
+            }
+
+            // Update cart counter
+            updateCartCounter(result.cartCount);
+            showToast('Added to cart successfully!', 'success');
+        } else {
+            // FIXED: Show the actual server error message
+            if (button) {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+            
+            // Display the specific error message from server (like stock limit)
+            showToast(result.message || 'Failed to add to cart', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
         
-        // Clear previous errors
-        document.getElementById('minPriceError').style.display = 'none';
-        document.getElementById('maxPriceError').style.display = 'none';
-        minPriceInput.classList.remove('error');
-        maxPriceInput.classList.remove('error');
+        if (button) {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            showToast('Please login to add items to cart', 'error');
+        } else {
+            showToast('Unable to add item to cart. Please try again.', 'error');
+        }
+    }
+}
+
+/* ------------------------------------------------------------------
+   NAVIGATION FUNCTIONS
+------------------------------------------------------------------ */
+function viewProduct(id) {
+    if (!id) {
+        console.error('Product ID is required');
+        return;
+    }
+    window.location.href = `/product/${id}`;
+}
+
+/* ------------------------------------------------------------------
+   UPDATE COUNTERS
+------------------------------------------------------------------ */
+function updateCartCounter(count) {
+    window.shopState.cartCount = count || 0;
+    const cartElements = document.querySelectorAll('#cartCount, .cart-count');
+    cartElements.forEach(elem => {
+        elem.textContent = count || '0';
+        elem.style.display = count > 0 ? 'flex' : 'none';
+    });
+}
+
+function updateWishlistCount(count) {
+    window.shopState.wishlistCount = count || 0;
+    const wishlistElements = document.querySelectorAll('#wishlistCount, .wishlist-count');
+    wishlistElements.forEach(elem => {
+        elem.textContent = count || '0';
+        elem.style.display = count > 0 ? 'flex' : 'none';
+    });
+}
+
+/* ------------------------------------------------------------------
+   INITIALIZATION
+------------------------------------------------------------------ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Sync initial wishlist button states
+    if (window.shopState.isAuthenticated && window.shopState.wishlistIds) {
+        document.querySelectorAll('.wishlist-icon').forEach(btn => {
+            const productId = btn.getAttribute('data-product-id');
+            if (window.shopState.wishlistIds.includes(productId)) {
+                btn.classList.add('active');
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-heart text-danger';
+                }
+                btn.title = 'Remove from Wishlist';
+            }
+        });
+    }
+
+    // Initialize counters
+    updateCartCounter(window.shopState.cartCount);
+    updateWishlistCount(window.shopState.wishlistCount);
+});
+
+/* ------------------------------------------------------------------
+   PRICE VALIDATION
+------------------------------------------------------------------ */
+document.addEventListener('DOMContentLoaded', () => {
+    const filterForm = document.getElementById('filterForm');
+    const minPriceInput = document.getElementById('minPriceInput');
+    const maxPriceInput = document.getElementById('maxPriceInput');
+    const minPriceMessage = document.getElementById('minPriceMessage');
+    const maxPriceMessage = document.getElementById('maxPriceMessage');
+    const priceRangeMsg = document.getElementById('priceRangeMessage');
+
+    function showMsg(el, msg, type = 'error') {
+        if (!el) return;
+        el.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' :
+            type === 'success' ? 'fa-check-circle' :
+                type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i> ${msg}`;
+        el.className = `validation-message ${type} show`;
+    }
+
+    function hideMsg(el) {
+        if (!el) return;
+        el.className = 'validation-message';
+        el.innerHTML = '';
+    }
+
+    function validatePriceInputs() {
+        if (!minPriceInput || !maxPriceInput) return true;
+
+        const min = parseFloat(minPriceInput.value);
+        const max = parseFloat(maxPriceInput.value);
+        let isValid = true;
+
+        // Reset states
+        minPriceInput.className = 'form-control';
+        maxPriceInput.className = 'form-control';
+        hideMsg(minPriceMessage);
+        hideMsg(maxPriceMessage);
+        hideMsg(priceRangeMsg);
 
         // Validate minimum price
-        if (minPriceInput.value && (minPrice < 0 || minPrice > 999999)) {
-            showError('minPriceError', 'Price must be between ₹0 and ₹999,999');
+        if (minPriceInput.value && (isNaN(min) || min < 0)) {
             minPriceInput.classList.add('error');
+            showMsg(minPriceMessage, 'Invalid minimum price');
             isValid = false;
+        } else if (minPriceInput.value) {
+            showMsg(minPriceMessage, 'Looks good', 'success');
         }
 
         // Validate maximum price
-        if (maxPriceInput.value && (maxPrice < 0 || maxPrice > 999999)) {
-            showError('maxPriceError', 'Price must be between ₹0 and ₹999,999');
+        if (maxPriceInput.value && (isNaN(max) || max < 0)) {
             maxPriceInput.classList.add('error');
+            showMsg(maxPriceMessage, 'Invalid maximum price');
             isValid = false;
+        } else if (maxPriceInput.value) {
+            showMsg(maxPriceMessage, 'Looks good', 'success');
         }
 
         // Validate price range
-        if (minPriceInput.value && maxPriceInput.value && minPrice > maxPrice) {
-            showError('maxPriceError', 'Maximum price must be greater than minimum price');
-            maxPriceInput.classList.add('error');
-            isValid = false;
+        if (minPriceInput.value && maxPriceInput.value && !isNaN(min) && !isNaN(max)) {
+            if (min > max) {
+                showMsg(priceRangeMsg, 'Maximum price must be greater than minimum', 'error');
+                isValid = false;
+            } else if (min === max && min > 0) {
+                showMsg(priceRangeMsg, 'Price range is very narrow', 'warning');
+            } else {
+                showMsg(priceRangeMsg, 'Price range is valid', 'success');
+            }
+        }
+
+        if (!minPriceInput.value && !maxPriceInput.value) {
+            showMsg(priceRangeMsg, 'Enter price range to filter products', 'info');
         }
 
         return isValid;
     }
 
-    function showError(elementId, message) {
-        const errorElement = document.getElementById(elementId);
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
+    function delayedValidate(input) {
+        clearTimeout(input._validationTimer);
+        input._validationTimer = setTimeout(validatePriceInputs, 300);
     }
 
-    // Real-time price validation
-    minPriceInput.addEventListener('input', validatePrices);
-    maxPriceInput.addEventListener('input', validatePrices);
+    // Add event listeners
+    if (minPriceInput) {
+        minPriceInput.addEventListener('input', () => delayedValidate(minPriceInput));
+        minPriceInput.addEventListener('focus', validatePriceInputs);
+        minPriceInput.addEventListener('blur', validatePriceInputs);
+    }
 
-    // Form submission validation
-    form.addEventListener('submit', function(e) {
-        if (!validatePrices()) {
-            e.preventDefault();
-            return false;
-        }
-        
-        // Show loading state
-        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
-        applyBtn.disabled = true;
-    });
+    if (maxPriceInput) {
+        maxPriceInput.addEventListener('input', () => delayedValidate(maxPriceInput));
+        maxPriceInput.addEventListener('focus', validatePriceInputs);
+        maxPriceInput.addEventListener('blur', validatePriceInputs);
+    }
 
-    // Auto-submit on filter change (optional)
-    const autoSubmitElements = form.querySelectorAll('input[type="radio"], select[name="availability"], select[name="sort"]');
-    autoSubmitElements.forEach(element => {
-        element.addEventListener('change', function() {
-            if (validatePrices()) {
-                // Optional: Auto-submit form on filter change
-                // Uncomment the next line if you want instant filtering
-                // form.submit();
+    // Validate on form submit
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            if (!validatePriceInputs()) {
+                e.preventDefault();
+                showToast('Please fix the price range errors before adding filters', 'error');
             }
-        });
-    });
-
-    // Search input debouncing
-    let searchTimeout;
-    const searchInput = form.querySelector('input[name="search"]');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                // Optional: Auto-submit search after user stops typing
-                // Uncomment the next lines if you want instant search
-                // if (validatePrices()) {
-                //     form.submit();
-                // }
-            }, 1000);
         });
     }
 
-    // Number input formatting
-    [minPriceInput, maxPriceInput].forEach(input => {
-        input.addEventListener('input', function() {
-            // Remove any non-numeric characters except decimal point
-            this.value = this.value.replace(/[^\d.]/g, '');
-            
-            // Ensure only one decimal point
-            const parts = this.value.split('.');
-            if (parts.length > 2) {
-                this.value = parts[0] + '.' + parts.slice(1).join('');
-            }
-        });
-    });
+    // Initial validation
+    setTimeout(validatePriceInputs, 500);
 });
-
-// Product interaction functions
-function toggleWishlist(productId, buttonElement) {
-    console.log('Wishlist toggle for product:', productId);
-    
-    const heartIcon = buttonElement.querySelector('i');
-    const isActive = buttonElement.classList.contains('active');
-    
-    // Animate the button
-    buttonElement.style.transform = 'scale(1.2)';
-    setTimeout(() => {
-        buttonElement.style.transform = 'scale(1)';
-    }, 150);
-    
-    if (isActive) {
-        heartIcon.classList.remove('fas');
-        heartIcon.classList.add('far');
-        buttonElement.classList.remove('active');
-    } else {
-        heartIcon.classList.remove('far');
-        heartIcon.classList.add('fas');
-        buttonElement.classList.add('active');
-    }
-    
-    // Show feedback (you can implement actual wishlist logic here)
-    showToast(isActive ? 'Removed from wishlist' : 'Added to wishlist', isActive ? 'info' : 'success');
-}
-
-function addToCart(productId) {
-    console.log('Add to cart:', productId);
-    
-    const button = event.target.closest('.add-to-cart');
-    const originalContent = button.innerHTML;
-    const originalColor = button.style.backgroundColor;
-    
-    // Show loading state
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    button.disabled = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-        button.innerHTML = '<i class="fas fa-check"></i>';
-        button.style.backgroundColor = '#28a745';
-        
-        setTimeout(() => {
-            button.innerHTML = originalContent;
-            button.style.backgroundColor = originalColor;
-            button.disabled = false;
-        }, 1500);
-        
-        showToast('Added to cart successfully!', 'success');
-    }, 500);
-}
-
-function viewProduct(productId) {
-    console.log('View product:', productId);
-    // Implement navigation to product detail page
-    window.location.href = `/product/${productId}`;
-}
-
-// Utility function for toast notifications
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} toast-notification`;
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    toast.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-        ${message}
-    `;
-    
-    document.body.appendChild(toast);
-    
-    // Show toast
-    setTimeout(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(0)';
-    }, 100);
-    
-    // Hide toast after 3 seconds
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
-}
 </script>
+
+
+
+
+    <%- include("../partials/footer") %>
 </body>
+
 </html>

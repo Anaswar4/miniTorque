@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - miniTorque</title>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="/css/breadcrumb.css">
+
+     <%- include("../partials/head") %>
+
+</head>
+
+<body>
+    <!-- Account Sidebar -->
+    <%- include("../partials/user-sidebar") %>
+
+        <!-- Page-specific CSS -->
+        <link rel="stylesheet" href="/css/user/edit.profile.css">
+
+        <div class="main-content fade-in">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/profile">My Profile</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Profile</li>
+                </ol>
+            </nav>
+
+            <!-- Edit Profile -->
+            <div class="edit-profile-container">
+                <div class="edit-profile-header">
+                    <h2>Edit Profile</h2>
+                </div>
+
+                <div class="edit-profile-body">
+                    <form id="editProfileForm">
+                        <!-- Full Name -->
+                        <div class="form-group">
+                            <label for="fullname" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="fullname" name="fullname"
+                                value="<%= user.fullName || user.name || user.displayName || user.googleName || '' %>"
+                                required>
+                            <div class="error-message" id="fullname-error"></div>
+                        </div>
+
+
+                        <!-- Email (read-only, change via OTP) -->
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <div class="email-field-container">
+                                <input type="email" class="form-control" id="email" name="email"
+                                    value="<%= user.email || '' %>" disabled>
+                                <button type="button" class="email-change-btn" onclick="openEmailVerificationModal()">
+                                    Change
+                                </button>
+                            </div>
+                            <div class="error-message" id="email-error"></div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="updateBtn">
+                                <i class="fas fa-save"></i>
+                                Update Profile
+                            </button>
+                            <a href="/profile" class="btn btn-secondary">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+       
+        <!-- Email Verification Modal -->
+<div id="emailVerificationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Change Email Address</h3>
+            <button type="button" class="close" onclick="closeEmailVerificationModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Enter your current and new email addresses. OTP will be sent to your new email.</p>
+            
+            <!-- Current Email Field  -->
+            <div class="form-group">
+                <label for="currentEmail" class="form-label">Current Email Address</label>
+                <input type="email" class="form-control" id="currentEmail"
+                    value="<%= user.email %>" readonly>
+                <div class="error-message" id="currentEmail-error"></div>
+            </div>
+            
+            <!-- New Email Field  -->
+            <div class="form-group">
+                <label for="newEmail" class="form-label">New Email Address</label>
+                <input type="email" class="form-control" id="newEmail"
+                    placeholder="Enter your new email address">
+                <div class="error-message" id="newEmail-error"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary"
+                onclick="closeEmailVerificationModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="verifyCurrentEmail()" id="verifyEmailBtn">
+                Send OTP to New Email
+            </button>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Toast container -->
+        <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+        <!-- SweetAlert -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <style>
+            /* Toast styles (unchanged) */
+            .toast {
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+                margin-bottom: 10px;
+                padding: 16px 20px;
+                min-width: 300px;
+                max-width: 400px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transform: translateX(100%);
+                transition: all .3s ease;
+                border-left: 4px solid;
+            }
+
+            .toast.show {
+                transform: translateX(0);
+            }
+
+            .toast.success {
+                border-left-color: #10b981;
+            }
+
+            .toast.error {
+                border-left-color: #ef4444;
+            }
+
+            .toast.warning {
+                border-left-color: #f59e0b;
+            }
+
+            .toast.info {
+                border-left-color: #3b82f6;
+            }
+
+            .toast-icon {
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+
+            .toast.success .toast-icon {
+                color: #10b981;
+            }
+
+            .toast.error .toast-icon {
+                color: #ef4444;
+            }
+
+            .toast.warning .toast-icon {
+                color: #f59e0b;
+            }
+
+            .toast.info .toast-icon {
+                color: #3b82f6;
+            }
+
+            .toast-content {
+                flex: 1;
+            }
+
+            .toast-title {
+                font-weight: 600;
+                margin-bottom: 4px;
+                color: #111827;
+            }
+
+            .toast-message {
+                color: #6b7280;
+                font-size: 14px;
+            }
+
+            .toast-close {
+                background: none;
+                border: none;
+                color: #9ca3af;
+                cursor: pointer;
+                font-size: 18px;
+                padding: 0;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .toast-close:hover {
+                color: #6b7280;
+            }
+        </style>
+
+        <script>
+            /* ------------ Toast system ------------ */
+            function showToast(title, msg, type = 'info', duration = 4000) {
+                const c = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+
+                const icons = {
+                    success: 'bi bi-check-circle-fill',
+                    error: 'bi bi-exclamation-circle-fill',
+                    warning: 'bi bi-exclamation-triangle-fill',
+                    info: 'bi bi-info-circle-fill'
+                };
+
+                toast.innerHTML = `
+                <div class="toast-icon"><i class="${icons[type]}"></i></div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${msg}</div>
+                </div>
+                <button class="toast-close" onclick="removeToast(this.parentElement)">
+                    <i class="bi bi-x"></i>
+                </button>`;
+                c.appendChild(toast);
+                setTimeout(() => toast.classList.add('show'), 100);
+                setTimeout(() => removeToast(toast), duration);
+            }
+            function removeToast(t) {
+                if (t && t.parentElement) {
+                    t.classList.remove('show');
+                    setTimeout(() => t.parentElement?.removeChild(t), 300);
+                }
+            }
+
+            /* ------------ Sidebar active link ------------ */
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                const profileLink = document.querySelector('a[href="/profile"]');
+                profileLink && profileLink.classList.add('active');
+            });
+
+            /* ------------ Fullname validation ------------ */
+            function validateFullname(name) {
+                if (!name || name.trim().length < 4) return 'Full name must be at least 4 characters long';
+                if (/\d/.test(name.trim())) return 'Full name should not contain numbers';
+                return null;
+            }
+            document.getElementById('fullname').addEventListener('input', function () {
+                const err = validateFullname(this.value);
+                err ? showError('fullname', err) : clearError('fullname');
+            });
+
+            function showError(id, msg) {
+                const el = document.getElementById(id + '-error');
+                if (el) { el.textContent = msg; el.classList.add('show'); }
+            }
+            function clearError(id) {
+                const el = document.getElementById(id + '-error');
+                if (el) { el.textContent = ''; el.classList.remove('show'); }
+            }
+            function clearAllErrors() {
+                document.querySelectorAll('.error-message').forEach(e => {
+                    e.textContent = ''; e.classList.remove('show');
+                });
+            }
+
+            /* ------------ Form submit ------------ */
+            document.getElementById('editProfileForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const fullname = document.getElementById('fullname').value;
+
+                clearAllErrors();
+                const nameErr = validateFullname(fullname);
+                if (nameErr) { showError('fullname', nameErr); return; }
+
+                const btn = document.getElementById('updateBtn');
+                btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+                try {
+                    const res = await fetch('/profile/edit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fullname: fullname.trim() })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('Success!', 'Profile updated successfully', 'success');
+                        setTimeout(() => window.location.href = '/profile', 2000);
+                    } else {
+                        data.errors ? Object.keys(data.errors).forEach(f => showError(f, data.errors[f]))
+                            : showToast('Error', data.message || 'Update failed', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error', 'An error occurred while updating profile', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Update Profile';
+                }
+            });
+
+           
+           /* ------------ Email Verification Modal ------------ */
+function openEmailVerificationModal() {
+    document.getElementById('emailVerificationModal').style.display = 'block';
+    document.getElementById('currentEmail').value = '<%= user.email || "" %>';
+    document.getElementById('newEmail').value = '';  
+}
+
+function closeEmailVerificationModal() {
+    document.getElementById('emailVerificationModal').style.display = 'none';
+    clearError('currentEmail');
+    clearError('newEmail');  
+}
+
+window.onclick = e => {
+    const modal = document.getElementById('emailVerificationModal');
+    if (e.target === modal) closeEmailVerificationModal();
+};
+
+async function verifyCurrentEmail() {
+    const currentEmail = document.getElementById('currentEmail').value.trim();
+    const newEmail = document.getElementById('newEmail').value.trim();  
+    
+    // Validate current email
+    if (!currentEmail) { 
+        showError('currentEmail', 'Please enter your current email'); 
+        return; 
+    }
+    
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!re.test(currentEmail)) { 
+        showError('currentEmail', 'Enter a valid email'); 
+        return; 
+    }
+    
+    // Validate new email
+    if (!newEmail) { 
+        showError('newEmail', 'Please enter your new email'); 
+        return; 
+    }
+    if (!re.test(newEmail)) { 
+        showError('newEmail', 'Enter a valid new email'); 
+        return; 
+    }
+    
+    // Check if emails are the same
+    if (currentEmail.toLowerCase() === newEmail.toLowerCase()) {
+        showError('newEmail', 'New email must be different from current email');
+        return;
+    }
+
+    clearError('currentEmail');
+    clearError('newEmail');
+    
+    const btn = document.getElementById('verifyEmailBtn');
+    btn.disabled = true; 
+    btn.textContent = 'Sending OTP...';
+
+    try {
+        const res = await fetch('/profile/verify-current-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                currentEmail,
+                newEmail  
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeEmailVerificationModal();
+            showToast('OTP Sent', 'An OTP has been sent to your new email address', 'success');
+            setTimeout(() => window.location.href = '/profile/email-change-otp', 3000);
+        } else {
+            showError('newEmail', data.message || 'Verification failed');
+        }
+    } catch (err) {
+        console.error(err);
+        showError('newEmail', 'Error verifying email');
+    } finally {
+        btn.disabled = false; 
+        btn.textContent = 'Send OTP';
+    }
+}
+
+        </script>
+</body>
+
+</html>

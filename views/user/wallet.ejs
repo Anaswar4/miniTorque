@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet - miniTorque</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+     <%- include("../partials/head") %>
+    <!-- Shared Breadcrumb CSS -->
+     <link rel="stylesheet" href="/css/breadcrumb.css">
+     <%- include("../partials/user-sidebar") %>
+     <link rel="stylesheet" href="/css/user/wallet.css">
+    
+</head>
+<body>
+    <!-- Main Content -->
+    <div class="main-content fade-in">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/profile">My Account</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Wallet</li>
+                </ol>
+            </nav>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header fade-in">
+            <h1><i class="fas fa-wallet"></i> My Wallet</h1>
+            <p>Manage your finances and track your spending</p>
+        </div>
+
+        <!-- Wallet Balance Cards -->
+        <div class="wallet-cards fade-in">
+            <div class="balance-card">
+                <div class="balance-title">Total Balance</div>
+                <div class="balance-amount">₹<%= wallet.balance.toFixed(2) %></div>
+                <div class="balance-change">
+                    <i class="fas fa-wallet"></i>
+                    Ready to use
+                </div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="stats-value">₹<%= wallet.totalSpent.toFixed(2) %></div>
+                <div class="stats-label">Total Spent</div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="stats-value">₹<%= wallet.totalAdded.toFixed(2) || 0.00 %></div>
+                <div class="stats-label">Total Added</div>
+            </div>
+        </div>
+
+        
+        <!-- Recent Transactions -->
+        <div class="transactions-section fade-in">
+            <div class="transactions-header">
+                <h2><i class="fas fa-list"></i> Recent Transactions</h2>
+            </div>
+
+            <% if (wallet.transactions && wallet.transactions.length > 0) { %>
+                <% wallet.transactions.forEach(transaction => { %>
+                    <div class="transaction-item">
+                        <div class="transaction-icon <%= transaction.type === 'credit' ? 'income' : 'expense' %>">
+                            <i class="fas <%= transaction.type === 'credit' ? 'fa-arrow-down' : 'fa-arrow-up' %>"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">
+                                <%= transaction.type === 'credit' ? 'Money Added' : 'Money Spent' %>
+                            </div>
+                            <div class="transaction-description">
+                                <%= transaction.description %>
+                            </div>
+                            <div class="transaction-date">
+                                <%= new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) %>
+                            </div>
+                        </div>
+                        <div class="transaction-amount <%= transaction.type === 'credit' ? 'positive' : 'negative' %>">
+                            <%= transaction.type === 'credit' ? '+' : '-' %>₹<%= transaction.amount.toFixed(2) %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No Transactions Yet</h3>
+                    <p>Your transaction history will appear here once you start using your wallet.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        // Wallet page scripts can be added here if needed
+    </script>
+</body>
+</html>

@@ -19,7 +19,16 @@ const adminRoutes = require('./routes/admin/admin-route');
 // View engine and static setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Configure static file serving with proper MIME types for videos
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.mp4')) {
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  }
+}));
 
 // Middleware
 app.use(express.urlencoded({  extended: true, limit: '50mb' }));
@@ -29,7 +38,10 @@ app.use(passport.initialize()); // Initialize Passport
 app.use(passport.session()); // Enable Passport session support
 
 app.use((req, res, next) => {
-  res.locals.user = req.user || null;
+  // Only set user from req.user if res.locals.user hasn't been set by addUserContext middleware
+  if (!res.locals.user) {
+    res.locals.user = req.user || null;
+  }
   next();
 });
 

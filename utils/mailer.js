@@ -154,7 +154,7 @@ async function sendOTP(toEmail, otp) {
             margin: 0;
             font-size: 14px;
             font-weight: 600;
-          "> This code expires in 60 seconds</p>
+          "> This code expires in 5 minutes</p>
         </div>
         
         <p style="
@@ -183,7 +183,7 @@ async function sendOTP(toEmail, otp) {
   
 Your 6-digit verification code is: ${otp}
 
-This code is valid for 60 seconds.
+This code is valid for 5 minutes.
 
 If you didn't request this verification, please ignore this email.
 
