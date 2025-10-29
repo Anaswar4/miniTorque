@@ -51,6 +51,22 @@ const userSchema = new mongoose.Schema({
   isBlocked: {
     type: Boolean,
     default: false,
+  },
+  referralCode: {
+    type: String,
+    sparse: true,
+    index: true,
+    default: null
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  referralCount: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, { timestamps: true });
 

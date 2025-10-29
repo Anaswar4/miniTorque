@@ -14,6 +14,7 @@ const userUtilityController = require("../../controllers/user/user-utility-contr
 const { checkProductAvailabilityForPage, checkProductAvailability, checkProductAvailabilityForWishlist } = require("../../middlewares/product-availability-middleware");
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 const { profileUpload, handleMulterError } = require("../../config/multer-config");
+const referralController = require('../../controllers/user/referral-controller');
 
 
 // Google OAuth Start
@@ -21,8 +22,6 @@ router.get(
   "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })
 );
-
-
 // Google OAuth Callback 
 router.get(
   "/auth/google/callback",
@@ -178,11 +177,16 @@ router.post("/orders/:orderId/items/:itemId/request-return", isUserAuthenticated
 router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCache, checkUserBlocked, orderController.downloadInvoice);
 
 
-
 // Wallet route
 router.get("/wallet", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadWallet);
 
+//Referral
+router.get('/referrals', isUserAuthenticated, referralController.getReferrals);
+router.get('/api/referral/validate', referralController.validateReferral);
+
+
 //about
 router.get("/about", validateSession, addUserContext, checkUserBlocked, userUtilityController.loadAbout);
+
 
 module.exports = router;

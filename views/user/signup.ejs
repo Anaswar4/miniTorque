@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
     <link rel="stylesheet" href="/css/user/signup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Bootstrap CSS for Modal -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="signup-container">
@@ -69,6 +71,9 @@
                     </div>
                 </div>
 
+                <!-- Hidden input for referral code -->
+                <input type="hidden" id="referralCodeField" name="referralCode" value="">
+
                 <button type="submit" class="btn-submit">
                     <span class="btn-text">Sign Up</span>
                     <span class="btn-loading d-none"><span class="spinner-border" role="status"></span></span>
@@ -77,10 +82,56 @@
 
             <div class="signup-footer">
                 <p>Already have an account? <a href="/login" class="login-link">Log in</a></p>
+                <p style="margin-top: 10px; margin-bottom: 0;">
+                    Have a referral code? 
+                    <a href="#" class="login-link" data-bs-toggle="modal" data-bs-target="#referralModal">Enter here</a>
+                </p>
             </div>
         </div>
     </div>
 
+    <!-- Referral Modal -->
+    <div class="modal fade" id="referralModal" tabindex="-1" aria-labelledby="referralModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="referralModalLabel">
+                        <i class="fas fa-gift me-2 text-success"></i>Enter Referral Code
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <div class="text-center mb-3">
+                        <div class="referral-icon-circle">
+                            <i class="fas fa-gift text-success"></i>
+                        </div>
+                        <p class="text-muted small mb-0">Get rewards when you use a friend's referral code!</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="referralCodeInput" class="form-label">Referral Code</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="referralCodeInput"
+                            placeholder="Enter referral code"
+                            maxlength="8"
+                        />
+                        <div id="referralCodeError" class="text-danger small mt-1"></div>
+                        <div id="referralCodeSuccess" class="text-success small mt-1"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Skip</button>
+                    <button type="button" class="btn btn-success btn-sm" id="applyReferralBtn">
+                        <i class="fas fa-check me-1"></i>Apply Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS for Modal -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/js/signup.js"></script>
 </body>

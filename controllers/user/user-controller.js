@@ -9,6 +9,8 @@ const Product = require('../../models/product-schema');
 const Category = require('../../models/category-schema');
 const Wishlist = require('../../models/wishlist-schema');
 const Cart = require('../../models/cart-schema');
+const Referral = require('../../models/referral-schema');
+const { generateUniqueReferralCode } = require('../../utils/generateReferralCode');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -140,7 +142,7 @@ const loadHome = async (req, res) => {
 
 // Handle signup
 const signup = async (req, res) => {
-  const { fullName, email, password, confirmPassword } = req.body;
+  const { fullName, email, password, confirmPassword, referralCode} = req.body;
 
   if (!fullName || !email || !password || !confirmPassword) {
     return res.render('user/signup', {
@@ -170,6 +172,19 @@ const signup = async (req, res) => {
       formData: { fullName, email },
     });
   }
+   //  REFERRAL CODE (OPTIONAL)
+  if (referralCode && referralCode.trim() !== '') {
+    const referrerExists = await userModel.findOne({ 
+      referralCode: referralCode.toUpperCase().trim() 
+    });
+    
+    if (!referrerExists) {
+      return res.render('user/signup', {
+        error: 'Invalid referral code',
+        formData: { fullName, email, referralCode },
+      });
+    }
+  } 
 
   try {
     const otp = generateOTP();
@@ -184,6 +199,7 @@ const signup = async (req, res) => {
       password: hashedPassword,
       otp,
       isVerified: false,
+      referralCode: referralCode ? referralCode.toUpperCase().trim() : null
     };
     req.session.otpExpires = Date.now() + 5 * 60 * 1000;
 
@@ -242,12 +258,47 @@ const verifyOTP = async (req, res) => {
       throw new Error('Invalid OTP');
     }
 
-    await userModel.create({
+     // CREATE USER WITH REFERRAL CODE 
+    const newUser = await userModel.create({
       fullName: tempUser.fullName,
       email: tempUser.email,
       password: tempUser.password,
       isVerified: true,
     });
+
+    // Generate unique referral code for new user
+    const userReferralCode = await generateUniqueReferralCode(8);
+    newUser.referralCode = userReferralCode;
+    await newUser.save();
+
+    // Process referral code if provided
+    if (tempUser.referralCode) {
+      const referrer = await userModel.findOne({ 
+        referralCode: tempUser.referralCode 
+      });
+
+      if (referrer && referrer._id.toString() !== newUser._id.toString()) {
+        // Link new user to referrer
+        newUser.referredBy = referrer._id;
+        await newUser.save();
+
+        // Increment referrer's count
+        await userModel.findByIdAndUpdate(referrer._id, {
+          $inc: { referralCount: 1 }
+        });
+
+        // Create referral record
+        await Referral.create({
+          referrer: referrer._id,
+          referred: newUser._id,
+          status: 'completed',
+          rewardGiven: false,
+          rewardAmount: 50
+        });
+
+        console.log(`User ${newUser.email} referred by ${referrer.email}`);
+      }
+    }
 
     req.session.tempUser = null;
     req.session.otpExpires = null;
