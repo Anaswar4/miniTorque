@@ -9,6 +9,7 @@ const { isAdminAuthenticated, preventCache, redirectIfAdminAuthenticated } = req
 const productController = require('../../controllers/admin/product-controller');
 const orderController = require("../../controllers/admin/order-controller");
 const returnController = require("../../controllers/admin/return-controller");
+const salesReportController = require("../../controllers/admin/sales-report-controller");
 
 const { productUpload, handleMulterError } = require('../../config/multer-config');
 
@@ -62,7 +63,10 @@ adminRoute.get('/get-return-request-count', isAdminAuthenticated, preventCache, 
 adminRoute.post('/return-requests/:id/approve', isAdminAuthenticated, preventCache, returnController.approveReturnRequest);
 adminRoute.post('/return-requests/:id/reject', isAdminAuthenticated, preventCache, returnController.rejectReturnRequest);
 
-
+// Sales Report Management
+adminRoute.get("/sales-report", isAdminAuthenticated, preventCache, salesReportController.getSalesReport);
+adminRoute.get("/sales-report/export-pdf", isAdminAuthenticated, preventCache, salesReportController.exportPDF);
+adminRoute.get("/sales-report/export-excel", isAdminAuthenticated, preventCache, salesReportController.exportExcel);
 
 
 module.exports = adminRoute;
