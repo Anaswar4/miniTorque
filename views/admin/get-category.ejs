@@ -67,12 +67,18 @@
         <table class="modern-table" id="categoryTable">
           <thead>
             <tr>
-              <th>#</th><th>Name</th><th>Description</th><th>Status</th><th>Created</th><th>Actions</th>
+              <th>#</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Offer %</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="categoryTableBody">
             <tr>
-              <td colspan="6" class="loading-state">
+              <td colspan="7" class="loading-state">
                 <div class="loading-content">
                   <i class="fas fa-spinner fa-spin"></i> <span>Loading categories...</span>
                 </div>
@@ -96,24 +102,41 @@
     // --- ADD CATEGORY MODAL ---
     function showAddModal() {
       Swal.fire({
-        title: 'Add New Category',
+        title: '<i class="fas fa-plus-circle me-2"></i>Add New Category',
         html: `
-          <label>Name</label>
-          <input id="swal-name" class="swal2-input" placeholder="Category name">
-          <label>Description</label>
-          <textarea id="swal-desc" class="swal2-textarea" placeholder="Description"></textarea>
-          <label>Status</label>
-          <select id="swal-status" class="swal2-input">
-            <option value="true" selected>Active</option>
-            <option value="false">Inactive</option>
-          </select>
+          <div class="text-start">
+            <div class="mb-3">
+              <label for="swal-name" class="form-label">Category Name <span class="text-danger">*</span></label>
+              <input type="text" id="swal-name" class="swal2-input" placeholder="Enter category name" style="display: block; width: 100%; margin: 0;">
+            </div>
+            <div class="mb-3">
+              <label for="swal-desc" class="form-label">Description</label>
+              <textarea id="swal-desc" class="swal2-textarea" placeholder="Enter category description..." style="display: block; width: 100%; margin: 0; height: 100px;"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="swal-offer" class="form-label">Category Offer (%)</label>
+              <input type="number" id="swal-offer" class="swal2-input" value="0" min="0" max="100" step="1" placeholder="Enter offer percentage (0-100)" style="display: block; width: 100%; margin: 0;">
+              <small class="text-muted">Optional: Enter 0 for no offer. This will apply to all products in this category.</small>
+            </div>
+            <div class="mb-3">
+              <label for="swal-status" class="form-label">Status <span class="text-danger">*</span></label>
+              <select id="swal-status" class="swal2-input" style="display: block; width: 100%; margin: 0;">
+                <option value="true" selected>Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+          </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Save',
+        confirmButtonText: '<i class="fas fa-check"></i> Save Category',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+        width: '500px',
         preConfirm: () => {
           const name = document.getElementById('swal-name').value.trim();
           const description = document.getElementById('swal-desc').value.trim();
+          const categoryOffer = parseFloat(document.getElementById('swal-offer').value) || 0;
           const status = document.getElementById('swal-status').value === 'true';
+          
           if (!name) {
             Swal.showValidationMessage('Please enter a category name');
             return false;
@@ -122,7 +145,12 @@
             Swal.showValidationMessage('Category name already exists');
             return false;
           }
-          return { name, description, status };
+          if (categoryOffer < 0 || categoryOffer > 100) {
+            Swal.showValidationMessage('Offer must be between 0 and 100');
+            return false;
+          }
+          
+          return { name, description, categoryOffer, status };
         }
       }).then(async result => {
         if (result.isConfirmed) await addCategory(result.value);
@@ -132,11 +160,19 @@
     async function addCategory(data) {
       try {
         const res = await fetch('/admin/get-categories', {
-          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error((await res.json()).message);
         await fetchCategories();
-        Swal.fire('Success','Category added','success');
+        Swal.fire({
+          title: 'Success!',
+          text: 'Category added successfully!',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } catch (e) {
         Swal.fire('Error', e.message, 'error');
       }
@@ -146,25 +182,43 @@
     function showEditModal(id) {
       const cat = categories.find(c => c._id === id);
       if (!cat) return;
+      
       Swal.fire({
-        title: 'Edit Category',
+        title: '<i class="fas fa-edit me-2"></i>Edit Category',
         html: `
-          <label>Name</label>
-          <input id="swal-name" class="swal2-input" value="${cat.name}">
-          <label>Description</label>
-          <textarea id="swal-desc" class="swal2-textarea">${cat.description || ''}</textarea>
-          <label>Status</label>
-          <select id="swal-status" class="swal2-input">
-            <option value="true" ${cat.isListed ? 'selected' : ''}>Active</option>
-            <option value="false" ${!cat.isListed ? 'selected' : ''}>Inactive</option>
-          </select>
+          <div class="text-start">
+            <div class="mb-3">
+              <label for="swal-edit-name" class="form-label">Category Name <span class="text-danger">*</span></label>
+              <input type="text" id="swal-edit-name" class="swal2-input" value="${cat.name}" style="display: block; width: 100%; margin: 0;">
+            </div>
+            <div class="mb-3">
+              <label for="swal-edit-desc" class="form-label">Description</label>
+              <textarea id="swal-edit-desc" class="swal2-textarea" style="display: block; width: 100%; margin: 0; height: 100px;">${cat.description || ''}</textarea>
+            </div>
+            <div class="mb-3">
+              <label for="swal-edit-offer" class="form-label">Category Offer (%)</label>
+              <input type="number" id="swal-edit-offer" class="swal2-input" value="${cat.categoryOffer || 0}" min="0" max="100" step="1" style="display: block; width: 100%; margin: 0;">
+              <small class="text-muted">Enter 0 to remove offer.</small>
+            </div>
+            <div class="mb-3">
+              <label for="swal-edit-status" class="form-label">Status <span class="text-danger">*</span></label>
+              <select id="swal-edit-status" class="swal2-input" style="display: block; width: 100%; margin: 0;">
+                <option value="true" ${cat.isListed ? 'selected' : ''}>Active</option>
+                <option value="false" ${!cat.isListed ? 'selected' : ''}>Inactive</option>
+              </select>
+            </div>
+          </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Update',
+        confirmButtonText: '<i class="fas fa-save"></i> Update',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+        width: '500px',
         preConfirm: () => {
-          const name = document.getElementById('swal-name').value.trim();
-          const description = document.getElementById('swal-desc').value.trim();
-          const status = document.getElementById('swal-status').value === 'true';
+          const name = document.getElementById('swal-edit-name').value.trim();
+          const description = document.getElementById('swal-edit-desc').value.trim();
+          const categoryOffer = parseFloat(document.getElementById('swal-edit-offer').value) || 0;
+          const status = document.getElementById('swal-edit-status').value === 'true';
+          
           if (!name) {
             Swal.showValidationMessage('Please enter a category name');
             return false;
@@ -173,7 +227,12 @@
             Swal.showValidationMessage('Another category with this name exists');
             return false;
           }
-          return { name, description, status };
+          if (categoryOffer < 0 || categoryOffer > 100) {
+            Swal.showValidationMessage('Offer must be between 0 and 100');
+            return false;
+          }
+          
+          return { name, description, categoryOffer, status };
         }
       }).then(async result => {
         if (result.isConfirmed) await updateCategory(id, result.value);
@@ -183,11 +242,98 @@
     async function updateCategory(id, data) {
       try {
         const res = await fetch(`/admin/get-categories/${id}`, {
-          method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+          method: 'PUT', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error((await res.json()).message);
         await fetchCategories();
-        Swal.fire('Updated','Category updated successfully','success');
+        Swal.fire({
+          title: 'Updated!',
+          text: 'Category updated successfully',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+      }
+    }
+
+    // --- MANAGE CATEGORY OFFER  ---
+    function showOfferModal(id) {
+      const cat = categories.find(c => c._id === id);
+      if (!cat) {
+        Swal.fire('Error', 'Category not found', 'error');
+        return;
+      }
+      
+      Swal.fire({
+        title: `<i class="fas fa-percentage me-2"></i>Set Offer for "${cat.name}"`,
+        html: `
+          <div class="text-start">
+            <div class="mb-3">
+              <label for="swal-offer-value" class="form-label">Category Offer Percentage <span class="text-danger">*</span></label>
+              <input type="number" id="swal-offer-value" class="swal2-input" value="${cat.categoryOffer || 0}" min="0" max="100" step="1" placeholder="Enter offer percentage (0-100)" style="display: block; width: 100%; margin: 0;">
+              <small class="text-muted">Enter a value between 0 and 100. This offer will apply to all products in this category.</small>
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Note:</strong> If a product has its own offer, the system will automatically apply the higher offer.
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check"></i> Update Offer',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+        width: '500px',
+        preConfirm: () => {
+          const offer = parseFloat(document.getElementById('swal-offer-value').value);
+          
+          if (isNaN(offer)) {
+            Swal.showValidationMessage('Please enter a valid number');
+            return false;
+          }
+          if (offer < 0 || offer > 100) {
+            Swal.showValidationMessage('Offer must be between 0 and 100');
+            return false;
+          }
+          
+          return { categoryOffer: offer };
+        }
+      }).then(async result => {
+        if (result.isConfirmed) await updateCategoryOffer(id, result.value.categoryOffer);
+      });
+    }
+
+    async function updateCategoryOffer(id, offerPercentage) {
+      try {
+        const res = await fetch(`/admin/get-categories/${id}/offer`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ categoryOffer: offerPercentage })
+        });
+        
+        if (!res.ok) throw new Error((await res.json()).message);
+        
+        const data = await res.json();
+        
+        // Update local data
+        const category = categories.find(c => c._id === id);
+        if (category) category.categoryOffer = offerPercentage;
+        const filteredCategory = filteredCategories.find(c => c._id === id);
+        if (filteredCategory) filteredCategory.categoryOffer = offerPercentage;
+        
+        // Re-render table
+        renderTable();
+        
+        Swal.fire({
+          title: 'Success!',
+          text: data.message,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } catch (e) {
         Swal.fire('Error', e.message, 'error');
       }
@@ -197,21 +343,42 @@
     async function deleteCategory(id) {
       const cat = categories.find(c => c._id === id);
       if (!cat) return;
+      
       Swal.fire({
         title: 'Delete Category?',
-        text: `This will hide "${cat.name}" from users. You can restore later.`,
+        html: `
+          <div class="text-start">
+            <p>You are about to delete the category <strong>"${cat.name}"</strong>.</p>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Note:</strong> This is a soft delete. The category will be hidden but can be restored later.
+            </div>
+          </div>
+        `,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#d33'
+        confirmButtonText: '<i class="fas fa-trash"></i> Delete',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        width: '500px'
       }).then(async res => {
         if (res.isConfirmed) {
           try {
             const delRes = await fetch(`/admin/get-categories/${id}`, { method: 'DELETE' });
             if (!delRes.ok) throw new Error((await delRes.json()).message);
-            await fetchCategories();
-            Swal.fire('Deleted','Category deleted (soft delete)','success');
+            
+            // Remove from local arrays
+            categories = categories.filter(c => c._id !== id);
+            applySearchFilter();
+            
+            Swal.fire({
+              title: 'Deleted!',
+              text: 'Category deleted successfully',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
           } catch (e) {
             Swal.fire('Error', e.message, 'error');
           }
@@ -224,10 +391,28 @@
       const newStatus = el.checked;
       try {
         const res = await fetch(`/admin/get-categories/${id}/status`, {
-          method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: newStatus})
+          method: 'PATCH', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({status: newStatus})
         });
-        if (!res.ok) { el.checked = !newStatus; throw new Error((await res.json()).message); }
-        Swal.fire('Success', `Status updated to ${newStatus?'Active':'Inactive'}`, 'success');
+        if (!res.ok) { 
+          el.checked = !newStatus; 
+          throw new Error((await res.json()).message); 
+        }
+        
+        // Update local data
+        const category = categories.find(c => c._id === id);
+        if (category) category.isListed = newStatus;
+        const filteredCategory = filteredCategories.find(c => c._id === id);
+        if (filteredCategory) filteredCategory.isListed = newStatus;
+        
+        Swal.fire({
+          title: 'Success!',
+          text: `Status updated to ${newStatus?'Active':'Inactive'}`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } catch (e) {
         el.checked = !newStatus;
         Swal.fire('Error', e.message, 'error');
@@ -243,8 +428,10 @@
       filteredCategories = term==='' ? [...categories] : categories.filter(c =>
         c.name.toLowerCase().includes(term) || (c.description && c.description.toLowerCase().includes(term))
       );
-      renderTable(); updateCount();
+      renderTable(); 
+      updateCount();
     }
+    
     function updateCount(){
       document.getElementById('categoryCount').textContent = `${filteredCategories.length} categories`;
     }
@@ -258,27 +445,68 @@
         applySearchFilter();
       }catch(e){
         Swal.fire('Error', e.message, 'error');
+        document.getElementById('categoryTableBody').innerHTML = `
+          <tr><td colspan="7" class="error-state">Failed to load categories</td></tr>
+        `;
       }
     }
 
-    // Render
+    // Render table
     function renderTable(){
       const tbody = document.getElementById('categoryTableBody');
-      tbody.innerHTML = filteredCategories.length===0 ? 
-        `<tr><td colspan="6" class="empty-state">No categories</td></tr>` :
-        filteredCategories.map((c,i)=>`
+      const paginationInfo = document.getElementById('paginationInfo');
+      
+      if (filteredCategories.length === 0) {
+        const searchTerm = searchInput.value.trim();
+        tbody.innerHTML = `
           <tr>
-            <td>${i+1}</td>
-            <td>${c.name}</td>
-            <td>${c.description || '<span class="text-muted">No description</span>'}</td>
-            <td><label class="status-toggle"><input type="checkbox" ${c.isListed?'checked':''} onchange="toggleStatus('${c._id}',this)"><span class="toggle-slider"></span></label></td>
-            <td>${c.date}</td>
-            <td>
-              <button class="btn btn-sm btn-primary" onclick="showEditModal('${c._id}')"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c._id}')"><i class="fas fa-trash"></i></button>
+            <td colspan="7" class="empty-state">
+              <div class="empty-content">
+                <i class="fas fa-${searchTerm ? 'search' : 'folder-open'}"></i>
+                <p>${searchTerm ? 'No categories found' : 'No categories available'}</p>
+              </div>
             </td>
           </tr>
-        `).join('');
+        `;
+        paginationInfo.textContent = 'Showing 0 to 0 of 0 entries';
+        return;
+      }
+      
+      tbody.innerHTML = filteredCategories.map((c, i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${c.name}</td>
+          <td>${c.description || '<span class="text-muted">No description</span>'}</td>
+          <td>
+            <div class="offer-display">
+              ${c.categoryOffer > 0 ? 
+                `<span class="offer-value">${c.categoryOffer}%</span>` : 
+                `<span class="no-offer-text">0%</span>`
+              }
+            </div>
+          </td>
+          <td>
+            <label class="status-toggle">
+              <input type="checkbox" ${c.isListed?'checked':''} onchange="toggleStatus('${c._id}',this)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td>${c.date}</td>
+          <td>
+            <button class="btn btn-sm btn-success" onclick="showOfferModal('${c._id}')" title="Manage Offer">
+              <i class="fas fa-percentage"></i>
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="showEditModal('${c._id}')" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c._id}')" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      
+      paginationInfo.textContent = `Showing 1 to ${filteredCategories.length} of ${filteredCategories.length} entries`;
     }
 
     document.addEventListener('DOMContentLoaded', fetchCategories);

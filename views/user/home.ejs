@@ -509,7 +509,7 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// 🔥 SAFETY CHECK: Initialize userWishlistIds safely
+//  Initialize userWishlistIds safely
 const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
 
 // ====== PAGE INITIALIZATION ======
@@ -576,9 +576,9 @@ async function loadFlashSales() {
         document.getElementById('flashSalesLoading').style.display = 'none';
 
         if (data.success && data.products && data.products.length > 0) {
-            // Filter products with offers for flash sales
+            //  Filter products with offers (checks hasOffer from backend)
             const flashSaleProducts = data.products.filter(product => 
-                product.productOffer && product.productOffer > 0
+                product.hasOffer
             );
             
             if (flashSaleProducts.length > 0) {
@@ -617,7 +617,7 @@ async function loadNewArrivals() {
     }
 }
 
-// 🔥 NEW: Synchronize all wishlist icons for the same product
+//  Synchronize all wishlist icons for the same product
 function synchronizeWishlistIcons(productId, isActive) {
     const icons = document.querySelectorAll(`button.wishlist-icon[data-product-id="${productId}"]`);
     icons.forEach(icon => {
@@ -633,26 +633,27 @@ function synchronizeWishlistIcons(productId, isActive) {
     });
 }
 
-// 🔥 UPDATED: Display products with data-product-id attributes
+//  Display products with category offers
 function displayProducts(products, containerId) {
     const container = document.getElementById(containerId);
     
     const productCards = products.map(product => {
-        const hasOffer = product.productOffer && product.productOffer > 0;
-        const finalPrice = hasOffer ? 
-            (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) : 
-            product.salePrice.toFixed(2);
+        //  Uses finalPrice (with category offers) and hasOffer from backend
+        const hasOffer = product.hasOffer;
+        const finalPrice = product.finalPrice.toFixed(2);
+        const offerPercentage = product.offerPercentage;
 
-        // 🔥 Check if product is in wishlist using global state
+        //  Check if product is in wishlist using global state
         const isInWishlist = window.globalState.isInWishlist(product._id);
 
         return `
             <div class="col-6 col-md-3">
                 <div class="product-card">
                     <div class="product-image-container">
-                        ${hasOffer ? `<div class="product-badge">${product.productOffer}% OFF</div>` : ''}
+                        <!--  Shows best offer percentage -->
+                        ${hasOffer ? `<div class="product-badge">${offerPercentage}% OFF</div>` : ''}
                         
-                        <!-- 🔥 UPDATED: Added data-product-id attribute -->
+                        <!--  Added data-product-id attribute -->
                         <button class="wishlist-icon ${isInWishlist ? 'active' : ''}" 
                                 data-product-id="${product._id}"
                                 onclick="toggleWishlistFromHome('${product._id}', this)" 
@@ -671,6 +672,7 @@ function displayProducts(products, containerId) {
                         <h5 class="product-title">${product.productName}</h5>
                         <div class="product-price">
                             <div class="price-section">
+                                <!--  Shows final price with category offers -->
                                 <span class="current-price">₹${finalPrice}</span>
                                 ${hasOffer ? `<span class="original-price">₹${product.salePrice.toFixed(2)}</span>` : ''}
                             </div>
@@ -745,9 +747,7 @@ async function addToWishlist(productId) {
     }
 }
 
-
-
-//  REPLACE WITH ACTUAL ADD TO CART FUNCTIONALITY
+//  ADD TO CART FUNCTIONALITY
 async function addToCart(productId) {
     const button = event.target.closest('.add-to-cart');
     const originalContent = button.innerHTML;
@@ -757,7 +757,7 @@ async function addToCart(productId) {
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         button.disabled = true;
         
-        const response = await fetch('/add-to-cart', {
+        const response = await fetch('/api/cart/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -799,7 +799,7 @@ async function addToCart(productId) {
     }
 }
 
-// ⭐ UNIFIED CART COUNTER UPDATE FUNCTION (LEGACY COMPATIBILITY)
+//  UNIFIED CART COUNTER UPDATE FUNCTION 
 function updateCartCounter(count) {
     // Use unified cart state system
     if (window.cartState) {
@@ -880,7 +880,7 @@ function initializeScrollAnimations() {
     });
 }
 
-// ⭐ IMPROVED TOAST FUNCTION
+//  IMPROVED TOAST FUNCTION
 function showToast(message, type = 'info') {
     // Create toast container if it doesn't exist
     let toastContainer = document.getElementById('toast-container');
@@ -975,6 +975,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 </script>
+
 
 </body>
 </html>

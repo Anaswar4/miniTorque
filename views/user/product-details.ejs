@@ -51,8 +51,9 @@
           <!-- Main Image -->
           <div class="col-10">
             <div class="mb-3 zoom-container" id="zoomContainer">
-              <% if (product.productOffer && product.productOffer > 0) { %>
-                <span class="offer-badge"><%= product.productOffer %>% OFF</span>
+              <!--  Shows best offer percentage -->
+              <% if (product.hasOffer) { %>
+                <span class="offer-badge"><%= product.offerPercentage %>% OFF</span>
               <% } %>
               <img src="/uploads/products/<%= product.mainImage %>" alt="<%= product.productName %>" class="main-image" id="mainImage" onerror="this.src='/assets/placeholder.jpg'" />
             </div>
@@ -100,19 +101,18 @@
             </div>
           </div>
 
-          <!-- Price Section -->
+          <!--  Price Section with category offers -->
           <div class="price-section mb-4">
-            <% if (product.productOffer && product.productOffer > 0) { %>
-              <% const finalPrice = (product.salePrice * (1 - product.productOffer / 100)).toFixed(2) %>
+            <% if (product.hasOffer) { %>
               <div class="d-flex align-items-baseline gap-2">
-                <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= finalPrice %></h2>
+                <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= product.finalPrice.toFixed(2) %></h2>
                 <span class="fs-5 text-decoration-line-through text-muted">₹<%= product.salePrice.toFixed(2) %></span>
-                <span class="badge bg-danger">-<%= product.productOffer %>% OFF</span>
+                <span class="badge bg-danger">-<%= product.offerPercentage %>% OFF</span>
               </div>
               <div class="savings-info mt-2">
                 <span class="text-success d-flex align-items-center gap-1">
                   <i class="fas fa-tag"></i>
-                  You save: ₹<%= (product.salePrice - finalPrice).toFixed(2) %>
+                  You save: ₹<%= product.discountAmount.toFixed(2) %>
                 </span>
               </div>
             <% } else { %>
@@ -165,7 +165,7 @@
                 <span>Add to Cart</span>
               </button>
               
-              <!-- 🔥 UPDATED: Wishlist button with correct state -->
+              <!--  Wishlist button with correct state -->
               <% 
                 const isInWishlist = userWishlistIds && userWishlistIds.includes(product._id.toString());
               %>
@@ -341,7 +341,7 @@
       </div>
     </div>
 
-    <!-- ✅ CORRECTED: Related Products Section -->
+    <!--  Related Products Section with category offers -->
     <div class="related-products mt-5">
       <h3 class="fs-3 fw-bold mb-4">You May Also Like</h3>
       <div class="row g-4">
@@ -350,8 +350,9 @@
             <div class="col-sm-6 col-md-4 col-lg-3">
               <div class="product-card bg-white h-100 related-product">
                 <div class="product-image-container">
-                  <% if (relatedProduct.productOffer && relatedProduct.productOffer > 0) { %>
-                    <span class="offer-badge"><%= relatedProduct.productOffer %>% OFF</span>
+                  <!--  Shows best offer percentage -->
+                  <% if (relatedProduct.hasOffer) { %>
+                    <span class="offer-badge"><%= relatedProduct.offerPercentage %>% OFF</span>
                   <% } %>
                   <%
                     const now = new Date();
@@ -373,10 +374,10 @@
                   <p class="text-muted small mb-2"><%= relatedProduct.brand %></p>
                   <div class="d-flex justify-content-between align-items-center">
                     <div>
-                      <% if (relatedProduct.productOffer && relatedProduct.productOffer > 0) { %>
-                        <% const relatedFinalPrice = (relatedProduct.salePrice * (1 - relatedProduct.productOffer / 100)).toFixed(2) %>
+                      <!--  Shows final price with category offers -->
+                      <% if (relatedProduct.hasOffer) { %>
                         <div class="d-flex align-items-center gap-2">
-                          <span class="fw-bold text-danger">₹<%= relatedFinalPrice %></span>
+                          <span class="fw-bold text-danger">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
                           <span class="text-decoration-line-through text-muted small">₹<%= relatedProduct.salePrice.toFixed(2) %></span>
                         </div>
                       <% } else { %>
@@ -410,6 +411,7 @@
     </div>
   </div>
 </section>
+
 
 <style>
 /* Product Details Styles */
@@ -856,7 +858,7 @@
 <script src="/js/product-zoomer.js"></script>
 
 <script>
-console.log('🚀 Product Details Script Loading...');
+console.log(' Product Details Script Loading...');
 
 // Pass server data to client
 const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
@@ -1031,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ================================
     if (wishlistBtn) {
         wishlistBtn.addEventListener('click', async function () {
-            console.log('❤️ Wishlist clicked');
+            console.log(' Wishlist clicked');
             
             const productId = this.dataset.productId;
             console.log('Toggling wishlist for product:', productId);
@@ -1078,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     throw new Error(result.message || 'Failed to update wishlist');
                 }
             } catch (error) {
-                console.error('❌ Wishlist error:', error);
+                console.error(' Wishlist error:', error);
                 
                 // Show error notification
                 Swal.fire({
@@ -1164,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     throw new Error(result.message || 'Failed to add to cart');
                 }
             } catch (error) {
-                console.error('❌ Related cart error:', error);
+                console.error(' Related cart error:', error);
                 
                 // Reset button
                 this.innerHTML = originalHTML;
@@ -1190,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     relatedWishlistButtons.forEach((button, index) => {
         button.addEventListener('click', async function (e) {
             e.preventDefault();
-            console.log(`❤️ Related product ${index + 1} wishlist clicked`);
+            console.log(` Related product ${index + 1} wishlist clicked`);
             
             const productId = this.dataset.productId;
             console.log('Toggling related product wishlist:', productId);
@@ -1235,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     throw new Error(result.message || 'Failed to update wishlist');
                 }
             } catch (error) {
-                console.error('❌ Related wishlist error:', error);
+                console.error(' Related wishlist error:', error);
                 
                 // Show error notification
                 Swal.fire({
@@ -1262,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const zoomContainer = document.getElementById('zoomContainer');
         
         if (mainImage && zoomContainer) {
-            console.log('✅ Found zoom elements');
+            console.log(' Found zoom elements');
             
             // Try different zoomer function names (check your product-zoomer.js file)
             if (typeof magnify === 'function') {
@@ -1275,11 +1277,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                 console.log('Using imageZoom function');
                 imageZoom("mainImage", "result");
             } else {
-                console.log('⚠️ No zoomer function found');
+                console.log(' No zoomer function found');
                 console.log('Available functions:', Object.keys(window).filter(k => k.toLowerCase().includes('zoom')));
             }
         } else {
-            console.log('❌ Zoom elements not found');
+            console.log(' Zoom elements not found');
         }
     }, 1000);
 });
@@ -1303,13 +1305,13 @@ function updateNavbarCount(selector, count) {
             element.style.transform = 'scale(1)';
         }, 200);
     } else {
-        console.log(`❌ Element ${selector} not found in navbar`);
+        console.log(` Element ${selector} not found in navbar`);
     }
 }
 
 // Image change function for thumbnails
 window.changeImage = function(element, imageUrl) {
-    console.log('🖼️ Changing image to:', imageUrl);
+    console.log(' Changing image to:', imageUrl);
     
     // Remove active class from all thumbnails
     document.querySelectorAll('.thumbnail').forEach(thumb => {
@@ -1326,7 +1328,7 @@ window.changeImage = function(element, imageUrl) {
     }
 };
 
-console.log('🎉 Product Details Script Loaded Successfully!');
+console.log(' Product Details Script Loaded Successfully!');
 </script>
 
 
