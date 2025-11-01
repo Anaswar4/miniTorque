@@ -15,6 +15,8 @@ const { checkProductAvailabilityForPage, checkProductAvailability, checkProductA
 const { isUserAuthenticated, preventCache, redirectIfAuthenticated, validateSession, addUserContext, checkUserBlocked } = require("../../middlewares/user-middleware");
 const { profileUpload, handleMulterError } = require("../../config/multer-config");
 const referralController = require('../../controllers/user/referral-controller');
+const couponController = require("../../controllers/user/user-coupon-controller");
+
 
 
 // Google OAuth Start
@@ -176,9 +178,14 @@ router.post("/orders/:orderId/request-return", isUserAuthenticated, preventCache
 router.post("/orders/:orderId/items/:itemId/request-return", isUserAuthenticated, preventCache, checkUserBlocked, orderController.requestIndividualItemReturn);
 router.get("/orders/:orderId/download-invoice", isUserAuthenticated, preventCache, checkUserBlocked, orderController.downloadInvoice);
 
-
 // Wallet route
 router.get("/wallet", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, userProfileController.loadWallet);
+
+// Coupon-related routes
+router.get("/coupons", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, couponController.getUserCoupons);
+router.post("/apply-coupon", isUserAuthenticated, preventCache, checkUserBlocked, couponController.applyCoupon);
+router.post("/remove-coupon", isUserAuthenticated, preventCache, checkUserBlocked, couponController.removeCoupon);
+
 
 //Referral
 router.get('/referrals', isUserAuthenticated, referralController.getReferrals);

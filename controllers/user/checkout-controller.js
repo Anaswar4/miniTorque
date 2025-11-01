@@ -1,3 +1,4 @@
+const Coupon = require('../../models/coupon-schema');
 const Cart = require('../../models/cart-schema');
 const Address = require('../../models/address-schema');
 const Order = require('../../models/order-schema');
@@ -109,6 +110,51 @@ const loadCheckout = async (req, res) => {
       delete req.session.addressSuccess;
     }
 
+    //  Fetch available coupons for user
+    let availableCoupons = [];
+    try {
+      const currentDate = new Date();
+      
+      // Fetch active coupons that user can use
+      const coupons = await Coupon.find({
+        isActive: true,
+        startDate: { $lte: currentDate },
+        expiry: { $gte: currentDate }
+      })
+      .populate("applicableCategories", "name")
+      .populate("applicableProducts", "productName")
+      .lean();
+
+      // Filter coupons based on minimum purchase and usage limits
+      availableCoupons = coupons.filter(coupon => {
+        // Check minimum purchase requirement
+        if (coupon.minPurchase && finalAmount < coupon.minPurchase) {
+          return false;
+        }
+        
+        // Check usage limits
+        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+          return false;
+        }
+        
+        return true;
+      });
+
+      // Format coupons for display
+      availableCoupons = availableCoupons.map(coupon => ({
+        ...coupon,
+        discountDisplay: coupon.discountType === 'percentage' 
+          ? `${coupon.discount}% OFF${coupon.maxDiscount ? ` (up to ₹${coupon.maxDiscount})` : ''}`
+          : `₹${coupon.discount} OFF`,
+        validityText: `Valid till: ${coupon.expiry.toLocaleDateString('en-IN', { 
+          day: '2-digit', month: 'short', year: 'numeric' 
+        })}`,
+        minOrderText: coupon.minPurchase > 0 ? `Min. order: ₹${coupon.minPurchase}` : ''
+      }));
+    } catch (error) {
+      console.error('Error fetching available coupons:', error);
+    }  
+
     res.render('user/checkout', {
       user,
       cartItems,
@@ -121,6 +167,7 @@ const loadCheckout = async (req, res) => {
       },
       addressSuccess,
       isCODAvailable,
+      availableCoupons,
       wishlistCount,
       cartCount,
       isAuthenticated: true,
@@ -147,7 +194,7 @@ const loadCheckout = async (req, res) => {
 const placeOrder = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;  
-    const { selectedAddressId, paymentMethod = 'Cash on Delivery' } = req.body;
+    const { selectedAddressId, paymentMethod = 'Cash on Delivery', appliedCoupon } = req.body;
 
     // Validate address selection
     if (!selectedAddressId) {
@@ -245,7 +292,12 @@ const placeOrder = async (req, res) => {
     });
 
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
-    const finalAmount = amountAfterDiscount + shippingCharges;
+    let finalAmount = amountAfterDiscount + shippingCharges;
+
+    //  Apply coupon discount if exists
+    if (appliedCoupon && appliedCoupon.discountAmount) {
+      finalAmount = finalAmount - appliedCoupon.discountAmount;
+    }
 
     // Validate COD limit
     if (paymentMethod === 'Cash on Delivery' && finalAmount > 2000) {
@@ -338,7 +390,7 @@ const placeOrder = async (req, res) => {
 const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
-    const { selectedAddressId } = req.body;
+    const { selectedAddressId, appliedCoupon } = req.body;
 
     // Validate address selection
     if (!selectedAddressId) {
@@ -436,7 +488,12 @@ const createRazorpayOrder = async (req, res) => {
     });
 
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
-    const finalAmount = amountAfterDiscount + shippingCharges;
+    let finalAmount = amountAfterDiscount + shippingCharges;
+
+    //  Apply coupon discount if exists
+    if (appliedCoupon && appliedCoupon.discountAmount) {
+      finalAmount = finalAmount - appliedCoupon.discountAmount;
+    }
 
     // Create order in database with Pending status
     const order = new Order({
@@ -682,12 +739,11 @@ const loadOrderSuccess = async (req, res) => {
   }
 };
 
-
 module.exports = {
   loadCheckout,
   placeOrder,
   loadOrderSuccess,
-  createRazorpayOrder,     // NEW
-  verifyPayment,           // NEW
-  paymentFailed            // NEW
+  createRazorpayOrder,     
+  verifyPayment,           
+  paymentFailed            
 };
