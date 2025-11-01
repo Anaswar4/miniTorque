@@ -11,6 +11,7 @@ const Wishlist = require('../../models/wishlist-schema');
 const Cart = require('../../models/cart-schema');
 const Referral = require('../../models/referral-schema');
 const { generateUniqueReferralCode } = require('../../utils/generateReferralCode');
+const Wallet = require('../../models/wallet-schema');
 
 // Rate-limiting middleware for resend-otp
 const resendLimiter = rateLimit({
@@ -258,7 +259,7 @@ const verifyOTP = async (req, res) => {
       throw new Error('Invalid OTP');
     }
 
-     // CREATE USER WITH REFERRAL CODE 
+    // CREATE USER WITH REFERRAL CODE 
     const newUser = await userModel.create({
       fullName: tempUser.fullName,
       email: tempUser.email,
@@ -287,16 +288,27 @@ const verifyOTP = async (req, res) => {
           $inc: { referralCount: 1 }
         });
 
-        // Create referral record
+        //  Wallet rewards
+        const Wallet = require('../../models/wallet-schema');
+
+        // Give new user ₹50 wallet credit
+        const newUserWallet = await Wallet.getOrCreateWallet(newUser._id);
+        await newUserWallet.addMoney(50, 'Welcome bonus - Referral signup');
+        
+        // Give referrer ₹100 wallet credit
+        const referrerWallet = await Wallet.getOrCreateWallet(referrer._id);
+        await referrerWallet.addMoney(100, `Referral reward - ${newUser.fullName} joined`);
+
+        // Update referral record with rewards
         await Referral.create({
           referrer: referrer._id,
           referred: newUser._id,
           status: 'completed',
-          rewardGiven: false,
-          rewardAmount: 50
+          rewardGiven: true,
+          rewardAmount: 150 // Total rewards given (50 + 100)
         });
 
-        console.log(`User ${newUser.email} referred by ${referrer.email}`);
+        console.log(`Referral rewards: ${newUser.email} got ₹50, ${referrer.email} got ₹100`);
       }
     }
 
@@ -309,6 +321,7 @@ const verifyOTP = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 // Resend OTP
 const resendOTP = async (req, res) => {
