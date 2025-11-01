@@ -10,6 +10,7 @@ const productController = require('../../controllers/admin/product-controller');
 const orderController = require("../../controllers/admin/order-controller");
 const returnController = require("../../controllers/admin/return-controller");
 const salesReportController = require("../../controllers/admin/sales-report-controller");
+const couponController = require("../../controllers/admin/coupon-controller");
 
 const { productUpload, handleMulterError } = require('../../config/multer-config');
 
@@ -63,6 +64,16 @@ adminRoute.get('/return-requests', isAdminAuthenticated, preventCache, returnCon
 adminRoute.get('/get-return-request-count', isAdminAuthenticated, preventCache, orderController.getReturnRequestCount);
 adminRoute.post('/return-requests/:id/approve', isAdminAuthenticated, preventCache, returnController.approveReturnRequest);
 adminRoute.post('/return-requests/:id/reject', isAdminAuthenticated, preventCache, returnController.rejectReturnRequest);
+
+
+// Coupon Management
+adminRoute.get('/coupons', isAdminAuthenticated, preventCache, couponController.getCouponsPage);
+adminRoute.get('/coupons/:id', isAdminAuthenticated, preventCache, couponController.getEditCouponPage);
+adminRoute.post('/coupons', isAdminAuthenticated, preventCache, couponController.addCoupon);
+adminRoute.put('/coupons/:id', isAdminAuthenticated, preventCache, couponController.updateCoupon);
+adminRoute.patch('/coupons/:id/toggle-status', isAdminAuthenticated, preventCache, couponController.toggleCouponStatus);
+adminRoute.delete('/coupons/:id', isAdminAuthenticated, preventCache, couponController.deleteCoupon);
+
 
 // Sales Report Management
 adminRoute.get("/sales-report", isAdminAuthenticated, preventCache, salesReportController.getSalesReport);
