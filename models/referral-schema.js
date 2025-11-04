@@ -5,23 +5,23 @@ const referralSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-    index: true  // Add index here
+    index: true  
   },
   referred: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-    index: true  // Add index here
+    index: true  
   },
   status: {
     type: String,
     enum: ["pending", "completed", "rewarded", "cancelled", "expired"],
     default: "pending",
-    index: true  // Add index for filtering
+    index: true  
   },
   rewardAmount: {
     type: Number,
-    default: 50,  // Default reward in rupees
+    default: 50,  
     min: 0
   },
   rewardGiven: {
@@ -37,7 +37,7 @@ const referralSchema = new mongoose.Schema({
     default: null
   }
 }, { 
-  timestamps: true  // Auto-creates createdAt & updatedAt
+  timestamps: true  
 });
 
 // Compound index for efficient queries

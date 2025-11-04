@@ -15,11 +15,17 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
+
 // Load order listing page
 const loadOrderList = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;  
     const { highlight } = req.query; 
+
+    // Pagination setup 
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10; 
+    const skip = (page - 1) * limit;
 
     // Get user data for sidebar
     const user = await User.findById(userId).select('fullName email name displayName googleName profilePhoto');
@@ -27,10 +33,16 @@ const loadOrderList = async (req, res) => {
       return res.redirect('/login');
     }
 
-    // Get user's orders with populated product data
+    // Get user's orders with populated product data and pagination
     const orders = await Order.find({ userId })
       .populate('orderedItems.product')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Get total count for pagination
+    const totalOrders = await Order.countDocuments({ userId });
+    const totalPages = Math.ceil(totalOrders / limit);
 
     // Get wishlist count for navbar
     const wishlist = await Wishlist.findOne({ userId }).lean();
@@ -48,7 +60,11 @@ const loadOrderList = async (req, res) => {
       isAuthenticated: true,  
       currentPage: 'orders',  
       title: 'My Orders',
-      highlightOrderId: highlight || null 
+      highlightOrderId: highlight || null,
+      currentPage: page,
+      totalPages,
+      totalOrders,
+      limit
     });
   } catch (error) {
     console.error('Error loading order list:', error);
@@ -60,6 +76,7 @@ const loadOrderList = async (req, res) => {
     });
   }
 };
+
 
 // Load order details page
 const loadOrderDetails = async (req, res) => {

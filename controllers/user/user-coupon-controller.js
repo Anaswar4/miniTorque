@@ -3,7 +3,7 @@ const User = require("../../models/user-model");
 
 const getUserCoupons = async (req, res) => {
   try {
-    // ✅ FIXED: Match session variables with checkout controller
+    //  Match session variables with checkout controller
     const userId = req.session.userId || req.session.googleUserId;
     
     if (!userId) {
@@ -25,7 +25,7 @@ const getUserCoupons = async (req, res) => {
 
 const applyCoupon = async (req, res) => {
   try {
-    // ✅ FIXED: Match session variables with checkout controller
+    //  Match session variables with checkout controller
     const userId = req.session.userId || req.session.googleUserId;
     
     if (!userId) {
@@ -117,7 +117,6 @@ const applyCoupon = async (req, res) => {
 
 const removeCoupon = async (req, res) => {
   try {
-    // ✅ FIXED: Match session variables
     const userId = req.session.userId || req.session.googleUserId;
     
     if (!userId) {

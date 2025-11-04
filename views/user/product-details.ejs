@@ -896,9 +896,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         wishlistCountElement: !!wishlistCountElement
     });
 
-    // ================================
     // QUANTITY CONTROLS
-    // ================================
     window.decrementQuantity = function () {
         let value = parseInt(quantityInput.value);
         if (value > 1) {
@@ -928,9 +926,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // ================================
     // ADD TO CART FUNCTIONALITY
-    // ================================
     if (addToCartBtn) {
         addToCartBtn.addEventListener('click', async function () {
             console.log(' Add to Cart clicked');
@@ -1028,9 +1024,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    // ================================
     // WISHLIST FUNCTIONALITY
-    // ================================
     if (wishlistBtn) {
         wishlistBtn.addEventListener('click', async function () {
             console.log(' Wishlist clicked');
@@ -1103,10 +1097,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         });
     }
-
-    // ================================
-    // RELATED PRODUCTS FUNCTIONALITY
-    // ================================
     
     // Related products - Add to Cart
     const relatedAddToCartButtons = document.querySelectorAll('.related-products .add-to-cart');
@@ -1254,9 +1244,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     });
 
-    // ================================
     // IMAGE ZOOMER INITIALIZATION
-    // ================================
     setTimeout(() => {
         console.log('🔍 Initializing image zoomer...');
         
@@ -1266,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (mainImage && zoomContainer) {
             console.log(' Found zoom elements');
             
-            // Try different zoomer function names (check your product-zoomer.js file)
+            //   zoomer function  ( product-zoomer.js )
             if (typeof magnify === 'function') {
                 console.log('Using magnify function');
                 magnify("mainImage", 3);
@@ -1286,10 +1274,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     }, 1000);
 });
 
-// ================================
-// HELPER FUNCTIONS
-// ================================
 
+// HELPER FUNCTIONS
 // Update navbar counts with animation
 function updateNavbarCount(selector, count) {
     const element = document.querySelector(selector);

@@ -382,11 +382,11 @@
         </div>
 </section>
 
-    <!-- ====================  SHOP CONTENT  ==================== -->
+    <!--  SHOP CONTENT  -->
 <section class="py-5 bg-white">
     <div class="container">
         <div class="row g-4">
-            <!-- =====  FILTER SIDEBAR  ===== -->
+            <!--  FILTER SIDEBAR   -->
             <div class="col-lg-3">
                 <div class="filters-container">
                     <h3 class="fs-5 fw-bold mb-4">Filters</h3>
@@ -636,7 +636,7 @@
                     </div>
                 <% } %>
 
-                <!-- Optional: Show results info when there are products -->
+                <!--  Show results info when there are products -->
                 <% if (products && products.length> 0) { %>
                     <div class="d-flex justify-content-center mt-3">
                         <small class="text-muted">
@@ -660,9 +660,9 @@
 
 
 <script>
-/* ------------------------------------------------------------------
+/* 
    TOAST NOTIFICATIONS
------------------------------------------------------------------- */
+ */
 function showToast(msg, type = 'success') {
     let box = document.getElementById('toast-container');
     if (!box) {
@@ -702,9 +702,9 @@ window.shopState = {
     isAuthenticated: <%= isAuthenticated ? 'true' : 'false' %>
 };
 
-/* ------------------------------------------------------------------
+/* 
    WISHLIST FUNCTIONS
------------------------------------------------------------------- */
+ */
 async function toggleWishlistFromShop(productId, btn) {
     if (!productId) {
         showToast('Product ID is required', 'error');

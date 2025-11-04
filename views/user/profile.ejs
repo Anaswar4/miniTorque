@@ -37,7 +37,7 @@
         <div class="row g-3">
             <!-- Profile Details Section -->
             <div class="col-12">
-                <div class="card-light p-3"> <!-- Reduced padding from p-4 to p-3 -->
+                <div class="card-light p-3"> 
                     <div class="text-center mb-4">
                         <h2 class="section-title mb-0">
                             <i class="fas fa-user"></i>
@@ -315,12 +315,12 @@
         }
     }
 
-    // 🔥 FIXED: Main profile photo functions
+    //  Main profile photo functions
     function triggerMainPhotoUpload() {
         document.getElementById('profilePhotoInput').click();
     }
 
-    // 🔥 FIXED: Delete profile photo with real-time updates
+    //  Delete profile photo with real-time updates
     async function deleteMainProfilePhoto() {
         const result = await Swal.fire({
             title: 'Delete Profile Photo?',
@@ -353,7 +353,7 @@
                         </div>
                     `;
 
-                    // 🔥 FIX: Update ALL sidebar photo containers (desktop + mobile)
+                    //  Update ALL sidebar photo containers (desktop + mobile)
                     const sidebarContainers = document.querySelectorAll('.profile-avatar-container');
                     sidebarContainers.forEach(container => {
                         container.innerHTML = `
@@ -364,7 +364,7 @@
                         `;
                     });
 
-                    // 🔥 FIX: Remove the delete button
+                    //  Remove the delete button
                     const deleteBtn = document.querySelector('.profile-photo-actions .btn-secondary-custom');
                     if (deleteBtn) {
                         deleteBtn.remove();
@@ -381,12 +381,12 @@
         }
     }
 
-    // 🔥 NEW: Photo upload handler with real-time updates
+    //  Photo upload handler with real-time updates
     document.addEventListener('DOMContentLoaded', function() {
         // Ensure profile section is active on page load
         showSection('profile');
 
-        // 🔥 ADD: Photo upload handler
+        //  Photo upload handler
         const profilePhotoInput = document.getElementById('profilePhotoInput');
         if (profilePhotoInput) {
             profilePhotoInput.addEventListener('change', async function(event) {
@@ -406,7 +406,7 @@
                     if (data.success && data.filename) {
                         const newPhotoUrl = `/uploads/profiles/${data.filename}?t=${Date.now()}`;
                         
-                        // 🔥 FIX: Update main profile photo immediately
+                        //  Update main profile photo immediately
                         const photoContainer = document.querySelector('.profile-photo-container');
                         photoContainer.innerHTML = `
                             <img src="${newPhotoUrl}" alt="Profile Photo" class="main-profile-img" id="mainProfileImg">
@@ -415,7 +415,7 @@
                             </div>
                         `;
 
-                        // 🔥 FIX: Update ALL sidebar photo containers (desktop + mobile)
+                        //  Update ALL sidebar photo containers (desktop + mobile)
                         const sidebarContainers = document.querySelectorAll('.profile-avatar-container');
                         sidebarContainers.forEach(container => {
                             container.innerHTML = `
@@ -426,7 +426,7 @@
                             `;
                         });
 
-                        // 🔥 FIX: Show remove button immediately
+                        //  Show remove button immediately
                         const actionsContainer = document.querySelector('.profile-photo-actions');
                         let removeBtn = actionsContainer.querySelector('.btn-secondary-custom');
                         if (!removeBtn) {
