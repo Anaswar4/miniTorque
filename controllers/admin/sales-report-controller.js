@@ -352,7 +352,7 @@ const salesReportController = {
                          margin, footerY + 15, { align: 'center', width: usableWidth });
             };
 
-            // Page 1: Header and Report Info
+            //  Header and Report Info
             addPageHeader();
             
             let currentY = margin + 100;
