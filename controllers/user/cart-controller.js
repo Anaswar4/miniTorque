@@ -2,6 +2,9 @@ const Cart = require('../../models/cart-schema');
 const Product = require('../../models/product-schema');
 const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model');
+const { calculateBestOffer } = require('../../utils/offer-utils'); 
+
+
 
 // Load cart page
 const loadCart = async (req, res) => {
@@ -20,7 +23,7 @@ const loadCart = async (req, res) => {
         path: 'items.productId',
         populate: {
           path: 'category',
-          select: 'name isListed isDeleted'
+          select: 'name isListed isDeleted categoryOffer'
         }
       });
 
@@ -41,16 +44,20 @@ const loadCart = async (req, res) => {
       //  Calculate cart count (total quantity of items)
       cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-      // Update prices with current product data
+      //  Update prices with offer prices
       let priceUpdatesNeeded = false;
-      cartItems.forEach(item => {
-        const currentPrice = item.productId.salePrice;
+      
+      // Use Promise.all for async operations
+      await Promise.all(cartItems.map(async item => {
+        const offerData = await calculateBestOffer(item.productId);
+        const currentPrice = offerData.finalPrice;
+        
         if (item.price !== currentPrice) {
           item.price = currentPrice;
           item.totalPrice = currentPrice * item.quantity;
           priceUpdatesNeeded = true;
         }
-      });
+      }));
 
       // Save updated prices to database if needed
       if (priceUpdatesNeeded) {
@@ -83,7 +90,7 @@ const loadCart = async (req, res) => {
 };
 
 
-// Add product to cart with comprehensive validation
+// Add product to cart with validation
 const addToCart = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -149,6 +156,10 @@ const addToCart = async (req, res) => {
       });
     }
 
+    //  Calculate offer price
+    const offerData = await calculateBestOffer(product);
+    const cartPrice = offerData.finalPrice;
+
     // Find or create user's cart
     let cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -185,15 +196,15 @@ const addToCart = async (req, res) => {
       }
 
       existingItem.quantity = newQuantity;
-      existingItem.price = product.salePrice;
-      existingItem.totalPrice = product.salePrice * newQuantity;
+      existingItem.price = cartPrice; 
+      existingItem.totalPrice = cartPrice * newQuantity; 
     } else {
       // Add new item
       cart.items.push({
         productId,
         quantity: parsedQuantity,
-        price: product.salePrice,
-        totalPrice: product.salePrice * parsedQuantity
+        price: cartPrice, 
+        totalPrice: cartPrice * parsedQuantity 
       });
     }
 
@@ -231,6 +242,7 @@ const addToCart = async (req, res) => {
   }
 };
 
+
 // Get cart count for navbar
 const getCartCount = async (req, res) => {
   try {
@@ -248,6 +260,7 @@ const getCartCount = async (req, res) => {
     res.json({ count: 0 });
   }
 };
+
 
 // Update cart item quantity
 const updateCartQuantity = async (req, res) => {
@@ -334,10 +347,14 @@ const updateCartQuantity = async (req, res) => {
       });
     }
 
-    // Update quantity and total price
+    //  Calculate offer price
+    const offerData = await calculateBestOffer(product);
+    const cartPrice = offerData.finalPrice;
+
+    // Update quantity and total price with offer price
     cart.items[itemIndex].quantity = parsedQuantity;
-    cart.items[itemIndex].price = product.salePrice;
-    cart.items[itemIndex].totalPrice = product.salePrice * parsedQuantity;
+    cart.items[itemIndex].price = cartPrice; 
+    cart.items[itemIndex].totalPrice = cartPrice * parsedQuantity; 
 
     await cart.save();
 
@@ -358,6 +375,7 @@ const updateCartQuantity = async (req, res) => {
     });
   }
 };
+
 
 // Remove item from cart
 const removeFromCart = async (req, res) => {

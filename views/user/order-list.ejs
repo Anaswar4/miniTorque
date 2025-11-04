@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/css/user/order-list.css">
     </head>
 <body>
-    <!-- Main Content -->
+<!-- Main Content -->
     <div class="main-content fade-in">
         <!-- Breadcrumb -->
         <div class="breadcrumb-container">
@@ -27,17 +27,20 @@
             </nav>
         </div>
 
+
         <!-- Page Header -->
         <div class="page-header fade-in">
             <h1><i class="fas fa-shopping-bag"></i> My Orders</h1>
             <p>Track and manage your purchases</p>
         </div>
 
+
         <!-- Orders Container -->
         <div class="orders-container fade-in">
             <div class="orders-header">
                 <h2><i class="fas fa-list"></i> Order History</h2>
             </div>
+
 
             <% if (orders && orders.length > 0) { %>
                 <div class="orders-grid">
@@ -54,6 +57,7 @@
                                     <%= order.status %>
                                 </div>
                             </div>
+
 
                             <div class="order-info">
                                 <div class="order-date">
@@ -86,6 +90,7 @@
                                 </div>
                             </div>
 
+
                             <div class="order-items">
                                 <h6><i class="fas fa-box"></i> Items (<%= order.orderedItems.length %>)</h6>
                                 <div class="items-preview">
@@ -107,6 +112,7 @@
                                     <% } %>
                                 </div>
                             </div>
+
 
                             <div class="order-actions">
                                 <a href="/order-details/<%= order.orderId %>" class="btn-view-details">
@@ -131,6 +137,74 @@
                         </div>
                     <% }); %>
                 </div>
+
+                <!-- PAGINATION STARTS HERE -->
+                <% if (totalPages > 1) { %>
+                    <div class="pagination-container">
+                        <!-- Results Info -->
+                        <div class="results-info">
+                            Showing <%= ((currentPage - 1) * limit) + 1 %> to 
+                            <%= Math.min(currentPage * limit, totalOrders) %> of 
+                            <%= totalOrders %> orders
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="pagination-wrapper">
+                            <!-- Previous Button -->
+                            <% if (currentPage > 1) { %>
+                                <a href="?page=<%= currentPage - 1 %>" class="page-btn">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            <% } else { %>
+                                <span class="page-btn disabled">
+                                    <i class="fas fa-chevron-left"></i>
+                                </span>
+                            <% } %>
+
+                            <!-- Page Numbers with Ellipsis -->
+                            <% 
+                                let startPage = Math.max(1, currentPage - 2);
+                                let endPage = Math.min(totalPages, currentPage + 2);
+                                
+                                if (startPage > 1) { 
+                            %>
+                                <a href="?page=1" class="page-btn">1</a>
+                                <% if (startPage > 2) { %>
+                                    <span class="page-ellipsis">...</span>
+                                <% } %>
+                            <% } %>
+
+                            <% for (let i = startPage; i <= endPage; i++) { %>
+                                <a href="?page=<%= i %>" 
+                                   class="page-btn <%= currentPage === i ? 'active' : '' %>">
+                                    <%= i %>
+                                </a>
+                            <% } %>
+
+                            <% if (endPage < totalPages) { %>
+                                <% if (endPage < totalPages - 1) { %>
+                                    <span class="page-ellipsis">...</span>
+                                <% } %>
+                                <a href="?page=<%= totalPages %>" class="page-btn">
+                                    <%= totalPages %>
+                                </a>
+                            <% } %>
+
+                            <!-- Next Button -->
+                            <% if (currentPage < totalPages) { %>
+                                <a href="?page=<%= currentPage + 1 %>" class="page-btn">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <% } else { %>
+                                <span class="page-btn disabled">
+                                    <i class="fas fa-chevron-right"></i>
+                                </span>
+                            <% } %>
+                        </div>
+                    </div>
+                <% } %>
+               
+
             <% } else { %>
                 <!-- Empty State -->
                 <div class="empty-state">
@@ -142,8 +216,10 @@
                     </a>
                 </div>
             <% } %>
+            
         </div>
     </div>
+
 
     <!-- Toast Container -->
     <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>

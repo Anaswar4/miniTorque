@@ -1,10 +1,14 @@
 const Wishlist = require('../../models/wishlist-schema');
 const User = require('../../models/user-model'); const Cart = require('../../models/cart-schema');
+ const { calculateBestOffer } = require('../../utils/offer-utils'); 
+
+
 
 // Load wishlist listing page
 const loadWishlist = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
+    const { calculateBestOffer } = require('../../utils/offer-utils'); 
     
     // Get user data for sidebar
     const user = await User.findById(userId).select('fullName email profilePhoto');
@@ -30,10 +34,10 @@ const loadWishlist = async (req, res) => {
       })
       .sort({ 'products.addedOn': -1 });
     
-    // Filter out products that are no longer available
+    //  Filter and map with Promise.all() for async operations
     let wishlistProducts = [];
     if (wishlist && wishlist.products) {
-      wishlistProducts = wishlist.products.filter(item => {
+      const filteredProducts = wishlist.products.filter(item => {
         const product = item.productId;
         const isValid = product &&
                !product.isDeleted &&
@@ -44,10 +48,30 @@ const loadWishlist = async (req, res) => {
                product.category.isListed;
         return isValid;
       });
+
+      wishlistProducts = await Promise.all(
+        filteredProducts.map(async item => {
+          const offerData = await calculateBestOffer(item.productId);
+          
+          return {
+            ...item.toObject ? item.toObject() : item,
+            productId: {
+              ...item.productId.toObject ? item.productId.toObject() : item.productId,
+              hasOffer: offerData.hasOffer,
+              finalPrice: offerData.finalPrice,
+              discountAmount: offerData.discountAmount,
+              offerPercentage: offerData.offerPercentage,
+              offerType: offerData.offerType
+            }
+          };
+        })
+      );
     }
 
     // Calculate wishlist count
     const wishlistCount = wishlistProducts.length;
+    
+   
 
     res.render('user/wishlist', {
       user,

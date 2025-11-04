@@ -12,9 +12,9 @@ const path = require("path");
 const fs = require("fs");
 const { validateEmailFormat } = require("../../validator/addressValidator");
 
-/* ------------------------------------------------------------------
+/* 
    1. PROFILE PAGES
--------------------------------------------------------------------*/
+*/
 const loadProfile = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -243,9 +243,9 @@ const updateProfileData = async (req, res) => {
   }
 };
 
-/* ------------------------------------------------------------------
+/* 
    3. EMAIL CHANGE  
--------------------------------------------------------------------*/
+*/
 const verifyCurrentEmail = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -392,9 +392,9 @@ const changeEmail = async (req, res) => {
 };
 
 
-/* ------------------------------------------------------------------
+/* 
    4. PASSWORD UPDATE
--------------------------------------------------------------------*/
+*/
 const updatePassword = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -436,9 +436,9 @@ const updatePassword = async (req, res) => {
   }
 };
 
-/* ------------------------------------------------------------------
-   5. PROFILE PHOTO  (upload & delete)
--------------------------------------------------------------------*/
+/* 
+   5. PROFILE PHOTO  
+*/
 const uploadProfilePhoto = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
@@ -500,9 +500,9 @@ const deleteProfilePhoto = async (req, res) => {
   }
 };
 
-/* ------------------------------------------------------------------
+/* 
    6. LOGOUT
--------------------------------------------------------------------*/
+*/
 const logout = (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;

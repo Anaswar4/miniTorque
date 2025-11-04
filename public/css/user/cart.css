@@ -134,6 +134,43 @@
     .low-stock {
         color: #d97706;
     }
+    /* Style the discount badge to look like first image */
+.item-total-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.item-discount-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    color: #059669;
+    font-weight: 600;
+    background: rgba(5, 150, 105, 0.08);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.item-discount-badge:empty {
+    display: none;
+}
+
+/* Add tag icon to discount badge */
+.item-discount-badge::before {
+    content: '\f02b'; /* Font Awesome tag icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.75rem;
+    color: white;
+    background: #059669;
+    padding: 2px 3px;
+    border-radius: 3px;
+    margin-right: 0.25rem;
+}
+
 
     /* Quantity Controls */
     .quantity-controls {

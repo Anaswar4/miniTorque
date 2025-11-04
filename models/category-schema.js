@@ -8,6 +8,12 @@ const categorySchema = new Schema({
     unique: true,
     trim: true
   },
+  categoryOffer: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
   description: {
     type: String,
     required: true,
@@ -22,6 +28,24 @@ const categorySchema = new Schema({
     default: false
   }
 }, { timestamps: true });
+
+categorySchema.pre('save', async function(next) {
+  if (this.isModified('name')) {
+    const exists = await this.constructor.findOne({
+      name: new RegExp(`^${this.name}$`, 'i'),
+      $or: [
+        { isDeleted: false },
+        { isDeleted: { $exists: false } }
+      ]
+    });
+    if (exists && exists._id.toString() !== this._id.toString()) {
+      const err = new Error('A category with this name already exists.');
+      err.statusCode = 409;
+      return next(err);
+    }
+  }
+  next();
+});
 
 
 const Category = mongoose.model('Category', categorySchema);

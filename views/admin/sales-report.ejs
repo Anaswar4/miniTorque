@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report - miniTorque</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
+     <link rel="stylesheet" href="/css/admin/sales-report-style.css"/>
+</head>
+<body>
+    <!-- Include Admin Sidebar -->
+     <%- include("../partials/sidebar") %>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Breadcrumbs -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin-dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Sales Report</li>
+            </ol>
+        </nav>
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="page-title">Sales Report</h1>
+                    <p class="page-subtitle">Comprehensive sales analytics and performance insights</p>
+                </div>
+                <div class="header-right">
+                    <div class="export-actions">
+                        <button type="button" class="export-btn pdf-btn" id="exportPDF">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Export PDF</span>
+                        </button>
+                        <button type="button" class="export-btn excel-btn" id="exportExcel">
+                            <i class="fas fa-file-excel"></i>
+                            <span>Export Excel</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Error:</strong> <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+
+        <!-- Filters Section -->
+        <div class="filters-card">
+            <div class="filters-header">
+                <h3 class="filters-title">
+                    <i class="fas fa-filter"></i>
+                    Filter Options
+                </h3>
+            </div>
+            <form id="filterForm" method="GET" action="/admin/sales-report">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">Time Period</label>
+                        <select class="form-select" name="timePeriod" id="timePeriod">
+                            <option value="monthly" <%= filters.timePeriod === 'monthly' ? 'selected' : '' %>>Monthly (Last 30 Days)</option>
+                            <option value="weekly" <%= filters.timePeriod === 'weekly' ? 'selected' : '' %>>Weekly (Last 7 Days)</option>
+                            <option value="yearly" <%= filters.timePeriod === 'yearly' ? 'selected' : '' %>>Yearly (Last 365 Days)</option>
+                            <option value="custom" <%= filters.timePeriod === 'custom' ? 'selected' : '' %>>Custom Date Range</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group custom-date-group" id="customDateGroup" style="display: <%= filters.timePeriod === 'custom' ? 'block' : 'none' %>;">
+                        <label class="filter-label">From Date</label>
+                        <input type="date" class="form-control" name="startDate" id="startDate" 
+                               value="<%= filters.startDate || '' %>" 
+                               max="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+                    
+                    <div class="filter-group custom-date-group" id="customDateGroup2" style="display: <%= filters.timePeriod === 'custom' ? 'block' : 'none' %>;">
+                        <label class="filter-label">To Date</label>
+                        <input type="date" class="form-control" name="endDate" id="endDate" 
+                               value="<%= filters.endDate || '' %>" 
+                               max="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Payment Method</label>
+                        <select class="form-select" name="paymentMethod" id="paymentMethod">
+                            <option value="all" <%= filters.paymentMethod === 'all' ? 'selected' : '' %>>All Methods</option>
+                            <option value="online" <%= filters.paymentMethod === 'online' ? 'selected' : '' %>>Online</option>
+                            <option value="wallet" <%= filters.paymentMethod === 'wallet' ? 'selected' : '' %>>Wallet</option>
+                            <option value="cod" <%= filters.paymentMethod === 'cod' ? 'selected' : '' %>>Cash on Delivery</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Order Status</label>
+                        <select class="form-select" name="orderStatus" id="orderStatus">
+                            <option value="all" <%= filters.orderStatus === 'all' ? 'selected' : '' %>>All Statuses</option>
+                            <option value="delivered" <%= filters.orderStatus === 'delivered' ? 'selected' : '' %>>Delivered</option>
+                            <option value="cancelled" <%= filters.orderStatus === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                            <option value="returned" <%= filters.orderStatus === 'returned' ? 'selected' : '' %>>Returned</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group filter-actions">
+                        <button type="submit" class="apply-filters-btn">
+                            <i class="fas fa-search"></i>
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card revenue-card">
+                    <div class="stat-content">
+                        <div class="stat-value">₹<%= salesStats.totalRevenue ? salesStats.totalRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+
+                <div class="stat-card orders-card">
+                    <div class="stat-content">
+                        <div class="stat-value"><%= salesStats.totalOrders || 0 %></div>
+                        <div class="stat-label">Total Orders</div>
+                    </div>
+                </div>
+
+                <div class="stat-card average-card">
+                    <div class="stat-content">
+                        <div class="stat-value">₹<%= salesStats.averageOrder ? salesStats.averageOrder.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div>
+                        <div class="stat-label">Average Order Value</div>
+                    </div>
+                </div>
+
+                <div class="stat-card discount-card">
+                    <div class="stat-content">
+                        <div class="stat-value">₹<%= salesStats.totalDiscount ? salesStats.totalDiscount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div>
+                        <div class="stat-label">Total Discounts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Analysis Section -->
+        <div class="analysis-card">
+            <div class="card-header">
+                <div class="header-left">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Sales Analysis
+                    </h3>
+                    <p class="card-subtitle">Daily breakdown of sales performance</p>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Period</th>
+                            <th>Orders</th>
+                            <th>Revenue</th>
+                            <th>Discount</th>
+                            <th>Net Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (dailyAnalysis && dailyAnalysis.length > 0) { %>
+                            <% dailyAnalysis.forEach(function(item) { %>
+                                <tr>
+                                    <td>
+                                        <div class="date-cell">
+                                            <i class="fas fa-calendar-day"></i>
+                                            <span><%= item.date %></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="order-badge"><%= item.orders %></span>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell positive">
+                                            ₹<%= item.revenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell discount">
+                                            ₹<%= item.discount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell net">
+                                            ₹<%= item.netRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                            <tr class="total-row">
+                                <td>
+                                    <div class="total-label">
+                                        <i class="fas fa-calculator"></i>
+                                        <strong>TOTAL</strong>
+                                    </div>
+                                </td>
+                                <td><span class="order-badge total"><%= salesStats.totalOrders || 0 %></span></td>
+                                <td><div class="amount-cell total">₹<%= salesStats.totalRevenue ? salesStats.totalRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div></td>
+                                <td><div class="amount-cell total">₹<%= salesStats.totalDiscount ? salesStats.totalDiscount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div></td>
+                                <td><div class="amount-cell total">₹<%= salesStats.netRevenue ? salesStats.netRevenue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %></div></td>
+                            </tr>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="5" class="no-data">
+                                    <div class="no-data-content">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>No data available for the selected period</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Order Details Section -->
+        <div class="orders-card">
+            <div class="card-header">
+                <div class="header-left">
+                    <h3 class="card-title">
+                        <i class="fas fa-list-alt"></i>
+                        Order Details
+                    </h3>
+                    <p class="card-subtitle">Detailed view of individual orders</p>
+                </div>
+                <div class="header-right">
+                    <div class="records-info">
+                        <span class="records-count"><%= pagination.totalOrders %> orders</span>
+                        <span class="page-info">Page <%= pagination.currentPage %> of <%= pagination.totalPages %></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th>Discount</th>
+                            <th>Final Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (orders && orders.length > 0) { %>
+                            <% orders.forEach(function(order) { %>
+                                <tr>
+                                    <td>
+                                        <a href="/admin/get-orders/<%= order._id %>/details" class="order-link">
+                                            <i class="fas fa-external-link-alt"></i>
+                                            <%= order.orderId %>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="date-cell">
+                                            <i class="fas fa-calendar"></i>
+                                            <span><%= order.date %></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="customer-cell">
+                                            <div class="customer-avatar">
+                                               <%= order.customer ? order.customer.charAt(0).toUpperCase() : 'G' %>
+
+                                            </div>
+                                            <span><%= order.customer || 'Guest' %></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="payment-badge payment-<%= (order.paymentMethod || 'unknown').toLowerCase() %>">
+                                            <%= (order.paymentMethod || 'Unknown').charAt(0).toUpperCase() + (order.paymentMethod || 'Unknown').slice(1) %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-<%= (order.status || 'pending').toLowerCase() %>">
+                                            <%= (order.status || 'Pending').charAt(0).toUpperCase() + (order.status || 'Pending').slice(1) %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell">
+                                            ₹<%= order.amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell discount">
+                                            ₹<%= order.discount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="amount-cell final">
+                                            ₹<%= order.finalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="8" class="no-data">
+                                    <div class="no-data-content">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <span>No orders found for the selected criteria</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (pagination.totalPages > 1) { %>
+                <div class="pagination-wrapper">
+                    <div class="pagination-container">
+                        <% 
+                            let queryParams = `timePeriod=${filters.timePeriod}&paymentMethod=${filters.paymentMethod}&orderStatus=${filters.orderStatus}`;
+                            if (filters.timePeriod === 'custom' && filters.startDate && filters.endDate) {
+                                queryParams += `&startDate=${filters.startDate}&endDate=${filters.endDate}`;
+                            }
+                        %>
+                        
+                        <% if (pagination.hasPrev) { %>
+                            <a href="?page=<%= pagination.currentPage - 1 %>&<%= queryParams %>" class="pagination-btn">
+                                <i class="fas fa-chevron-left"></i>
+                                Previous
+                            </a>
+                        <% } %>
+                        
+                        <div class="pagination-numbers">
+                            <% for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) { %>
+                                <a href="?page=<%= i %>&<%= queryParams %>" 
+                                   class="pagination-number <%= i === pagination.currentPage ? 'active' : '' %>">
+                                    <%= i %>
+                                </a>
+                            <% } %>
+                        </div>
+                        
+                        <% if (pagination.hasNext) { %>
+                            <a href="?page=<%= pagination.currentPage + 1 %>&<%= queryParams %>" class="pagination-btn">
+                                Next
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Export functionality
+        document.getElementById('exportPDF').addEventListener('click', function() {
+            const currentParams = new URLSearchParams(window.location.search);
+            const exportUrl = `/admin/sales-report/export-pdf?${currentParams.toString()}`;
+            
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Generating...</span>';
+            this.disabled = true;
+            
+            window.open(exportUrl, '_blank');
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-file-pdf"></i><span>Export PDF</span>';
+                this.disabled = false;
+            }, 2000);
+        });
+
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            const currentParams = new URLSearchParams(window.location.search);
+            const exportUrl = `/admin/sales-report/export-excel?${currentParams.toString()}`;
+            
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Generating...</span>';
+            this.disabled = true;
+            
+            window.open(exportUrl, '_blank');
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-file-excel"></i><span>Export Excel</span>';
+                this.disabled = false;
+            }, 2000);
+        });
+
+        // Handle filter form submission
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            const timePeriod = document.getElementById('timePeriod').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const applyBtn = document.querySelector('.apply-filters-btn');
+            
+            // Auto-set timePeriod to custom if custom dates are provided
+            if ((startDate || endDate) && timePeriod !== 'custom') {
+                document.getElementById('timePeriod').value = 'custom';
+            }
+            
+            if (timePeriod === 'custom' || startDate || endDate) {
+                if (!startDate || !endDate) {
+                    e.preventDefault();
+                    alert('Please select both start and end dates for custom date range.');
+                    return false;
+                }
+                
+                if (new Date(startDate) > new Date(endDate)) {
+                    e.preventDefault();
+                    alert('Start date cannot be later than end date.');
+                    return false;
+                }
+                
+                const daysDiff = (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24);
+                if (daysDiff > 365) {
+                    const confirmLargeRange = window.confirm('You have selected a date range longer than 1 year. This may take longer to process. Continue?');
+                    if (!confirmLargeRange) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+            
+            applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Applying...';
+            applyBtn.disabled = true;
+        });
+
+        // Handle time period change
+        document.getElementById('timePeriod').addEventListener('change', function() {
+            const customDateGroups = document.querySelectorAll('.custom-date-group');
+            const isCustom = this.value === 'custom';
+            
+            customDateGroups.forEach(function(group) {
+                if (isCustom) {
+                    group.style.display = 'block';
+                    const dateInputs = group.querySelectorAll('input[type="date"]');
+                    dateInputs.forEach(input => input.required = true);
+                } else {
+                    group.style.display = 'none';
+                    const dateInputs = group.querySelectorAll('input[type="date"]');
+                    dateInputs.forEach(input => {
+                        input.required = false;
+                        // Clear date values when switching away from custom
+                        if (!isCustom) {
+                            input.value = '';
+                        }
+                    });
+                }
+            });
+        });
+
+        // Auto-show custom date fields when dates are manually entered
+        document.getElementById('startDate').addEventListener('input', function() {
+            if (this.value && document.getElementById('timePeriod').value !== 'custom') {
+                document.getElementById('timePeriod').value = 'custom';
+                document.getElementById('timePeriod').dispatchEvent(new Event('change'));
+            }
+        });
+
+        document.getElementById('endDate').addEventListener('input', function() {
+            if (this.value && document.getElementById('timePeriod').value !== 'custom') {
+                document.getElementById('timePeriod').value = 'custom';
+                document.getElementById('timePeriod').dispatchEvent(new Event('change'));
+            }
+        });
+
+        // Date validation
+        document.getElementById('startDate').addEventListener('change', function() {
+            const endDate = document.getElementById('endDate');
+            if (this.value) {
+                endDate.min = this.value;
+            }
+        });
+
+        document.getElementById('endDate').addEventListener('change', function() {
+            const startDate = document.getElementById('startDate');
+            if (this.value) {
+                startDate.max = this.value;
+            }
+        });
+
+        // Reset button state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const applyBtn = document.querySelector('.apply-filters-btn');
+            if (applyBtn) {
+                applyBtn.innerHTML = '<i class="fas fa-search"></i>Apply Filters';
+                applyBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

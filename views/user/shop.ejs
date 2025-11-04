@@ -362,7 +362,7 @@
 <body>
 
     <!-- ====================  SHOP HEADER  ==================== -->
-    <section class="shop-header">
+<section class="shop-header">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
@@ -380,317 +380,289 @@
                 </div>
             </div>
         </div>
-    </section>
+</section>
 
-    <!-- ====================  SHOP CONTENT  ==================== -->
-    <section class="py-5 bg-white">
-        <div class="container">
-            <div class="row g-4">
-                <!-- =====  FILTER SIDEBAR  ===== -->
-                <div class="col-lg-3">
-                    <div class="filters-container">
-                        <h3 class="fs-5 fw-bold mb-4">Filters</h3>
+    <!--  SHOP CONTENT  -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row g-4">
+            <!--  FILTER SIDEBAR   -->
+            <div class="col-lg-3">
+                <div class="filters-container">
+                    <h3 class="fs-5 fw-bold mb-4">Filters</h3>
 
-                        <form method="GET" action="/shopPage" id="filterForm" novalidate>
-                            <!-- Search -->
-                            <div class="filter-group">
-                                <label class="filter-label">Search Products</label>
-                                <input type="text" name="search" class="form-control"
-                                    placeholder="Search by name or brand..." value="<%= filters.search %>"
-                                    maxlength="100">
-                            </div>
-
-                            <!-- Categories -->
-                            <div class="filter-group">
-                                <label class="filter-label">Categories</label>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="category" value="all"
-                                        id="allCategories" <%=!filters.category || filters.category==='all' ? 'checked'
-                                        : '' %>>
-                                    <label class="form-check-label" for="allCategories">All Categories</label>
-                                </div>
-                                <% if (categories && categories.length){ %>
-                                    <% categories.forEach(cat=>{ %>
-                                        <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" name="category"
-                                                value="<%= cat._id %>" id="cat_<%= cat._id %>"
-                                                <%=filters.category===cat._id.toString() ? 'checked' : '' %>
-                                            <label class="form-check-label" for="cat_<%= cat._id %>">
-                                                <%= cat.name %>
-                                            </label>
-                                        </div>
-                                        <% }) %>
-                                            <% } %>
-                            </div>
-
-                            <!-- Price -->
-                            <div class="filter-group">
-                                <label class="filter-label">Price Range (Optional)</label>
-                                <div class="d-flex gap-2">
-                                    <div class="flex-fill">
-                                        <input type="number" name="minPrice" id="minPriceInput" class="form-control"
-                                            placeholder="Min ₹" min="0" max="999999" step="1"
-                                            value="<%= filters.minPrice %>">
-                                        <div id="minPriceMessage" class="validation-message"></div>
-                                    </div>
-                                    <div class="flex-fill">
-                                        <input type="number" name="maxPrice" id="maxPriceInput" class="form-control"
-                                            placeholder="Max ₹" min="0" max="999999" step="1"
-                                            value="<%= filters.maxPrice %>">
-                                        <div id="maxPriceMessage" class="validation-message"></div>
-                                    </div>
-                                </div>
-                                <div id="priceRangeMessage" class="validation-message"></div>
-                                <small class="text-muted mt-1">Leave empty to show all prices</small>
-                            </div>
-
-                            <!-- Availability -->
-                            <div class="filter-group">
-                                <label class="filter-label">Availability</label>
-                                <select name="availability" class="filter-select">
-                                    <option value="">All Products</option>
-                                    <option value="in-stock" <%=filters.availability==='in-stock' ? 'selected' : '' %>
-                                        >In Stock</option>
-                                    <option value="on-sale" <%=filters.availability==='on-sale' ? 'selected' : '' %>>On
-                                        Sale</option>
-                                </select>
-                            </div>
-
-                            <!-- Sort -->
-                            <div class="filter-group">
-                                <label class="filter-label">Sort By</label>
-                                <select name="sort" class="filter-select">
-                                    <option value="newest" <%=filters.sort==='newest' ? 'selected' :'' %>>Newest First
-                                    </option>
-                                    <option value="oldest" <%=filters.sort==='oldest' ? 'selected' :'' %>>Oldest First
-                                    </option>
-                                    <option value="price-low" <%=filters.sort==='price-low' ? 'selected' :'' %>>Price:
-                                        Low to High</option>
-                                    <option value="price-high" <%=filters.sort==='price-high' ? 'selected' :'' %>>Price:
-                                        High to Low</option>
-                                    <option value="name-az" <%=filters.sort==='name-az' ? 'selected' :'' %>>Name: A to Z
-                                    </option>
-                                    <option value="name-za" <%=filters.sort==='name-za' ? 'selected' :'' %>>Name: Z to A
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- Buttons -->
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-dark flex-fill" id="applyFiltersBtn">
-                                    <i class="fas fa-filter me-1"></i>Apply Filters
-                                </button>
-                                <a href="/shopPage" class="btn btn-outline-secondary flex-fill text-center">
-                                    <i class="fas fa-refresh me-1"></i>Reset
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- =====  PRODUCT GRID  ===== -->
-                <div class="col-lg-9">
-                    <!-- Header -->
-                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap products-header">
-                        <div class="products-count mb-2 mb-md-0">
-                            <span class="fw-medium">
-                                Showing
-                                <% if (products && products.length){ %>
-                                    <% const startItem=(pagination.currentPage-1)*12+1; %>
-                                        <% const endItem=Math.min(pagination.currentPage*12,totalProducts); %>
-                                            <%= startItem %> to <%= endItem %>
-                                                    <% } else { %>0<% } %>
-                                                            of <%= totalProducts %> products
-                            </span>
+                    <form method="GET" action="/shopPage" id="filterForm" novalidate>
+                        <!-- Search -->
+                        <div class="filter-group">
+                            <label class="filter-label">Search Products</label>
+                            <input type="text" name="search" class="form-control"
+                                placeholder="Search by name or brand..." value="<%= filters.search %>"
+                                maxlength="100">
                         </div>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2 text-muted d-none d-sm-block">View:</span>
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm active"><i
-                                        class="fas fa-th"></i></button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm"><i
-                                        class="fas fa-list"></i></button>
+
+                        <!-- Categories -->
+                        <div class="filter-group">
+                            <label class="filter-label">Categories</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="category" value="all"
+                                    id="allCategories" <%=!filters.category || filters.category==='all' ? 'checked'
+                                    : '' %>>
+                                <label class="form-check-label" for="allCategories">All Categories</label>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Grid -->
-                    <div class="row g-4" id="productGrid">
-                        <% if (products && products.length){ %>
-                            <% products.forEach(product=>{ %>
-                                <div class="col-6 col-md-4 col-lg-3">
-                                    <div class="product-card">
-                                        <div class="product-image-container">
-                                            <% if (product.productOffer && product.productOffer>0){ %>
-                                                <div class="product-badge">
-                                                    <%= product.productOffer %>% OFF
-                                                </div>
-                                                <% } %>
-
-                                                    <!--  UPDATED WISHLIST BUTTON -->
-                                                    <button
-                                                        class="wishlist-icon <%= userWishlistIds.includes(product._id.toString()) ? 'active' : '' %>"
-                                                        data-product-id="<%= product._id %>"
-                                                        onclick="toggleWishlistFromShop('<%= product._id %>', this)"
-                                                        title="<%= userWishlistIds.includes(product._id.toString()) ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
-                                                        <i
-                                                            class="<%= userWishlistIds.includes(product._id.toString()) ? 'fas fa-heart text-danger' : 'far fa-heart' %>"></i>
-                                                    </button>
-
-                                                    <img src="/uploads/products/<%= product.mainImage %>"
-                                                        class="product-image" alt="<%= product.productName %>"
-                                                        onerror="this.src='/assets/placeholder.jpg'"
-                                                        onclick="viewProduct('<%= product._id %>')">
-                                        </div>
-                                        <div class="product-info">
-                                            <div class="product-brand">
-                                                <%= product.brand %>
-                                            </div>
-                                            <h5 class="product-title" title="<%= product.productName %>">
-                                                <%= product.productName %>
-                                            </h5>
-                                            <div class="product-price">
-                                                <div class="price-section">
-                                                    <% if (product.productOffer && product.productOffer>0){ %>
-                                                        <% const
-                                                            finalPrice=(product.salePrice*(1-product.productOffer/100)).toFixed(2);
-                                                            %>
-                                                            <span class="current-price">₹<%= finalPrice %></span>
-                                                            <span class="original-price">₹<%=
-                                                                    product.salePrice.toFixed(2) %></span>
-                                                            <% } else { %>
-                                                                <span class="current-price">₹<%=
-                                                                        product.salePrice.toFixed(2) %></span>
-                                                                <% } %>
-                                                </div>
-                                                <button class="add-to-cart" onclick="addToCart('<%= product._id %>')"
-                                                    <%=product.quantity===0 ? 'disabled' : '' %>
-                                                    title="<%= product.quantity===0 ? 'Out of Stock' : 'Add to Cart' %>
-                                                        ">
-                                                        <i
-                                                            class="fas fa-<%= product.quantity === 0 ? 'times' : 'plus' %>"></i>
-                                                </button>
-                                            </div>
-                                        </div>
+                            <% if (categories && categories.length){ %>
+                                <% categories.forEach(cat=>{ %>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="category"
+                                            value="<%= cat._id %>" id="cat_<%= cat._id %>"
+                                            <%=filters.category===cat._id.toString() ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="cat_<%= cat._id %>">
+                                            <%= cat.name %>
+                                        </label>
                                     </div>
-                                </div>
                                 <% }) %>
-                                    <% } else { %>
-                                        <div class="col-12 text-center py-5">
-                                            <i class="fas fa-search fa-3x text-muted mb-3" style="opacity:.3;"></i>
-                                            <h3 class="mb-3">No Products Found</h3>
-                                            <p class="text-muted mb-4">We couldn't find any products matching your
-                                                criteria.</p>
-                                            <a href="/shopPage" class="btn btn-primary"><i
-                                                    class="fas fa-refresh me-2"></i>Clear All Filters</a>
-                                        </div>
-                                        <% } %>
-                    </div>
-
-
-                    <!-- Pagination -->
-                    <% if (pagination && pagination.totalPages> 1) { %>
-                        <div class="d-flex justify-content-center mt-5">
-                            <nav aria-label="Product pagination">
-                                <ul class="pagination">
-                                    <!-- Previous Page Button -->
-                                    <li class="page-item <%= pagination.hasPrevPage ? '' : 'disabled' %>">
-                                        <a class="page-link"
-                                            href="<%= pagination.hasPrevPage ? `?page=${pagination.prevPage}${queryString}` : '#' %>"
-                                            aria-label="Previous Page" <%=!pagination.hasPrevPage ? 'tabindex="-1"' : ''
-                                            %>>
-                                            <i class="fas fa-chevron-left"></i>
-                                        </a>
-                                    </li>
-
-                                    <!-- First page and ellipsis logic -->
-                                    <% if (pagination.currentPage> 3 && pagination.totalPages > 5) { %>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page=1<%= queryString %>">1</a>
-                                        </li>
-                                        <% if (pagination.currentPage> 4) { %>
-                                            <li class="page-item disabled">
-                                                <span class="page-link">...</span>
-                                            </li>
-                                            <% } %>
-                                                <% } %>
-
-                                                    <!-- Page numbers -->
-                                                    <% pagination.pages.forEach(pg=> { %>
-                                                        <li
-                                                            class="page-item <%= pg === pagination.currentPage ? 'active' : '' %>">
-                                                            <a class="page-link"
-                                                                href="?page=<%= pg %><%= queryString %>"
-                                                                <%=pg===pagination.currentPage ? 'aria-current="page"'
-                                                                : '' %>>
-                                                                <%= pg %>
-                                                            </a>
-                                                        </li>
-                                                        <% }) %>
-
-                                                            <!-- Last page and ellipsis logic -->
-                                                            <% if (pagination.currentPage < pagination.totalPages - 2 &&
-                                                                pagination.totalPages> 5) { %>
-                                                                <% if (pagination.currentPage < pagination.totalPages -
-                                                                    3) { %>
-                                                                    <li class="page-item disabled">
-                                                                        <span class="page-link">...</span>
-                                                                    </li>
-                                                                    <% } %>
-                                                                        <li class="page-item">
-                                                                            <a class="page-link"
-                                                                                href="?page=<%= pagination.totalPages %><%= queryString %>">
-                                                                                <%= pagination.totalPages %>
-                                                                            </a>
-                                                                        </li>
-                                                                        <% } %>
-
-                                                                            <!-- Next Page Button -->
-                                                                            <li
-                                                                                class="page-item <%= pagination.hasNextPage ? '' : 'disabled' %>">
-                                                                                <a class="page-link"
-                                                                                    href="<%= pagination.hasNextPage ? `?page=${pagination.nextPage}${queryString}` : '#' %>"
-                                                                                    aria-label="Next Page"
-                                                                                    <%=!pagination.hasNextPage
-                                                                                    ? 'tabindex="-1"' : '' %>>
-                                                                                    <i class="fas fa-chevron-right"></i>
-                                                                                </a>
-                                                                            </li>
-                                </ul>
-                            </nav>
+                            <% } %>
                         </div>
-                        <% } %>
 
-                            <!-- Optional: Show results info when there are products -->
-                            <% if (products && products.length> 0) { %>
-                                <div class="d-flex justify-content-center mt-3">
-                                    <small class="text-muted">
-                                        <% if (pagination && pagination.totalProducts> 0) { %>
-                                            Showing <%= (pagination.currentPage - 1) * 12 + 1 %> to
-                                                <%= Math.min(pagination.currentPage * 12, pagination.totalProducts) %>
-                                                    of <%= pagination.totalProducts %> products
-                                                        <% } else { %>
-                                                            Showing <%= products.length %> product<%= products.length
-                                                                    !==1 ? 's' : '' %>
-                                                                    <% } %>
-                                    </small>
+                        <!-- Price -->
+                        <div class="filter-group">
+                            <label class="filter-label">Price Range (Optional)</label>
+                            <div class="d-flex gap-2">
+                                <div class="flex-fill">
+                                    <input type="number" name="minPrice" id="minPriceInput" class="form-control"
+                                        placeholder="Min ₹" min="0" max="999999" step="1"
+                                        value="<%= filters.minPrice %>">
+                                    <div id="minPriceMessage" class="validation-message"></div>
                                 </div>
-                                <% } %>
+                                <div class="flex-fill">
+                                    <input type="number" name="maxPrice" id="maxPriceInput" class="form-control"
+                                        placeholder="Max ₹" min="0" max="999999" step="1"
+                                        value="<%= filters.maxPrice %>">
+                                    <div id="maxPriceMessage" class="validation-message"></div>
+                                </div>
+                            </div>
+                            <div id="priceRangeMessage" class="validation-message"></div>
+                            <small class="text-muted mt-1">Leave empty to show all prices</small>
+                        </div>
 
-                                   
+                        <!-- Availability -->
+                        <div class="filter-group">
+                            <label class="filter-label">Availability</label>
+                            <select name="availability" class="filter-select">
+                                <option value="">All Products</option>
+                                <option value="in-stock" <%=filters.availability==='in-stock' ? 'selected' : '' %>>In Stock</option>
+                                <option value="on-sale" <%=filters.availability==='on-sale' ? 'selected' : '' %>>On Sale</option>
+                            </select>
+                        </div>
 
+                        <!-- Sort -->
+                        <div class="filter-group">
+                            <label class="filter-label">Sort By</label>
+                            <select name="sort" class="filter-select">
+                                <option value="newest" <%=filters.sort==='newest' ? 'selected' :'' %>>Newest First</option>
+                                <option value="oldest" <%=filters.sort==='oldest' ? 'selected' :'' %>>Oldest First</option>
+                                <option value="price-low" <%=filters.sort==='price-low' ? 'selected' :'' %>>Price: Low to High</option>
+                                <option value="price-high" <%=filters.sort==='price-high' ? 'selected' :'' %>>Price: High to Low</option>
+                                <option value="name-az" <%=filters.sort==='name-az' ? 'selected' :'' %>>Name: A to Z</option>
+                                <option value="name-za" <%=filters.sort==='name-za' ? 'selected' :'' %>>Name: Z to A</option>
+                            </select>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-dark flex-fill" id="applyFiltersBtn">
+                                <i class="fas fa-filter me-1"></i>Apply Filters
+                            </button>
+                            <a href="/shopPage" class="btn btn-outline-secondary flex-fill text-center">
+                                <i class="fas fa-refresh me-1"></i>Reset
+                            </a>
+                        </div>
+                    </form>
                 </div>
             </div>
+
+            <!-- =====  PRODUCT GRID  ===== -->
+            <div class="col-lg-9">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap products-header">
+                    <div class="products-count mb-2 mb-md-0">
+                        <span class="fw-medium">
+                            Showing
+                            <% if (products && products.length){ %>
+                                <% const startItem=(pagination.currentPage-1)*12+1; %>
+                                <% const endItem=Math.min(pagination.currentPage*12,totalProducts); %>
+                                <%= startItem %> to <%= endItem %>
+                            <% } else { %>0<% } %>
+                            of <%= totalProducts %> products
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2 text-muted d-none d-sm-block">View:</span>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm active"><i class="fas fa-th"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"><i class="fas fa-list"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid -->
+                <div class="row g-4" id="productGrid">
+                    <% if (products && products.length){ %>
+                        <% products.forEach(product=>{ %>
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="product-card">
+                                    <div class="product-image-container">
+                                        <!-- Shows best offer percentage -->
+                                        <% if (product.hasOffer) { %>
+                                            <div class="product-badge">
+                                                <%= product.offerPercentage %>% OFF
+                                            </div>
+                                        <% } %>
+
+                                        <!-- Wishlist Button -->
+                                        <button
+                                            class="wishlist-icon <%= userWishlistIds.includes(product._id.toString()) ? 'active' : '' %>"
+                                            data-product-id="<%= product._id %>"
+                                            onclick="toggleWishlistFromShop('<%= product._id %>', this)"
+                                            title="<%= userWishlistIds.includes(product._id.toString()) ? 'Remove from Wishlist' : 'Add to Wishlist' %>">
+                                            <i class="<%= userWishlistIds.includes(product._id.toString()) ? 'fas fa-heart text-danger' : 'far fa-heart' %>"></i>
+                                        </button>
+
+                                        <img src="/uploads/products/<%= product.mainImage %>"
+                                            class="product-image" alt="<%= product.productName %>"
+                                            onerror="this.src='/assets/placeholder.jpg'"
+                                            onclick="viewProduct('<%= product._id %>')">
+                                    </div>
+                                    <div class="product-info">
+                                        <div class="product-brand">
+                                            <%= product.brand %>
+                                        </div>
+                                        <h5 class="product-title" title="<%= product.productName %>">
+                                            <%= product.productName %>
+                                        </h5>
+                                        <div class="product-price">
+                                            <div class="price-section">
+                                                <!--  final price with category offers -->
+                                                <% if (product.hasOffer) { %>
+                                                    <span class="current-price">₹<%= product.finalPrice.toFixed(2) %></span>
+                                                    <span class="original-price">₹<%= product.salePrice.toFixed(2) %></span>
+                                                    
+                                                <% } else { %>
+                                                    <span class="current-price">₹<%= product.salePrice.toFixed(2) %></span>
+                                                <% } %>
+                                            </div>
+                                            <button class="add-to-cart" onclick="addToCart('<%= product._id %>')"
+                                                <%=product.quantity===0 ? 'disabled' : '' %>
+                                                title="<%= product.quantity===0 ? 'Out of Stock' : 'Add to Cart' %>">
+                                                <i class="fas fa-<%= product.quantity === 0 ? 'times' : 'plus' %>"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-12 text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3" style="opacity:.3;"></i>
+                            <h3 class="mb-3">No Products Found</h3>
+                            <p class="text-muted mb-4">We couldn't find any products matching your criteria.</p>
+                            <a href="/shopPage" class="btn btn-primary"><i class="fas fa-refresh me-2"></i>Clear All Filters</a>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Pagination -->
+                <% if (pagination && pagination.totalPages> 1) { %>
+                    <div class="d-flex justify-content-center mt-5">
+                        <nav aria-label="Product pagination">
+                            <ul class="pagination">
+                                <!-- Previous Page Button -->
+                                <li class="page-item <%= pagination.hasPrevPage ? '' : 'disabled' %>">
+                                    <a class="page-link"
+                                        href="<%= pagination.hasPrevPage ? `?page=${pagination.prevPage}${queryString}` : '#' %>"
+                                        aria-label="Previous Page" <%=!pagination.hasPrevPage ? 'tabindex="-1"' : '' %>>
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+
+                                <!-- First page and ellipsis logic -->
+                                <% if (pagination.currentPage> 3 && pagination.totalPages > 5) { %>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1<%= queryString %>">1</a>
+                                    </li>
+                                    <% if (pagination.currentPage> 4) { %>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    <% } %>
+                                <% } %>
+
+                                <!-- Page numbers -->
+                                <% pagination.pages.forEach(pg=> { %>
+                                    <li class="page-item <%= pg === pagination.currentPage ? 'active' : '' %>">
+                                        <a class="page-link"
+                                            href="?page=<%= pg %><%= queryString %>"
+                                            <%=pg===pagination.currentPage ? 'aria-current="page"' : '' %>>
+                                            <%= pg %>
+                                        </a>
+                                    </li>
+                                <% }) %>
+
+                                <!-- Last page and ellipsis logic -->
+                                <% if (pagination.currentPage < pagination.totalPages - 2 && pagination.totalPages> 5) { %>
+                                    <% if (pagination.currentPage < pagination.totalPages - 3) { %>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    <% } %>
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                            href="?page=<%= pagination.totalPages %><%= queryString %>">
+                                            <%= pagination.totalPages %>
+                                        </a>
+                                    </li>
+                                <% } %>
+
+                                <!-- Next Page Button -->
+                                <li class="page-item <%= pagination.hasNextPage ? '' : 'disabled' %>">
+                                    <a class="page-link"
+                                        href="<%= pagination.hasNextPage ? `?page=${pagination.nextPage}${queryString}` : '#' %>"
+                                        aria-label="Next Page"
+                                        <%=!pagination.hasNextPage ? 'tabindex="-1"' : '' %>>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                <% } %>
+
+                <!--  Show results info when there are products -->
+                <% if (products && products.length> 0) { %>
+                    <div class="d-flex justify-content-center mt-3">
+                        <small class="text-muted">
+                            <% if (pagination && pagination.totalProducts> 0) { %>
+                                Showing <%= (pagination.currentPage - 1) * 12 + 1 %> to
+                                <%= Math.min(pagination.currentPage * 12, pagination.totalProducts) %>
+                                of <%= pagination.totalProducts %> products
+                            <% } else { %>
+                                Showing <%= products.length %> product<%= products.length !==1 ? 's' : '' %>
+                            <% } %>
+                        </small>
+                    </div>
+                <% } %>
+            </div>
         </div>
-    </section>
+    </div>
+</section>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 
 <script>
-/* ------------------------------------------------------------------
+/* 
    TOAST NOTIFICATIONS
------------------------------------------------------------------- */
+ */
 function showToast(msg, type = 'success') {
     let box = document.getElementById('toast-container');
     if (!box) {
@@ -730,9 +702,9 @@ window.shopState = {
     isAuthenticated: <%= isAuthenticated ? 'true' : 'false' %>
 };
 
-/* ------------------------------------------------------------------
+/* 
    WISHLIST FUNCTIONS
------------------------------------------------------------------- */
+ */
 async function toggleWishlistFromShop(productId, btn) {
     if (!productId) {
         showToast('Product ID is required', 'error');
@@ -800,9 +772,9 @@ function toggleWishlist(id, el) {
     toggleWishlistFromShop(id, el);
 }
 
-/* ------------------------------------------------------------------
+/* 
    CART FUNCTIONS
------------------------------------------------------------------- */
+ */
 async function addToCart(productId) {
     if (!productId) {
         showToast('Product ID is required', 'error');
@@ -877,9 +849,9 @@ async function addToCart(productId) {
     }
 }
 
-/* ------------------------------------------------------------------
+/* 
    NAVIGATION FUNCTIONS
------------------------------------------------------------------- */
+*/
 function viewProduct(id) {
     if (!id) {
         console.error('Product ID is required');
@@ -888,9 +860,9 @@ function viewProduct(id) {
     window.location.href = `/product/${id}`;
 }
 
-/* ------------------------------------------------------------------
+/* 
    UPDATE COUNTERS
------------------------------------------------------------------- */
+ */
 function updateCartCounter(count) {
     window.shopState.cartCount = count || 0;
     const cartElements = document.querySelectorAll('#cartCount, .cart-count');
@@ -909,9 +881,9 @@ function updateWishlistCount(count) {
     });
 }
 
-/* ------------------------------------------------------------------
+/* 
    INITIALIZATION
------------------------------------------------------------------- */
+ */
 document.addEventListener('DOMContentLoaded', function() {
     // Sync initial wishlist button states
     if (window.shopState.isAuthenticated && window.shopState.wishlistIds) {
@@ -933,9 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateWishlistCount(window.shopState.wishlistCount);
 });
 
-/* ------------------------------------------------------------------
-   PRICE VALIDATION
------------------------------------------------------------------- */
+/* PRICE VALIDATION */
 document.addEventListener('DOMContentLoaded', () => {
     const filterForm = document.getElementById('filterForm');
     const minPriceInput = document.getElementById('minPriceInput');

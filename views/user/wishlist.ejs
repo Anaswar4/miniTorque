@@ -34,137 +34,135 @@
 
         <!-- Wishlist Container -->
         <div class="wishlist-container fade-in">
-            <div class="wishlist-header">
-                <h2><i class="fas fa-list"></i> Saved Items</h2>
-                <div class="wishlist-header-right">
-                    <span class="items-count"><%= wishlist.products.length %> items</span>
-                    <% if (wishlist.products.length > 0) { %>
-                        <%
-                            // Check if there are any available products
-                            const availableProducts = wishlist.products.filter(item => {
-                                const product = item.productId;
-                                return product &&
-                                       !product.isDeleted &&
-                                       product.isListed &&
-                                       !product.isBlocked &&
-                                       product.category &&
-                                       !product.category.isDeleted &&
-                                       product.category.isListed &&
-                                       product.quantity > 0;
-                            });
-                        %>
-                        <% if (availableProducts.length > 0) { %>
-                            <button class="btn-add-all-to-cart" onclick="bulkAddToCart()" id="bulkAddBtn">
-                                <i class="fas fa-cart-plus"></i>
-                                Add All to Cart
-                            </button>
-                        <% } %>
-                    <% } %>
-                </div>
-            </div>
-
+    <div class="wishlist-header">
+        <h2><i class="fas fa-list"></i> Saved Items</h2>
+        <div class="wishlist-header-right">
+            <span class="items-count"><%= wishlist.products.length %> items</span>
             <% if (wishlist.products.length > 0) { %>
-                <!-- Wishlist Products -->
-                <div class="wishlist-products">
-                    <% wishlist.products.forEach(item => { %>
-                        <div class="wishlist-item" data-product-id="<%= item.productId._id %>">
-                            <div class="product-image">
-                                <img src="/uploads/products/<%= item.productId.mainImage %>"
-                                     alt="<%= item.productId.productName %>"
-                                     onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
-                                <% if (item.productId.offerDetails && item.productId.offerDetails.hasOffer) { %>
-                                    <div class="discount-badge">
-                                        <%= item.productId.offerDetails.bestOfferPercentage %>% OFF
-                                    </div>
-                                <% } %>
-
-                                <!-- Hover Action Overlay -->
-                                <div class="wishlist-product-hover-overlay">
-                                    <button class="wishlist-cart-btn"
-                                            onclick="addToCartFromWishlist('<%= item.productId._id %>')"
-                                            title="<%= item.productId.quantity > 0 ? 'Add to Cart' : 'Out of Stock' %>"
-                                            <%= item.productId.quantity === 0 ? 'disabled' : '' %>>
-                                        <% if (item.productId.quantity > 0) { %>
-                                            <i class="bi bi-cart-plus"></i>
-                                        <% } else { %>
-                                            <i class="bi bi-x-circle"></i>
-                                        <% } %>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="product-details">
-                                <div class="product-brand"><%= item.productId.brand %></div>
-                                <h3 class="product-name"><%= item.productId.productName %></h3>
-
-                                <div class="product-price">
-                                    <% if (item.productId.offerDetails && item.productId.offerDetails.hasOffer) { %>
-                                        <span class="current-price">₹<%= item.productId.offerDetails.finalPrice.toLocaleString() %></span>
-                                        <span class="original-price">₹<%= item.productId.offerDetails.originalPrice.toLocaleString() %></span>
-                                    <% } else { %>
-                                        <span class="current-price">₹<%= item.productId.salePrice.toLocaleString() %></span>
-                                    <% } %>
-                                </div>
-
-                                <div class="product-stock">
-                                    <% if (item.productId.quantity > 0) { %>
-                                        <span class="in-stock">
-                                            <i class="fas fa-check-circle"></i>
-                                            In Stock (<%= item.productId.quantity %> available)
-                                        </span>
-                                    <% } else { %>
-                                        <span class="out-of-stock">
-                                            <i class="fas fa-times-circle"></i>
-                                            Out of Stock
-                                        </span>
-                                    <% } %>
-                                </div>
-
-                                <div class="added-date">
-                                    Added on <%= new Date(item.addedOn).toLocaleDateString('en-IN', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    }) %>
-                                </div>
-                            </div>
-
-                            <div class="product-actions">
-                                <a href="/product/<%= item.productId._id %>" class="btn-action btn-view">
-                                    <i class="fas fa-eye"></i>
-                                    View Details
-                                </a>
-                                <% if (item.productId.quantity > 0) { %>
-                                    <button class="btn-action btn-cart" onclick="addToCart('<%= item.productId._id %>')">
-                                        <i class="fas fa-shopping-cart"></i>
-                                        Add to Cart
-                                    </button>
-                                <% } else { %>
-                                    <button class="btn-action btn-cart" disabled>
-                                        <i class="fas fa-times"></i>
-                                        Out of Stock
-                                    </button>
-                                <% } %>
-                                <button class="btn-action btn-remove" onclick="removeFromWishlist('<%= item.productId._id %>')">
-                                    <i class="fas fa-trash"></i>
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    <% }) %>
-                </div>
-            <% } else { %>
-                <!-- Empty State -->
-                <div class="empty-state">
-                    <i class="fas fa-heart"></i>
-                    <h3>Your Wishlist is Empty</h3>
-                    <p>You haven't saved any products yet. Start browsing to find items you love and save them for later!</p>
-                    <a href="/shopPage" class="browse-btn">
-                        <i class="fas fa-shopping-cart"></i> Browse Products
-                    </a>
-                </div>
+                <%
+                    // Check if there are any available products
+                    const availableProducts = wishlist.products.filter(item => {
+                        const product = item.productId;
+                        return product &&
+                               !product.isDeleted &&
+                               product.isListed &&
+                               !product.isBlocked &&
+                               product.category &&
+                               !product.category.isDeleted &&
+                               product.category.isListed &&
+                               product.quantity > 0;
+                    });
+                %>
+                <% if (availableProducts.length > 0) { %>
+                    <button class="btn-add-all-to-cart" onclick="bulkAddToCart()" id="bulkAddBtn">
+                        <i class="fas fa-cart-plus"></i>
+                        Add All to Cart
+                    </button>
+                <% } %>
             <% } %>
         </div>
+    </div>
+
+    <% if (wishlist.products.length > 0) { %>
+        <!-- Wishlist Products -->
+        <div class="wishlist-products">
+            <% wishlist.products.forEach(item => { %>
+                <div class="wishlist-item" data-product-id="<%= item.productId._id %>">
+                    <div class="product-image">
+                        <img src="/uploads/products/<%= item.productId.mainImage %>"
+                             alt="<%= item.productId.productName %>"
+                             onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'">
+                       
+
+                        <!-- Hover Action Overlay -->
+                        <div class="wishlist-product-hover-overlay">
+                            <button class="wishlist-cart-btn"
+                                    onclick="addToCartFromWishlist('<%= item.productId._id %>')"
+                                    title="<%= item.productId.quantity > 0 ? 'Add to Cart' : 'Out of Stock' %>"
+                                    <%= item.productId.quantity === 0 ? 'disabled' : '' %>>
+                                <% if (item.productId.quantity > 0) { %>
+                                    <i class="bi bi-cart-plus"></i>
+                                <% } else { %>
+                                    <i class="bi bi-x-circle"></i>
+                                <% } %>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-details">
+                        <div class="product-brand"><%= item.productId.brand %></div>
+                        <h3 class="product-name"><%= item.productId.productName %></h3>
+
+                        <!--  Shows final price with category offers -->
+                        <div class="product-price">
+                            <% if (item.productId.hasOffer) { %>
+                                <span class="current-price">₹<%= item.productId.finalPrice.toLocaleString() %></span>
+                                <span class="original-price">₹<%= item.productId.salePrice.toLocaleString() %></span>
+                            <% } else { %>
+                                <span class="current-price">₹<%= item.productId.salePrice.toLocaleString() %></span>
+                            <% } %>
+                        </div>
+
+                        <div class="product-stock">
+                            <% if (item.productId.quantity > 0) { %>
+                                <span class="in-stock">
+                                    <i class="fas fa-check-circle"></i>
+                                    In Stock (<%= item.productId.quantity %> available)
+                                </span>
+                            <% } else { %>
+                                <span class="out-of-stock">
+                                    <i class="fas fa-times-circle"></i>
+                                    Out of Stock
+                                </span>
+                            <% } %>
+                        </div>
+
+                        <div class="added-date">
+                            Added on <%= new Date(item.addedOn).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            }) %>
+                        </div>
+                    </div>
+
+                    <div class="product-actions">
+                        <a href="/product/<%= item.productId._id %>" class="btn-action btn-view">
+                            <i class="fas fa-eye"></i>
+                            View Details
+                        </a>
+                        <% if (item.productId.quantity > 0) { %>
+                            <button class="btn-action btn-cart" onclick="addToCart('<%= item.productId._id %>')">
+                                <i class="fas fa-shopping-cart"></i>
+                                Add to Cart
+                            </button>
+                        <% } else { %>
+                            <button class="btn-action btn-cart" disabled>
+                                <i class="fas fa-times"></i>
+                                Out of Stock
+                            </button>
+                        <% } %>
+                        <button class="btn-action btn-remove" onclick="removeFromWishlist('<%= item.productId._id %>')">
+                            <i class="fas fa-trash"></i>
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <!-- Empty State -->
+        <div class="empty-state">
+            <i class="fas fa-heart"></i>
+            <h3>Your Wishlist is Empty</h3>
+            <p>You haven't saved any products yet. Start browsing to find items you love and save them for later!</p>
+            <a href="/shopPage" class="browse-btn">
+                <i class="fas fa-shopping-cart"></i> Browse Products
+            </a>
+        </div>
+    <% } %>
+</div>
+
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>

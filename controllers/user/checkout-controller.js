@@ -1,3 +1,4 @@
+const Coupon = require('../../models/coupon-schema');
 const Cart = require('../../models/cart-schema');
 const Address = require('../../models/address-schema');
 const Order = require('../../models/order-schema');
@@ -5,8 +6,16 @@ const Product = require('../../models/product-schema');
 const User = require('../../models/user-model');
 const Wallet = require('../../models/wallet-schema');
 const Wishlist = require('../../models/wishlist-schema');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const { calculateFinalPrice, calculateItemTotal, calculateItemDiscount, syncAllCartPrices, calculateCartSummary } = require('../../utils/price-calculator');
 const { applyBestOffersToProducts } = require('../../utils/offer-utils');
+
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 // Load checkout page
 const loadCheckout = async (req, res) => {
@@ -83,23 +92,68 @@ const loadCheckout = async (req, res) => {
       const finalPrice = item.price || salePrice;
       
       // Calculate totals
-      subtotal += regularPrice * quantity; // Use regular price for subtotal
-      const itemDiscount = (regularPrice - finalPrice) * quantity; // Discount per item * quantity
+      subtotal += regularPrice * quantity; 
+      const itemDiscount = (regularPrice - finalPrice) * quantity; 
       totalDiscount += itemDiscount;
-      amountAfterDiscount += finalPrice * quantity; // Final amount customer pays
+      amountAfterDiscount += finalPrice * quantity; 
     });
 
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
     const finalAmount = amountAfterDiscount + shippingCharges;
 
-    // COD is now available for all order amounts
-    const isCODAvailable = true;
+    // COD available for orders <= ₹2000
+    const isCODAvailable = finalAmount <= 2000;
 
     // Check for address success message from session
     const addressSuccess = req.session.addressSuccess;
     if (addressSuccess) {
       delete req.session.addressSuccess;
     }
+
+    //  Fetch available coupons for user
+    let availableCoupons = [];
+    try {
+      const currentDate = new Date();
+      
+      // Fetch active coupons that user can use
+      const coupons = await Coupon.find({
+        isActive: true,
+        startDate: { $lte: currentDate },
+        expiry: { $gte: currentDate }
+      })
+      .populate("applicableCategories", "name")
+      .populate("applicableProducts", "productName")
+      .lean();
+
+      // Filter coupons based on minimum purchase and usage limits
+      availableCoupons = coupons.filter(coupon => {
+        // Check minimum purchase requirement
+        if (coupon.minPurchase && finalAmount < coupon.minPurchase) {
+          return false;
+        }
+        
+        // Check usage limits
+        if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+          return false;
+        }
+        
+        return true;
+      });
+
+      // Format coupons for display
+      availableCoupons = availableCoupons.map(coupon => ({
+        ...coupon,
+        discountDisplay: coupon.discountType === 'percentage' 
+          ? `${coupon.discount}% OFF${coupon.maxDiscount ? ` (up to ₹${coupon.maxDiscount})` : ''}`
+          : `₹${coupon.discount} OFF`,
+        validityText: `Valid till: ${coupon.expiry.toLocaleDateString('en-IN', { 
+          day: '2-digit', month: 'short', year: 'numeric' 
+        })}`,
+        minOrderText: coupon.minPurchase > 0 ? `Min. order: ₹${coupon.minPurchase}` : ''
+      }));
+    } catch (error) {
+      console.error('Error fetching available coupons:', error);
+    }  
 
     res.render('user/checkout', {
       user,
@@ -113,6 +167,7 @@ const loadCheckout = async (req, res) => {
       },
       addressSuccess,
       isCODAvailable,
+      availableCoupons,
       wishlistCount,
       cartCount,
       isAuthenticated: true,
@@ -135,12 +190,11 @@ const loadCheckout = async (req, res) => {
   }
 };
 
-
-// Process order placement
+// Process order placement (for COD and Wallet)
 const placeOrder = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;  
-    const { selectedAddressId, paymentMethod = 'Cash on Delivery' } = req.body;
+    const { selectedAddressId, paymentMethod = 'Cash on Delivery', appliedCoupon } = req.body;
 
     // Validate address selection
     if (!selectedAddressId) {
@@ -148,12 +202,6 @@ const placeOrder = async (req, res) => {
         success: false,
         message: 'Please select a delivery address'
       });
-    }
-
-    // If wallet payment, check wallet balance first
-    if (paymentMethod === 'Wallet') {
-      const wallet = await Wallet.getOrCreateWallet(userId);
-      // We'll check balance after calculating final amount
     }
 
     // Get user's cart
@@ -204,58 +252,62 @@ const placeOrder = async (req, res) => {
       });
     }
 
-    // Apply offer calculations to cart items for order processing
+    // Apply offer calculations to cart items
     if (cartItems.length > 0) {
       const products = cartItems.map(item => item.productId);
       const productsWithOffers = await applyBestOffersToProducts(products);
       
-      // Map back to cart structure with offer details
       cartItems.forEach((item, index) => {
         item.productId = productsWithOffers[index];
       });
     }
 
-    // Calculate order totals with offer-based pricing
-    let subtotal = 0; // Based on sale prices (before offers)
-    let totalDiscount = 0; // Discount from offers
-    let amountAfterDiscount = 0; // Amount customer actually pays (after offers)
+    // Calculate order totals
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let amountAfterDiscount = 0;
     const orderedItems = [];
 
     cartItems.forEach(item => {
-      const salePrice = item.productId.salePrice; // Original sale price
+      const salePrice = item.productId.salePrice;
       const quantity = item.quantity;
       
-      // Get final price after offers (from stored cart price or offer details)
       let finalPrice = item.price || salePrice;
       if (item.productId.offerDetails && item.productId.offerDetails.finalPrice) {
         finalPrice = item.productId.offerDetails.finalPrice;
       }
       
-      // Subtotal based on sale prices (before offers)
       subtotal += salePrice * quantity;
-      
-      // Calculate discount from offers
       const itemDiscount = calculateItemDiscount(salePrice, finalPrice, quantity);
       totalDiscount += itemDiscount;
-      
-      // Amount customer actually pays for this item (after offers)
       const itemFinalAmount = calculateItemTotal(finalPrice, quantity);
       amountAfterDiscount += itemFinalAmount;
 
       orderedItems.push({
         product: item.productId._id,
         quantity: quantity,
-        price: finalPrice, // Store final price after offers
+        price: finalPrice,
         totalPrice: itemFinalAmount
       });
     });
 
-    const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50; // Free shipping based on amount after discount
-    const finalAmount = amountAfterDiscount + shippingCharges; // Final amount = amount after discount + shipping
+    const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
+    let finalAmount = amountAfterDiscount + shippingCharges;
 
-    // COD validation removed - COD is now available for all order amounts
+    //  Apply coupon discount if exists
+    if (appliedCoupon && appliedCoupon.discountAmount) {
+      finalAmount = finalAmount - appliedCoupon.discountAmount;
+    }
 
-    // If wallet payment, check if sufficient balance
+    // Validate COD limit
+    if (paymentMethod === 'Cash on Delivery' && finalAmount > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cash on Delivery is not available for orders above ₹2000. Please select Online Payment or Wallet.'
+      });
+    }
+
+    // If wallet payment, check balance
     if (paymentMethod === 'Wallet') {
       const wallet = await Wallet.getOrCreateWallet(userId);
       if (wallet.balance < finalAmount) {
@@ -294,7 +346,7 @@ const placeOrder = async (req, res) => {
 
     await order.save();
 
-    // Process wallet payment if selected
+    // Process wallet payment
     if (paymentMethod === 'Wallet') {
       const wallet = await Wallet.getOrCreateWallet(userId);
       await wallet.deductMoney(
@@ -330,6 +382,311 @@ const placeOrder = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error placing order. Please try again.'
+    });
+  }
+};
+
+// Create Razorpay order (NEW FUNCTION)
+const createRazorpayOrder = async (req, res) => {
+  try {
+    const userId = req.session.userId || req.session.googleUserId;
+    const { selectedAddressId, appliedCoupon } = req.body;
+
+    // Validate address selection
+    if (!selectedAddressId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a delivery address'
+      });
+    }
+
+    // Get user's cart
+    const cart = await Cart.findOne({ userId })
+      .populate({
+        path: 'items.productId',
+        populate: {
+          path: 'category',
+          select: 'name isListed isDeleted categoryOffer'
+        }
+      });
+
+    if (!cart || !cart.items || cart.items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your cart is empty'
+      });
+    }
+
+    // Filter available items and validate stock
+    const cartItems = cart.items.filter(item => 
+      item.productId && 
+      item.productId.category && 
+      item.productId.category.isListed && 
+      !item.productId.category.isDeleted &&
+      item.productId.isListed &&
+      !item.productId.isDeleted
+    );
+
+    // Stock validation
+    for (const item of cartItems) {
+      if (item.productId.quantity < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for ${item.productId.productName}`
+        });
+      }
+    }
+
+    // Get selected address
+    const addressDoc = await Address.findOne({ userId });
+    const selectedAddress = addressDoc.address.id(selectedAddressId);
+    
+    if (!selectedAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selected address not found'
+      });
+    }
+
+    // Apply offer calculations
+    if (cartItems.length > 0) {
+      const products = cartItems.map(item => item.productId);
+      const productsWithOffers = await applyBestOffersToProducts(products);
+      
+      cartItems.forEach((item, index) => {
+        item.productId = productsWithOffers[index];
+      });
+    }
+
+    // Calculate order totals
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let amountAfterDiscount = 0;
+    const orderedItems = [];
+
+    cartItems.forEach(item => {
+      const salePrice = item.productId.salePrice;
+      const quantity = item.quantity;
+      
+      let finalPrice = item.price || salePrice;
+      if (item.productId.offerDetails && item.productId.offerDetails.finalPrice) {
+        finalPrice = item.productId.offerDetails.finalPrice;
+      }
+      
+      subtotal += salePrice * quantity;
+      const itemDiscount = calculateItemDiscount(salePrice, finalPrice, quantity);
+      totalDiscount += itemDiscount;
+      const itemFinalAmount = calculateItemTotal(finalPrice, quantity);
+      amountAfterDiscount += itemFinalAmount;
+
+      orderedItems.push({
+        product: item.productId._id,
+        quantity: quantity,
+        price: finalPrice,
+        totalPrice: itemFinalAmount
+      });
+    });
+
+    const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
+    let finalAmount = amountAfterDiscount + shippingCharges;
+
+    //  Apply coupon discount if exists
+    if (appliedCoupon && appliedCoupon.discountAmount) {
+      finalAmount = finalAmount - appliedCoupon.discountAmount;
+    }
+
+    // Create order in database with Pending status
+    const order = new Order({
+      userId,
+      orderedItems,
+      totalPrice: subtotal,
+      discount: totalDiscount,
+      shippingCharges,
+      finalAmount,
+      shippingAddress: {
+        addressType: selectedAddress.addressType,
+        name: selectedAddress.name,
+        city: selectedAddress.city,
+        landMark: selectedAddress.landMark,
+        state: selectedAddress.state,
+        pincode: selectedAddress.pincode,
+        phone: selectedAddress.phone,
+        altPhone: selectedAddress.altPhone
+      },
+      paymentMethod: 'Online Payment',
+      paymentStatus: 'Pending',
+      orderTimeline: [{
+        status: 'Pending',
+        description: 'Order created, awaiting payment'
+      }]
+    });
+
+    await order.save();
+
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(finalAmount * 100), // Amount in paise
+      currency: 'INR',
+      receipt: order.orderId,
+      notes: {
+        orderId: order.orderId,
+        userId: userId.toString()
+      }
+    });
+
+    // Get user data for prefill
+    const user = await User.findById(userId).select('fullName email');
+
+    res.status(200).json({
+      success: true,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+      amount: finalAmount,
+      currency: 'INR',
+      razorpayOrderId: razorpayOrder.id,
+      orderId: order.orderId,
+      prefill: {
+        name: user.fullName,
+        email: user.email,
+        contact: selectedAddress.phone
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating Razorpay order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating payment order. Please try again.'
+    });
+  }
+};
+
+// Verify Razorpay payment (NEW FUNCTION)
+const verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
+
+    // Verify signature
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      // Mark payment as failed
+      const order = await Order.findOne({ orderId });
+      if (order) {
+        order.paymentStatus = 'Failed';
+        order.orderTimeline.push({
+          status: 'Payment Failed',
+          description: 'Payment signature verification failed'
+        });
+        await order.save();
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed',
+        orderId: orderId
+      });
+    }
+
+    // Update order status
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order with payment details
+    order.paymentStatus = 'Completed';
+    order.razorpayOrderId = razorpay_order_id;
+    order.razorpayPaymentId = razorpay_payment_id;
+    order.orderTimeline.push({
+      status: 'Payment Completed',
+      description: 'Payment verified successfully'
+    });
+
+    await order.save();
+
+    // Update product quantities
+    for (const item of order.orderedItems) {
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { quantity: -item.quantity } }
+      );
+    }
+
+    // Clear cart
+    await Cart.findOneAndUpdate(
+      { userId: order.userId },
+      { $set: { items: [] } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment verified successfully',
+      orderId: order.orderId
+    });
+
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    
+    // Mark payment as failed
+    try {
+      const { orderId } = req.body;
+      if (orderId) {
+        const order = await Order.findOne({ orderId });
+        if (order) {
+          order.paymentStatus = 'Failed';
+          order.orderTimeline.push({
+            status: 'Payment Failed',
+            description: 'Payment verification error occurred'
+          });
+          await order.save();
+        }
+      }
+    } catch (updateError) {
+      console.error('Error updating order status:', updateError);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error verifying payment',
+      orderId: req.body.orderId
+    });
+  }
+};
+
+// Handle payment failure (NEW FUNCTION)
+const paymentFailed = async (req, res) => {
+  try {
+    const { orderId, error } = req.body;
+
+    // Update order status
+    const order = await Order.findOne({ orderId });
+    if (order) {
+      order.paymentStatus = 'Failed';
+      order.orderTimeline.push({
+        status: 'Payment Failed',
+        description: `Payment failed: ${error?.description || 'Unknown error'}`
+      });
+      await order.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment failure recorded',
+      orderId: orderId
+    });
+
+  } catch (error) {
+    console.error('Error handling payment failure:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error handling payment failure'
     });
   }
 };
@@ -385,5 +742,8 @@ const loadOrderSuccess = async (req, res) => {
 module.exports = {
   loadCheckout,
   placeOrder,
-  loadOrderSuccess
+  loadOrderSuccess,
+  createRazorpayOrder,     
+  verifyPayment,           
+  paymentFailed            
 };

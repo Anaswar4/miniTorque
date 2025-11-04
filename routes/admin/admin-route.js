@@ -9,6 +9,8 @@ const { isAdminAuthenticated, preventCache, redirectIfAdminAuthenticated } = req
 const productController = require('../../controllers/admin/product-controller');
 const orderController = require("../../controllers/admin/order-controller");
 const returnController = require("../../controllers/admin/return-controller");
+const salesReportController = require("../../controllers/admin/sales-report-controller");
+const couponController = require("../../controllers/admin/coupon-controller");
 
 const { productUpload, handleMulterError } = require('../../config/multer-config');
 
@@ -36,6 +38,7 @@ adminRoute.get('/get-category', isAdminAuthenticated, preventCache, getCategoryC
 adminRoute.get('/get-categories', isAdminAuthenticated, preventCache, getCategoryController.getAllCategoriesAPI);
 adminRoute.post('/get-categories', isAdminAuthenticated, preventCache, getCategoryController.addCategoryAPI);
 adminRoute.put('/get-categories/:id', isAdminAuthenticated, preventCache, getCategoryController.updateCategoryAPI);
+adminRoute.patch('/get-categories/:id/offer', isAdminAuthenticated, preventCache, getCategoryController.updateCategoryOfferAPI);
 adminRoute.patch('/get-categories/:id/status', isAdminAuthenticated, preventCache, getCategoryController.toggleCategoryStatusAPI);
 adminRoute.delete('/get-categories/:id', isAdminAuthenticated, preventCache, getCategoryController.deleteCategoryAPI);
 
@@ -63,6 +66,19 @@ adminRoute.post('/return-requests/:id/approve', isAdminAuthenticated, preventCac
 adminRoute.post('/return-requests/:id/reject', isAdminAuthenticated, preventCache, returnController.rejectReturnRequest);
 
 
+// Coupon Management
+adminRoute.get('/coupons', isAdminAuthenticated, preventCache, couponController.getCouponsPage);
+adminRoute.get('/coupons/:id', isAdminAuthenticated, preventCache, couponController.getEditCouponPage);
+adminRoute.post('/coupons', isAdminAuthenticated, preventCache, couponController.addCoupon);
+adminRoute.put('/coupons/:id', isAdminAuthenticated, preventCache, couponController.updateCoupon);
+adminRoute.patch('/coupons/:id/toggle-status', isAdminAuthenticated, preventCache, couponController.toggleCouponStatus);
+adminRoute.delete('/coupons/:id', isAdminAuthenticated, preventCache, couponController.deleteCoupon);
+
+
+// Sales Report Management
+adminRoute.get("/sales-report", isAdminAuthenticated, preventCache, salesReportController.getSalesReport);
+adminRoute.get("/sales-report/export-pdf", isAdminAuthenticated, preventCache, salesReportController.exportPDF);
+adminRoute.get("/sales-report/export-excel", isAdminAuthenticated, preventCache, salesReportController.exportExcel);
 
 
 module.exports = adminRoute;

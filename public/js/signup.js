@@ -14,6 +14,119 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const form = document.getElementById("signupForm");
 
+  // ========== REFERRAL CODE FUNCTIONALITY ========== 
+  let appliedReferralCode = null;
+  window.appliedReferralCode = null;
+
+  const referralCodeInput = document.getElementById('referralCodeInput');
+  const referralCodeError = document.getElementById('referralCodeError');
+  const referralCodeSuccess = document.getElementById('referralCodeSuccess');
+  const applyReferralBtn = document.getElementById('applyReferralBtn');
+  const referralCodeField = document.getElementById('referralCodeField');
+
+  // Check URL for ?ref=CODE parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref');
+  if (refCode) {
+    setTimeout(() => {
+      const modal = new bootstrap.Modal(document.getElementById('referralModal'));
+      modal.show();
+      referralCodeInput.value = refCode.toUpperCase();
+    }, 500);
+  }
+
+  // Real-time referral code validation
+  if (referralCodeInput) {
+    referralCodeInput.addEventListener('input', function() {
+      const code = this.value.trim().toUpperCase();
+      this.value = code;
+
+      referralCodeError.textContent = '';
+      referralCodeSuccess.textContent = '';
+
+      if (code.length === 0) {
+        applyReferralBtn.disabled = false;
+        return;
+      }
+
+      if (code.length < 6) {
+        referralCodeError.textContent = 'Referral code must be at least 6 characters';
+        applyReferralBtn.disabled = true;
+      } else {
+        applyReferralBtn.disabled = false;
+      }
+    });
+  }
+
+  // Apply referral code
+  if (applyReferralBtn) {
+    applyReferralBtn.addEventListener('click', async function() {
+      const code = referralCodeInput.value.trim().toUpperCase();
+
+      if (!code) {
+        bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
+        return;
+      }
+
+      const originalText = this.innerHTML;
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
+
+      try {
+        const response = await fetch('/api/referral/validate?code=' + code, {
+          method: 'GET'
+        });
+
+        const result = await response.json();
+
+        if (result.valid) {
+          referralCodeSuccess.textContent = `✓ Valid referral code from ${result.referrerName}!`;
+          referralCodeError.textContent = '';
+          appliedReferralCode = code;
+          window.appliedReferralCode = code;
+          referralCodeField.value = code;
+
+          setTimeout(() => {
+            bootstrap.Modal.getInstance(document.getElementById('referralModal')).hide();
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Referral Code Applied!',
+              text: `You'll be referred by ${result.referrerName}`,
+              timer: 3000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          }, 1500);
+        } else {
+          referralCodeError.textContent = 'Invalid referral code';
+          referralCodeSuccess.textContent = '';
+        }
+      } catch (error) {
+        console.error('Error validating referral code:', error);
+        referralCodeError.textContent = 'Error validating referral code. Please try again.';
+        referralCodeSuccess.textContent = '';
+      }
+
+      this.disabled = false;
+      this.innerHTML = originalText;
+    });
+  }
+
+  // Reset modal when closed
+  const referralModal = document.getElementById('referralModal');
+  if (referralModal) {
+    referralModal.addEventListener('hidden.bs.modal', function() {
+      if (!appliedReferralCode) {
+        referralCodeInput.value = '';
+        referralCodeError.textContent = '';
+        referralCodeSuccess.textContent = '';
+      }
+    });
+  }
+  // ========== END REFERRAL CODE FUNCTIONALITY ==========
+
   function validatePassword(value) {
     const hasLength = value.length >= 8;
     const hasUpper = /[A-Z]/.test(value);
@@ -54,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const classes = ["very-weak", "weak", "fair", "strong"];
     const labels = ["Very Weak", "Weak", "Fair", "Strong"];
-    const index = Math.max(0, result.score - 1); // Ensure index is not negative
+    const index = Math.max(0, result.score - 1);
     strengthValue.textContent = labels[index];
     strengthFill.classList.add(classes[index]);
     strengthValue.classList.add(classes[index]);
@@ -143,15 +256,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   form.addEventListener("submit", (e) => {
-    e.preventDefault(); // Prevent default submission to test validation first
+    e.preventDefault();
     let error = false;
 
-    // Check if all fields are empty
     const isAllEmpty = [fullNameInput, emailInput, passwordInput, confirmInput].every(
       (input) => input.value.trim() === ""
     );
 
-    // Clear previous errors
     [fullNameInput, emailInput, passwordInput, confirmInput].forEach((input) => {
       clearError(input);
       if (input.value.trim() === "") {
@@ -160,41 +271,32 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Validate full name
     if (fullNameInput.value.trim() !== "" && !/^[a-zA-Z\s]{2,}$/.test(fullNameInput.value)) {
       showError(fullNameInput, "Full name must contain only letters and be at least 2 characters.");
       error = true;
     }
 
-    // Validate email
     const emailRegex = /^[a-zA-Z0-9]+([._%+-]?[a-zA-Z0-9])*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (emailInput.value.trim() !== "" && !emailRegex.test(emailInput.value)) {
       showError(emailInput, "Please enter a valid email address.");
       error = true;
     }
 
-    // Validate password
     const pwdCheck = validatePassword(passwordInput.value);
     if (passwordInput.value.trim() !== "" && !pwdCheck.isValid) {
       showError(passwordInput, "Password must meet all requirements.");
       error = true;
     }
 
-    // Validate confirm password
     if (confirmInput.value.trim() !== "" && passwordInput.value !== confirmInput.value) {
       showError(confirmInput, "Passwords do not match.");
       error = true;
     }
 
-    // If there are errors, shake the form and show SweetAlert
     if (error) {
-      // Remove shake class if already present to allow retrigger
       form.classList.remove("shake");
-      // Force reflow to reset animation
       void form.offsetWidth;
-      // Add shake class
       form.classList.add("shake");
-      // Remove shake class after animation ends
       form.addEventListener(
         "animationend",
         () => {
@@ -217,7 +319,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     } else {
-      // If no errors, submit the form
+      // Set referral code in hidden field before submission
+      if (window.appliedReferralCode) {
+        referralCodeField.value = window.appliedReferralCode;
+      }
       form.submit();
     }
   });
