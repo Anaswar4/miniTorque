@@ -25,6 +25,17 @@ adminRoute.post("/admin-login", redirectIfAdminAuthenticated, adminController.po
 adminRoute.get("/admin-dashboard", isAdminAuthenticated, preventCache, adminController.getAdminDashboard);
 adminRoute.get("/admin-logout", isAdminAuthenticated, preventCache, adminController.logoutAdminDashboard);
 
+// Dashboard API Routes
+adminRoute.get("/api/dashboard/stats", isAdminAuthenticated, dashboardController.getDashboardStats);
+adminRoute.get("/api/dashboard/sales", isAdminAuthenticated, dashboardController.getSalesData);
+adminRoute.get("/api/dashboard/top-products", isAdminAuthenticated, dashboardController.getTopProducts);
+adminRoute.get("/api/dashboard/recent-orders",  isAdminAuthenticated,dashboardController.getRecentOrders);
+adminRoute.get("/api/dashboard/new-customers", isAdminAuthenticated, dashboardController.getNewCustomers);
+adminRoute.get("/api/dashboard/best-selling-products", isAdminAuthenticated, dashboardController.getBestSellingProducts);
+adminRoute.get("/api/dashboard/best-selling-category", isAdminAuthenticated, dashboardController.getBestSellingCategory);
+adminRoute.get("/api/dashboard/best-selling-brand", isAdminAuthenticated, dashboardController.getBestSellingBrand);
+adminRoute.get("/api/dashboard/revenue-distribution", isAdminAuthenticated, dashboardController.getRevenueDistribution);
+
 
 //User Management
 adminRoute.get("/get-user", isAdminAuthenticated, preventCache, getUsersController.getUsers);

@@ -414,7 +414,7 @@
 
         async function loadDashboardStats() {
             try {
-                const response = await fetch('/api/dashboard/stats');
+                const response = await fetch('/admin/api/dashboard/stats');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -430,7 +430,7 @@
 
         async function loadDynamicSalesChart(period = 'monthly') {
             try {
-                const response = await fetch(`/api/dashboard/sales?period=${period}`);
+                const response = await fetch(`/admin/api/dashboard/sales?period=${period}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -542,7 +542,7 @@
 
         async function loadRevenueDistribution() {
             try {
-                const response = await fetch('/api/dashboard/revenue-distribution');
+                const response = await fetch('/admin/api/dashboard/revenue-distribution');
                 const data = await response.json();
                 
                 const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -641,7 +641,7 @@
 
         async function loadBestSellingProducts() {
             try {
-                const response = await fetch('/api/dashboard/best-selling-products');
+                const response = await fetch('/admin/api/dashboard/best-selling-products');
                 const data = await response.json();
                 
                 const container = document.getElementById('bestProductsList');
@@ -690,7 +690,7 @@
 
         async function loadBestSellingCategory() {
             try {
-                const response = await fetch('/api/dashboard/best-selling-category');
+                const response = await fetch('/admin/api/dashboard/best-selling-category');
                 const data = await response.json();
                 
                 const container = document.getElementById('bestCategoryCard');
@@ -742,7 +742,7 @@
 
         async function loadBestSellingBrand() {
             try {
-                const response = await fetch('/api/dashboard/best-selling-brand');
+                const response = await fetch('/admin/api/dashboard/best-selling-brand');
                 const data = await response.json();
                 
                 const container = document.getElementById('bestBrandCard');
