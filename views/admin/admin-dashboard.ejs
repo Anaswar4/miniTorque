@@ -807,11 +807,11 @@
             });
         }
 
-        // Direct Ledger Report PDF Download Function - No Modals
+        // Direct Ledger Report PDF Download Function 
         function downloadLedgerReportDirect() {
             try {
                 // Create download link and trigger immediately
-                const downloadUrl = '/ledger-report/export-pdf?timePeriod=monthly&paymentMethod=all&orderStatus=all';
+                const downloadUrl = '/admin/ledger-report/export-pdf?timePeriod=monthly&paymentMethod=all&orderStatus=all';
                 const link = document.createElement('a');
                 link.href = downloadUrl;
                 link.download = `miniTorque-Ledger-Report-${new Date().toISOString().split('T')[0]}.pdf`;

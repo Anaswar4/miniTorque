@@ -11,7 +11,7 @@ const orderController = require("../../controllers/admin/order-controller");
 const returnController = require("../../controllers/admin/return-controller");
 const salesReportController = require("../../controllers/admin/sales-report-controller");
 const couponController = require("../../controllers/admin/coupon-controller");
-
+const ledgerController = require("../../controllers/admin/ledger-controller");
 const { productUpload, handleMulterError } = require('../../config/multer-config');
 
 
@@ -91,5 +91,8 @@ adminRoute.get("/sales-report", isAdminAuthenticated, preventCache, salesReportC
 adminRoute.get("/sales-report/export-pdf", isAdminAuthenticated, preventCache, salesReportController.exportPDF);
 adminRoute.get("/sales-report/export-excel", isAdminAuthenticated, preventCache, salesReportController.exportExcel);
 
+// Ledger Report Management
+adminRoute.get("/ledger-report/export-pdf", isAdminAuthenticated, preventCache, ledgerController.exportLedgerPDF);
+adminRoute.get("/ledger-report/export-excel", isAdminAuthenticated, preventCache, ledgerController.exportLedgerExcel);
 
 module.exports = adminRoute;
