@@ -43,7 +43,7 @@ const getUsers = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = 10;
 
-    let searchQuery = {isAdmin: false};
+    let searchQuery = {isAdmin: false}; //total user count instead of admin
     if (searchTerm) {
       searchQuery.$or = [
         { fullName: { $regex: searchTerm, $options: 'i' } },

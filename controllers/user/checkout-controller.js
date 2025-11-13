@@ -386,7 +386,7 @@ const placeOrder = async (req, res) => {
   }
 };
 
-// Create Razorpay order (NEW FUNCTION)
+// Create Razorpay order 
 const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.session.userId || req.session.googleUserId;
