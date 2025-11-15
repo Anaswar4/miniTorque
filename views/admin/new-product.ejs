@@ -105,8 +105,8 @@
                             <div class="form-group">
                                 <label for="productOffer" class="form-label">Product Offer (%)</label>
                                 <input type="number" id="productOffer" name="productOffer" class="form-control"
-                                    placeholder="Enter offer percentage" step="0.01" min="0" max="100">
-                                <div class="error-message">Please enter a valid offer (0-100)</div>
+                                    placeholder="Enter offer percentage" step="0.01" min="0" max="99">
+                                <div class="error-message">Please enter a valid offer (0-99)</div>
                             </div>
                             <div class="form-group">
                                 <label for="features" class="form-label">Features <span
@@ -581,8 +581,8 @@
             } else if (offerValue < 0) {
                 showFieldError(productOfferGroup, errorMsg, 'Offer percentage cannot be negative');
                 return false;
-            } else if (offerValue > 100) {
-                showFieldError(productOfferGroup, errorMsg, 'Offer percentage cannot exceed 100%');
+            } else if (offerValue >= 100) {
+                showFieldError(productOfferGroup, errorMsg, 'Offer percentage must be less than  100');
                 return false;
             } else if (!/^\d+(\.\d{1,2})?$/.test(value)) {
                 showFieldError(productOfferGroup, errorMsg, 'Offer can have maximum 2 decimal places');

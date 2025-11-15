@@ -118,9 +118,9 @@
                                 <div class="form-group">
                                     <label for="productOffer" class="form-label">Product Offer (%)</label>
                                     <input type="number" id="productOffer" name="productOffer" class="form-control"
-                                        placeholder="Enter offer percentage" step="0.01" min="0" max="100"
+                                        placeholder="Enter offer percentage" step="0.01" min="0" max="99"
                                         value="<%= product.productOffer || '' %>">
-                                    <div class="error-message">Please enter a valid offer (0-100)</div>
+                                    <div class="error-message">Please enter a valid offer (0-99)</div>
                                 </div>
                                 <div class="form-group">
                                     <label for="features" class="form-label">Features <span
@@ -371,6 +371,35 @@
                     // Calculate sale price when discount changes
                     productOffer.addEventListener('input', function () {
                         calculateSalePrice();
+
+                        const productOfferGroup = productOffer.closest('.form-group');
+                        const errorMsg = productOfferGroup.querySelector('.error-message');
+                        const value = productOffer.value.trim();
+
+                        if (!value) {
+                            productOfferGroup.classList.remove('error');
+                            errorMsg.style.display = 'none';
+                            return;
+                        }
+
+                        const offerValue = parseFloat(value);
+
+                        if (isNaN(offerValue)) {
+                            productOfferGroup.classList.add('error');
+                            errorMsg.textContent = 'Please enter a valid offer percentage';
+                            errorMsg.style.display = 'block';
+                        } else if (offerValue < 0) {
+                            productOfferGroup.classList.add('error');
+                            errorMsg.textContent = 'Offer percentage cannot be negative';
+                            errorMsg.style.display = 'block';
+                        } else if (offerValue >= 100) {
+                            productOfferGroup.classList.add('error');
+                            errorMsg.textContent = 'Offer percentage must be less than 100';
+                            errorMsg.style.display = 'block';
+                        } else {
+                            productOfferGroup.classList.remove('error');
+                            errorMsg.style.display = 'none';
+                        }
                     });
 
                     // Prevent manual editing of sale price
@@ -705,7 +734,7 @@
                                         currentCropper = new Cropper(img, {
                                             aspectRatio: 1,
                                             viewMode: 1,
-                                            autoCropArea: 1,  // ⭐ Changed from 0.8 to 1 for full coverage
+                                            autoCropArea: 1,  //  Changed from 0.8 to 1 for full coverage
                                             responsive: true,
                                             background: false,
                                             guides: true,
@@ -1169,14 +1198,14 @@
                 const productOfferGroup = productOffer.closest('.form-group');
                 const productOfferError = productOfferGroup.querySelector('.error-message');
                 const productOfferValue = productOffer.value.trim() ? parseFloat(productOffer.value) : null;
-                if (productOfferValue !== null && (isNaN(productOfferValue) || productOfferValue < 0 || productOfferValue > 100)) {
+                if (productOfferValue !== null && (isNaN(productOfferValue) || productOfferValue < 0 || productOfferValue >= 100)) {
                     productOfferGroup.classList.add('error');
                     if (isNaN(productOfferValue)) {
                         productOfferError.textContent = 'Please enter a valid offer percentage';
                     } else if (productOfferValue < 0) {
                         productOfferError.textContent = 'Offer percentage cannot be negative';
-                    } else if (productOfferValue > 100) {
-                        productOfferError.textContent = 'Offer percentage cannot exceed 100%';
+                    } else if (productOfferValue >= 100) {
+                        productOfferError.textContent = 'Offer percentage must be less than 100';
                     }
                     productOfferError.style.display = 'block';
                     isValid = false;

@@ -28,7 +28,9 @@ const productSchema = new Schema({
   },
   productOffer: { 
     type: Number, 
-    default: 0
+    default: 0,
+    min: 0,
+    max: 99
   },
   quantity: { 
     type: Number, 
