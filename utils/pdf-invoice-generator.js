@@ -487,20 +487,39 @@ class InvoiceGenerator {
     
     this.currentY += 12;
     
-    // Total
-    this.doc
-      .fontSize(10)
-      .fillColor('#000000')
-      .font('Helvetica-Bold')
-      .text('Total:', summaryX, this.currentY);
-    
-    this.doc
-      .fontSize(10)
-      .fillColor('#000000')
-      .font('Helvetica-Bold')
-      .text(`₹${currentTotal.toFixed(2)}`, summaryX + 100, this.currentY);
-    
-    this.currentY += 40;
+  // Check if all items are returned
+const allItemsReturned = order.orderedItems.every(item => item.status === 'Returned');
+
+if (allItemsReturned && returnedAmount > 0) {
+  // Show "Refund Issued" instead of "Total" when all items are returned
+  this.doc
+    .fontSize(10)
+    .fillColor('#10b981')
+    .font('Helvetica-Bold')
+    .text('Refund Issued:', summaryX, this.currentY);
+  
+  this.doc
+    .fontSize(10)
+    .fillColor('#10b981')
+    .font('Helvetica-Bold')
+    .text(`₹${returnedAmount.toFixed(2)}`, summaryX + 100, this.currentY);
+} else {
+  // Show "Total" for normal orders
+  this.doc
+    .fontSize(10)
+    .fillColor('#000000')
+    .font('Helvetica-Bold')
+    .text('Total:', summaryX, this.currentY);
+  
+  this.doc
+    .fontSize(10)
+    .fillColor('#000000')
+    .font('Helvetica-Bold')
+    .text(`₹${currentTotal.toFixed(2)}`, summaryX + 100, this.currentY);
+}
+
+this.currentY += 40;
+
   }
 
   // Add footer
