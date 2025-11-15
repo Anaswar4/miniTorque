@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 MIN: 1,
                 MAX: 90  // Maximum 90% discount allowed
             },
-            FIXED: {
+            FLAT: {
                 MIN: 1,
                 MAX: 10000  // Maximum ₹10,000 fixed discount
             }
@@ -167,9 +167,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 clearError(maxDiscountInput);
             }
         } else {
-            if (value < VALIDATION_RULES.DISCOUNT.FIXED.MIN ||
-                value > VALIDATION_RULES.DISCOUNT.FIXED.MAX) {
-                showError(valueInput, `Fixed amount must be between ₹${VALIDATION_RULES.DISCOUNT.FIXED.MIN} and ₹${VALIDATION_RULES.DISCOUNT.FIXED.MAX}`);
+            if (value < VALIDATION_RULES.DISCOUNT.FLAT.MIN ||
+                value > VALIDATION_RULES.DISCOUNT.FLAT.MAX) {
+                showError(valueInput, `Fixed amount must be between ₹${VALIDATION_RULES.DISCOUNT.FLAT.MIN} and ₹${VALIDATION_RULES.DISCOUNT.FLAT.MAX}`);
                 return false;
             }
         }
@@ -197,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // Fixed discount validation
-        if (discountType === 'fixed' && discountValue >= minOrderValue) {
+        if (discountType === 'flat' && discountValue >= minOrderValue) {
             showError(input, 'Minimum order amount must be greater than the discount amount');
             return false;
         }

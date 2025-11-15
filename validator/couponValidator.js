@@ -91,10 +91,20 @@ const validateDiscount = (discount, discountType) => {
         };
     }
 
-    if (discountType === 'percentage' && discountValue > 100) {
+    //  Validate percentage discount (1-90) 
+    if (discountType === 'percentage' && discountValue > 90) {
         return {
             isValid: false,
-            error: 'Percentage discount must be between 1 and 100',
+            error: 'Percentage discount must be between 1 and 90',
+            field: 'discount'
+        };
+    }
+
+    //  Validate flat discount (1-10000)
+    if (discountType === 'flat' && discountValue > 10000) {
+        return {
+            isValid: false,
+            error: 'Flat discount amount cannot exceed ₹10,000',
             field: 'discount'
         };
     }
@@ -104,6 +114,7 @@ const validateDiscount = (discount, discountType) => {
         parsedValue: discountValue
     };
 };
+
 
 /**
  * Validates minimum purchase amount field
