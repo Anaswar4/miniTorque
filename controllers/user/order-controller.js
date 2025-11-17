@@ -110,7 +110,7 @@ const loadOrderDetails = async (req, res) => {
     // Get cart count for navbar
     const cart = await Cart.findOne({ userId }).lean();
     const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-
+    
     res.render('user/order-details', {
       user,
       order,
@@ -149,15 +149,6 @@ const cancelOrderItem = async (req, res) => {
         message: 'Order not found'
       });
     }
-    
-
-    // Check if order can be cancelled based on status
-    if (['Shipped', 'Delivered', 'Return Request', 'Returned', 'Cancelled'].includes(order.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order cannot be cancelled at this stage'
-      });
-    }
 
     // Find the specific item
     const orderItem = order.orderedItems.id(itemId);
@@ -168,11 +159,20 @@ const cancelOrderItem = async (req, res) => {
       });
     }
 
-    // Check if item can be cancelled
-    if (orderItem.status !== 'Active') {
+    // Check if item can be cancelled - FIXED: Check for Pending, Processing statuses
+    const cancellableStatuses = ['Pending', 'Processing'];
+    if (!cancellableStatuses.includes(orderItem.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Item is already cancelled or returned'
+        message: 'Item cannot be cancelled at this stage. Only pending and processing items can be cancelled.'
+      });
+    }
+
+    // Check if order-level status allows cancellation
+    if (['Shipped', 'Delivered', 'Return Request', 'Returned', 'Cancelled'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order cannot be cancelled at this stage'
       });
     }
 
@@ -183,42 +183,41 @@ const cancelOrderItem = async (req, res) => {
 
     // Restore product stock
     try {
-      const productUpdateResult = await Product.findByIdAndUpdate(
+      await Product.findByIdAndUpdate(
         orderItem.product._id,
         { $inc: { quantity: orderItem.quantity } },
         { new: true }
       );
     } catch (stockError) {
       console.error('Error restoring product stock:', stockError);
-      // Continue with order cancellation even if stock update fails
     }
 
     // Recalculate order amounts based on active items only
-    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+    const activeItems = order.orderedItems.filter(item => 
+      ['Pending', 'Processing', 'Shipped', 'Delivered'].includes(item.status)
+    );
     const cancelledItems = order.orderedItems.filter(item => item.status === 'Cancelled');
     
     if (activeItems.length === 0) {
-      // All items cancelled - set amounts to 0
+      // All items cancelled
       order.status = 'Cancelled';
       order.totalPrice = 0;
       order.finalAmount = 0;
     } else {
-      // Partially cancelled - recalculate based on active items with proportional discount
+      // Partially cancelled
       order.status = 'Partially Cancelled';
       
-      // Calculate totals
       const activeItemsTotal = activeItems.reduce((sum, item) => sum + item.totalPrice, 0);
       const cancelledItemsTotal = cancelledItems.reduce((sum, item) => sum + item.totalPrice, 0);
       const originalOrderTotal = activeItemsTotal + cancelledItemsTotal;
       
-      // Calculate proportional discount for active items only
+      // Calculate proportional discount
       let applicableDiscount = 0;
       if (order.discount > 0 && originalOrderTotal > 0) {
         const activeItemsProportion = activeItemsTotal / originalOrderTotal;
         applicableDiscount = Math.min(order.discount * activeItemsProportion, activeItemsTotal);
       }
       
-      // Update order totals
       order.totalPrice = activeItemsTotal;
       order.finalAmount = Math.max(0, activeItemsTotal - applicableDiscount + order.shippingCharges);
     }
@@ -230,30 +229,16 @@ const cancelOrderItem = async (req, res) => {
       timestamp: new Date()
     });
 
-    // Credit wallet for cancelled item 
+    // Credit wallet for cancelled item
     let walletCreditAmount = 0;
-    
-    // Calculate refund amount 
     let refundAmount = orderItem.totalPrice;
     
-    // Check if this is the last item being cancelled and there were previous individual cancellations
-    const previouslyCancelledItems = order.orderedItems.filter(item => 
-      item.status === 'Cancelled' && item._id.toString() !== itemId
-    );
-    
-    if (activeItems.length === 0 && previouslyCancelledItems.length > 0 && order.couponDiscount > 0) {
-      // This is the last item being cancelled after previous partial cancellations
-      refundAmount = Math.max(0, orderItem.totalPrice - order.couponDiscount);
-    }
-    
-    // Apply payment method logic to the calculated refund amount
+    // Apply payment method logic
     if (order.paymentMethod === 'Cash on Delivery') {
-      // For COD, only credit if payment was actually collected (status Completed)
       if (order.paymentStatus === 'Completed') {
         walletCreditAmount = refundAmount;
       }
     } else {
-      // For online payments always credit to wallet
       walletCreditAmount = refundAmount;
     }
     
@@ -266,8 +251,7 @@ const cancelOrderItem = async (req, res) => {
           order.orderId
         );
       } catch (walletError) {
-        console.error('Error adding money to wallet for cancelled item:', walletError);
-        // Continue with cancellation even if wallet credit fails
+        console.error('Error adding money to wallet:', walletError);
       }
     }
 
@@ -408,6 +392,8 @@ const cancelEntireOrder = async (req, res) => {
 
 
 
+
+
 // Request return for an order (entire order or specific items)
 const requestReturn = async (req, res) => {
   try {
@@ -427,12 +413,15 @@ const requestReturn = async (req, res) => {
     }
 
     // Check if order can be returned(only delivered orders can be returned
-    if (order.status !== 'Delivered') {
-      return res.status(400).json({
+   //  Allow returns for Delivered, Partially Returned, and Returned orders
+const allowedOrderStatusesForReturn = ['Delivered', 'Partially Returned', 'Return Request', 'Returned'];
+
+if (!allowedOrderStatusesForReturn.includes(order.status)) {
+    return res.status(400).json({
         success: false,
-        message: 'Only delivered orders can be returned'
-      });
-    }
+        message: 'Returns are only available for delivered or partially returned orders.'
+    });
+}
 
     // Check if return request already exists for entire order or if return has been attempted
     if (order.status === 'Return Request' || order.status === 'Returned' || order.returnAttempted) {
@@ -461,20 +450,25 @@ const requestReturn = async (req, res) => {
       let returnDescription = '';
       
       for (const returnItem of items) {
-        const orderItem = order.orderedItems.id(returnItem.itemId);
-        if (orderItem && orderItem.status === 'Active' && !orderItem.returnAttempted) {
-          orderItem.status = 'Return Request';
-          orderItem.returnReason = returnItem.reason || reason || 'Return requested by customer';
-          orderItem.returnRequestedAt = new Date();
-          orderItem.returnAttempted = true; 
-          returnedItemsCount++;
-          
-          if (returnDescription) {
+    const orderItem = order.orderedItems.id(returnItem.itemId);
+    
+    // Define allowed statuses here
+    const allowedItemStatuses = ['Active', 'Delivered']; 
+    
+    //  Check if item is valid 
+    if (orderItem && allowedItemStatuses.includes(orderItem.status) && !orderItem.returnAttempted) {
+        orderItem.status = 'Return Request';
+        orderItem.returnReason = returnItem.reason || reason || 'Return requested by customer';
+        orderItem.returnRequestedAt = new Date();
+        orderItem.returnAttempted = true; 
+        returnedItemsCount++;
+        
+        if (returnDescription) {
             returnDescription += ', ';
-          }
-          returnDescription += orderItem.product.productName;
         }
-      }
+        returnDescription += orderItem.product.productName;
+    }
+}
 
       if (returnedItemsCount === 0) {
         return res.status(400).json({
@@ -626,7 +620,6 @@ const requestIndividualItemReturn = async (req, res) => {
     const userId = req.session.userId || req.session.googleUserId;  
     const { reason } = req.body;
 
-    // Get order with populated product data
     const order = await Order.findOne({ orderId, userId })
       .populate('orderedItems.product');
 
@@ -634,14 +627,6 @@ const requestIndividualItemReturn = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
-      });
-    }
-
-    // Check if order can be returned 
-    if (order.status !== 'Delivered') {
-      return res.status(400).json({
-        success: false,
-        message: 'Only delivered orders can be returned'
       });
     }
 
@@ -654,15 +639,34 @@ const requestIndividualItemReturn = async (req, res) => {
       });
     }
 
-    // Check if item can be returned
-    if (orderItem.status !== 'Active' || orderItem.returnAttempted) {
+    // Check if item can be returned - FIXED: Check for Delivered status specifically
+    //  Check if item can be returned - allow Delivered or Active
+const allowedItemReturnStatuses = ['Delivered', 'Active']; 
+if (!allowedItemReturnStatuses.includes(orderItem.status)) {
+    return res.status(400).json({
+        success: false,
+        message: 'Only delivered or active items can be returned. Current status: ' + orderItem.status
+    });
+}
+
+    // Check if return already attempted
+    if (orderItem.returnAttempted) {
       return res.status(400).json({
         success: false,
-        message: 'Item is already cancelled, returned, has a return request, or return has already been attempted. Only one return attempt is allowed per item.'
+        message: 'Return has already been attempted for this item. Only one return attempt is allowed per item.'
       });
     }
 
-    // Check if order is within return window 
+    // Check if order-level status allows returns
+    const allowedOrderStatuses = ['Delivered', 'Partially Returned'];
+    if (!allowedOrderStatuses.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Returns are only available for delivered orders'
+      });
+    }
+
+    // Check if order is within return window (7 days)
     const deliveryDate = order.orderTimeline.find(timeline => timeline.status === 'Delivered')?.timestamp;
     if (deliveryDate) {
       const daysSinceDelivery = Math.floor((new Date() - new Date(deliveryDate)) / (1000 * 60 * 60 * 24));
@@ -678,7 +682,7 @@ const requestIndividualItemReturn = async (req, res) => {
     orderItem.status = 'Return Request';
     orderItem.returnReason = reason || 'Return requested by customer';
     orderItem.returnRequestedAt = new Date();
-    orderItem.returnAttempted = true; 
+    orderItem.returnAttempted = true;
 
     // Add to order timeline
     order.orderTimeline.push({

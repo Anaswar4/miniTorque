@@ -314,213 +314,225 @@ class InvoiceGenerator {
     this.currentY += 20;
   }
 
-  // Add summary section
-  addSummary(order) {
-    // Calculate totals using the same logic as order details page
-    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-    const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
-    const cancelledItems = order.orderedItems.filter(item => item.status === 'Cancelled');
-    const returnedItems = order.orderedItems.filter(item => item.status === 'Returned');
+// Add summary section
+addSummary(order) {
+    // ----------------------------------------------------
+    // 1. DEFINE ITEM GROUPS & CALCULATE KEPT ITEM COST
+    // ----------------------------------------------------
+
+    const returnedOrCancelledStatuses = ['Cancelled', 'Returned', 'Return Approved', 'Return Request'];
+    const keptItems = order.orderedItems.filter(item => 
+        !returnedOrCancelledStatuses.includes(item.status)
+    );
     
-    const includedItems = [...activeItems, ...returnRequestItems];
+    let subtotalRegularPrice = 0; 
+    let keptAmountAfterAllDiscounts = 0; // The FINAL AMOUNT PAID for KEPT items
+    let totalItemDiscount = 0; 
     
-    // Calculate subtotal based on regular prices (original prices)
-    let subtotalRegularPrice = 0;
-    let amountAfterDiscount = 0;
-    let totalItemDiscount = 0;
-    
-    includedItems.forEach(item => {
-      // Get regular price from product (original price)
-      const regularPrice = item.product.regularPrice || item.price;
-      const salePrice = item.price; // This is the selling price
-      const quantity = item.quantity;
-      
-      // Subtotal based on regular prices
-      subtotalRegularPrice += regularPrice * quantity;
-      
-      // Amount customer actually pays (sale price total)
-      amountAfterDiscount += item.totalPrice;
-      
-      // Calculate discount for this item
-      const itemDiscount = (regularPrice - salePrice) * quantity;
-      totalItemDiscount += Math.max(0, itemDiscount);
+    keptItems.forEach(item => {
+        const regularPrice = item.product.regularPrice || item.price;
+        const salePrice = item.price; 
+        const quantity = item.quantity;
+        
+        subtotalRegularPrice += regularPrice * quantity;
+        keptAmountAfterAllDiscounts += item.totalPrice; 
+        
+        const itemDiscount = (regularPrice - salePrice) * quantity;
+        totalItemDiscount += Math.max(0, itemDiscount);
     });
+
+    // Refund amounts (This is the FLAWED data source, but we keep it for display)
+    const cancelledAmount = order.orderedItems.filter(item => item.status === 'Cancelled').reduce((sum, item) => sum + item.totalPrice, 0);
+    const returnedAmount = order.orderedItems.filter(item => ['Returned', 'Return Approved', 'Return Request'].includes(item.status)).reduce((sum, item) => sum + item.totalPrice, 0);
     
-    let currentTotal = amountAfterDiscount;
-    if (includedItems.length > 0) {
-      currentTotal += order.shippingCharges;
+    const totalRefundedValue = cancelledAmount + returnedAmount;
+    
+    // Total Order-Level Discounts (for display purposes only)
+    const additionalDiscount = order.couponApplied ? (order.discount || 0) : 0;
+    const couponDiscount = (order.couponApplied && order.couponDiscount) ? (order.couponDiscount || 0) : 0;
+    
+    // ----------------------------------------------------
+    // 2. CALCULATE TRUE NET TOTAL (The definitive fix)
+    // ----------------------------------------------------
+    
+    // Net Total is calculated as: (Final Billed Price of Kept Items) + Shipping.
+    // We explicitly remove the totalRefundedValue subtraction to prevent the negative number.
+    let netAmountPaid = keptAmountAfterAllDiscounts;
+    
+    if (keptItems.length > 0 || totalRefundedValue > 0) {
+        netAmountPaid += order.shippingCharges;
     }
     
-    // Subtract coupon discount if applied
-    if (order.couponApplied && order.couponDiscount > 0) {
-      currentTotal -= order.couponDiscount;
-    }
-    
-    const cancelledAmount = cancelledItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const returnedAmount = returnedItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    
-    // Summary section
+    // Check for full refund scenario where all items are gone
+    const allItemsGone = keptItems.length === 0;
+
+    // --- DISPLAY ---
+
     const summaryX = this.pageWidth - 200;
     
-    // Subtotal (based on regular prices)
+    // ----------------------------------------------------
+    // 3. PRINT SUMMARY LINES
+    // ----------------------------------------------------
+    
+    // Subtotal (based on regular prices of KEPT items)
     this.doc
-      .fontSize(8)
-      .fillColor('#666666')
-      .font('Helvetica')
-      .text('Subtotal:', summaryX, this.currentY);
+        .fontSize(8)
+        .fillColor('#666666')
+        .font('Helvetica')
+        .text('Subtotal (Original):', summaryX, this.currentY);
     
     this.doc
-      .fontSize(8)
-      .fillColor('#000000')
-      .font('Helvetica')
-      .text(`₹${subtotalRegularPrice.toFixed(2)}`, summaryX + 100, this.currentY);
+        .fontSize(8)
+        .fillColor('#000000')
+        .font('Helvetica')
+        .text(`₹${subtotalRegularPrice.toFixed(2)}`, summaryX + 100, this.currentY);
     
     this.currentY += 12;
     
-    // Product discount (difference between regular and sale prices)
+    // Product discount
     if (totalItemDiscount > 0) {
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text('Product Discount:', summaryX, this.currentY);
-      
-      this.doc
-        .fontSize(8)
-        .fillColor('#10b981')
-        .font('Helvetica')
-        .text(`-₹${totalItemDiscount.toFixed(2)}`, summaryX + 100, this.currentY);
-      
-      this.currentY += 12;
+        this.doc
+            .fontSize(8)
+            .fillColor('#666666')
+            .font('Helvetica')
+            .text('Product Discount:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(8)
+            .fillColor('#10b981')
+            .font('Helvetica')
+            .text(`-₹${totalItemDiscount.toFixed(2)}`, summaryX + 100, this.currentY);
+        
+        this.currentY += 12;
     }
     
-    // Additional discount (coupon/order level discount)
-    if (order.discount > 0) {
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text('Additional Discount:', summaryX, this.currentY);
-      
-      this.doc
-        .fontSize(8)
-        .fillColor('#10b981')
-        .font('Helvetica')
-        .text(`-₹${order.discount.toFixed(2)}`, summaryX + 100, this.currentY);
-      
-      this.currentY += 12;
+    // Additional discount
+    if (additionalDiscount > 0) {
+        this.doc
+            .fontSize(8)
+            .fillColor('#666666')
+            .font('Helvetica')
+            .text('Additional Discount:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(8)
+            .fillColor('#10b981')
+            .font('Helvetica')
+            .text(`-₹${additionalDiscount.toFixed(2)}`, summaryX + 100, this.currentY);
+        
+        this.currentY += 12;
     }
     
-    // Coupon discount (if applied)
-    if (order.couponApplied && order.couponDiscount > 0) {
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text('Coupon Discount:', summaryX, this.currentY);
-      
-      this.doc
-        .fontSize(8)
-        .fillColor('#10b981')
-        .font('Helvetica')
-        .text(`-₹${order.couponDiscount.toFixed(2)}`, summaryX + 100, this.currentY);
-      
-      this.currentY += 12;
+    // Coupon discount
+    if (couponDiscount > 0) {
+        this.doc
+            .fontSize(8)
+            .fillColor('#666666')
+            .font('Helvetica')
+            .text('Coupon Discount:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(8)
+            .fillColor('#10b981')
+            .font('Helvetica')
+            .text(`-₹${couponDiscount.toFixed(2)}`, summaryX + 100, this.currentY);
+        
+        this.currentY += 12;
     }
     
-    // Cancelled amount (if any)
+    // Cancelled amount
     if (cancelledAmount > 0) {
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text('Cancelled:', summaryX, this.currentY);
-      
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text(`-₹${cancelledAmount.toFixed(2)}`, summaryX + 100, this.currentY);
-      
-      this.currentY += 12;
+        this.doc
+            .fontSize(8)
+            .fillColor('#666666')
+            .font('Helvetica')
+            .text('Cancelled:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(8)
+            .fillColor('#e00000') 
+            .font('Helvetica')
+            .text(`-₹${cancelledAmount.toFixed(2)}`, summaryX + 100, this.currentY);
+        
+        this.currentY += 12;
     }
     
-    // Returned amount (if any)
+    // Returned amount
     if (returnedAmount > 0) {
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text('Returned:', summaryX, this.currentY);
-      
-      this.doc
-        .fontSize(8)
-        .fillColor('#666666')
-        .font('Helvetica')
-        .text(`-₹${returnedAmount.toFixed(2)}`, summaryX + 100, this.currentY);
-      
-      this.currentY += 12;
+        this.doc
+            .fontSize(8)
+            .fillColor('#666666')
+            .font('Helvetica')
+            .text('Returned (Refund):', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(8)
+            .fillColor('#e00000') 
+            .font('Helvetica')
+            .text(`-₹${returnedAmount.toFixed(2)}`, summaryX + 100, this.currentY);
+        
+        this.currentY += 12;
     }
     
     // Shipping
     this.doc
-      .fontSize(8)
-      .fillColor('#666666')
-      .font('Helvetica')
-      .text('Shipping:', summaryX, this.currentY);
+        .fontSize(8)
+        .fillColor('#666666')
+        .font('Helvetica')
+        .text('Shipping:', summaryX, this.currentY);
     
     this.doc
-      .fontSize(8)
-      .fillColor('#000000')
-      .font('Helvetica')
-      .text(order.shippingCharges === 0 ? 'FREE' : `₹${order.shippingCharges.toFixed(2)}`, summaryX + 100, this.currentY);
+        .fontSize(8)
+        .fillColor('#000000')
+        .font('Helvetica')
+        .text(order.shippingCharges === 0 ? 'FREE' : `₹${order.shippingCharges.toFixed(2)}`, summaryX + 100, this.currentY);
     
     this.currentY += 15;
     
     // Horizontal line
     this.doc
-      .strokeColor('#cccccc')
-      .lineWidth(1)
-      .moveTo(summaryX, this.currentY)
-      .lineTo(this.pageWidth - this.margin, this.currentY)
-      .stroke();
+        .strokeColor('#cccccc')
+        .lineWidth(1)
+        .moveTo(summaryX, this.currentY)
+        .lineTo(this.pageWidth - this.margin, this.currentY)
+        .stroke();
     
     this.currentY += 12;
     
-  // Check if all items are returned
-const allItemsReturned = order.orderedItems.every(item => item.status === 'Returned');
+    // ----------------------------------------------------
+    // 4. FINAL TOTAL LINE
+    // ----------------------------------------------------
 
-if (allItemsReturned && returnedAmount > 0) {
-  // Show "Refund Issued" instead of "Total" when all items are returned
-  this.doc
-    .fontSize(10)
-    .fillColor('#10b981')
-    .font('Helvetica-Bold')
-    .text('Refund Issued:', summaryX, this.currentY);
-  
-  this.doc
-    .fontSize(10)
-    .fillColor('#10b981')
-    .font('Helvetica-Bold')
-    .text(`₹${returnedAmount.toFixed(2)}`, summaryX + 100, this.currentY);
-} else {
-  // Show "Total" for normal orders
-  this.doc
-    .fontSize(10)
-    .fillColor('#000000')
-    .font('Helvetica-Bold')
-    .text('Total:', summaryX, this.currentY);
-  
-  this.doc
-    .fontSize(10)
-    .fillColor('#000000')
-    .font('Helvetica-Bold')
-    .text(`₹${currentTotal.toFixed(2)}`, summaryX + 100, this.currentY);
+    if (allItemsGone && totalRefundedValue > 0) {
+        // All items are gone, net is 0 (assuming refund covered the whole amount)
+        this.doc
+            .fontSize(10)
+            .fillColor('#10b981')
+            .font('Helvetica-Bold')
+            .text('Refund Total:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(10)
+            .fillColor('#10b981')
+            .font('Helvetica-Bold')
+            .text(`₹0.00`, summaryX + 100, this.currentY);
+    } else {
+        // Net Total is the TRUE cost of KEPT items
+        this.doc
+            .fontSize(10)
+            .fillColor('#000000')
+            .font('Helvetica-Bold')
+            .text('Net Total:', summaryX, this.currentY);
+        
+        this.doc
+            .fontSize(10)
+            .fillColor('#000000')
+            .font('Helvetica-Bold')
+            .text(`₹${netAmountPaid.toFixed(2)}`, summaryX + 100, this.currentY);
+    }
+
+    this.currentY += 40;
 }
-
-this.currentY += 40;
-
-  }
 
   // Add footer
   addFooter() {

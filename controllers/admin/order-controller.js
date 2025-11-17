@@ -277,6 +277,18 @@ const updateOrderStatus = async (req, res) => {
     }
 
     order.status = status;
+
+    if (status === 'Delivered') {
+  order.orderedItems.forEach(item => {
+    if (
+      item.status === 'Pending' ||
+      item.status === 'Processing' ||
+      item.status === 'Shipped'
+    ) {
+      item.status = 'Delivered';
+    }
+  });
+}
     
     if (status === 'Cancelled') {
       const activeItems = order.orderedItems.filter(item => item.status === 'Active');
