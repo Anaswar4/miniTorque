@@ -71,6 +71,7 @@ adminRoute.get('/get-orders', isAdminAuthenticated, preventCache, orderControlle
 adminRoute.get('/get-orders/:id/details', isAdminAuthenticated, preventCache, orderController.getOrderDetailsPage);
 adminRoute.get('/get-orders/:id', isAdminAuthenticated, preventCache, orderController.getOrderById);
 adminRoute.patch('/get-orders/:id/status', isAdminAuthenticated, preventCache, orderController.updateOrderStatus);
+adminRoute.patch('/get-orders/:id/items/bulk-status', isAdminAuthenticated, preventCache, orderController.updateItemsStatusBulk);
 adminRoute.get('/return-requests', isAdminAuthenticated, preventCache, returnController.getReturnRequests);
 adminRoute.get('/get-return-request-count', isAdminAuthenticated, preventCache, orderController.getReturnRequestCount);
 adminRoute.post('/return-requests/:id/approve', isAdminAuthenticated, preventCache, returnController.approveReturnRequest);

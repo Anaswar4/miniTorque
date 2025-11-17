@@ -42,8 +42,8 @@ const orderSchema = new Schema({
     },
     status: {
       type: String,
-      enum: ['Active', 'Cancelled', 'Returned', 'Return Request'],
-      default: 'Active'
+      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Request', 'Returned'],
+      default: 'Pending'
     },
     cancellationReason: {
       type: String,
@@ -128,7 +128,7 @@ const orderSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Request', 'Returned', 'Partially Cancelled', 'Partially Returned'],
+    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Return Request', 'Returned', 'Partially Cancelled', 'Partially Returned','Partially Delivered'],
     default: 'Pending'
   },
   orderTimeline: [{
@@ -147,7 +147,7 @@ const orderSchema = new Schema({
   }],
   estimatedDelivery: {
     type: Date,
-    default: function() {
+    default: function () {
       const deliveryDate = new Date();
       deliveryDate.setDate(deliveryDate.getDate() + 7); // 7 days from order
       return deliveryDate;

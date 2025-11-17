@@ -213,7 +213,10 @@
                                     %>
                                     <div class="amount-cell">
                                         <i class="fas fa-rupee-sign"></i>
-                                        <span class="amount-value">₹<%= currentTotal.toFixed(2) %></span>
+                                       <span class="amount-value">
+                                          ₹<%= order.totalPrice ? order.finalAmount.toLocaleString() : '0.00' %>
+                                        </span>
+
                                     </div>
                                 </td>
                                 <td>
