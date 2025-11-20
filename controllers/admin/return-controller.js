@@ -35,9 +35,13 @@ const getReturnRequests = async (req, res) => {
     const processedRequests = [];
     
     for (const order of returnRequests) {
-      if (order.status === 'Return Request') {
-        const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-        const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+      // Check if this is an entire order return or individual items
+      const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+      const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+      const allItemsBeingReturned = (activeItems.length + returnRequestItems.length) === order.orderedItems.length;
+      
+      if (order.status === 'Return Request' && allItemsBeingReturned) {
+        // This is an entire order return
         const includedItems = [...activeItems, ...returnRequestItems];
         
         let amountAfterDiscount = 0;
@@ -56,23 +60,18 @@ const getReturnRequests = async (req, res) => {
           returnItems: includedItems,
           returnAmount: currentTotal
         });
-      } else {
-        const returnRequestItems = order.orderedItems.filter(item => 
-          item.status === 'Return Request'
-        );
-        
-        if (returnRequestItems.length > 0) {
-          returnRequestItems.forEach(item => {
-            processedRequests.push({
-              ...order.toObject(),
-              returnType: 'individual',
-              returnItems: [item],
-              returnAmount: item.totalPrice || (item.price * item.quantity),
-              individualItemId: item._id,
-              individualItemName: item.product ? item.product.productName : 'Unknown Product'
-            });
+      } else if (returnRequestItems.length > 0) {
+        // These are individual item returns
+        returnRequestItems.forEach(item => {
+          processedRequests.push({
+            ...order.toObject(),
+            returnType: 'individual',
+            returnItems: [item],
+            returnAmount: item.totalPrice || (item.price * item.quantity),
+            individualItemId: item._id,
+            individualItemName: item.product ? item.product.productName : 'Unknown Product'
           });
-        }
+        });
       }
     }
 
@@ -134,39 +133,42 @@ const approveReturnRequest = async (req, res) => {
       });
     }
     
-    let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request'); 
-    const isEntireOrderReturn = order.status === 'Return Request';
-
-    if (!isEntireOrderReturn && returnRequestItems.length === 0) {
+    // Get current return request items
+    let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+    
+    if (returnRequestItems.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No return requests found for this order'
       });
     }
 
+    //  Determine if this is entire order return or individual items
+    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+    const allItemsBeingReturned = (activeItems.length + returnRequestItems.length) === order.orderedItems.length;
+    const isEntireOrderReturn = order.status === 'Return Request' && allItemsBeingReturned;
+
     let refundAmount = 0;
     let returnedItemsDescription = '';
 
     if (isEntireOrderReturn) {
-      if (order.status === 'Returned' || order.returnApprovedAt) {
+      
+      
+      // Check if already processed
+      const alreadyProcessed = order.orderedItems.every(item => 
+        item.status === 'Returned' || item.returnApprovedAt
+      );
+      
+      if (alreadyProcessed) {
         return res.status(400).json({
           success: true,
           message: 'This return request has already been processed'
         });
       }
-      if (order.status !== 'Return Request') {
-        return res.status(403).json({
-          success: false,
-          message: 'Return can only be approved from Return Request status'
-        });
-      }
 
       order.status = 'Returned';
 
-      const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-      const returnRequestItemsAll = order.orderedItems.filter(item => item.status === 'Return Request');
-      const includedItems = [...activeItems, ...returnRequestItemsAll];
-
+      const includedItems = [...activeItems, ...returnRequestItems];
       let amountAfterDiscount = 0;
       includedItems.forEach(item => {
         amountAfterDiscount += item.totalPrice;
@@ -198,11 +200,15 @@ const approveReturnRequest = async (req, res) => {
       returnedItemsDescription = 'Entire order';
 
     } else {
-      if (itemIds && Array.isArray(itemIds)) {
+      //  INDIVIDUAL ITEM RETURN - Only specific items being returned
+      // If itemIds provided, filter to those specific items
+      if (itemIds && Array.isArray(itemIds) && itemIds.length > 0) {
         returnRequestItems = returnRequestItems.filter(item => itemIds.includes(item._id.toString()));
       }
       
+      // Check if these specific items are already approved
       const itemsToApprove = returnRequestItems.filter(item => !item.returnApprovedAt);
+      
       if (itemsToApprove.length === 0) {
         return res.status(400).json({
           success: true,
@@ -210,6 +216,7 @@ const approveReturnRequest = async (req, res) => {
         });
       }
 
+      // Approve each individual item
       for (const item of itemsToApprove) {
         item.status = 'Returned';
         item.returnApprovedAt = new Date();
@@ -229,10 +236,15 @@ const approveReturnRequest = async (req, res) => {
         );
       }
 
-      const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-      if (activeItems.length === 0) {
+      // Update order status based on remaining items
+      const remainingActiveItems = order.orderedItems.filter(item => item.status === 'Active');
+      const allReturnedItems = order.orderedItems.filter(item => item.status === 'Returned');
+      
+      if (remainingActiveItems.length === 0 && allReturnedItems.length === order.orderedItems.length) {
+        // All items now returned
         order.status = 'Returned';
       } else {
+        // Some items still active
         order.status = 'Partially Returned';
       }
     }
@@ -247,7 +259,10 @@ const approveReturnRequest = async (req, res) => {
       );
     }
 
-    order.returnApprovedAt = new Date();
+    // Update order-level return approval (only set once)
+    if (!order.returnApprovedAt) {
+      order.returnApprovedAt = new Date();
+    }
     order.adminNote = adminNote || 'Return request approved by admin';
 
     order.orderTimeline.push({
@@ -299,22 +314,25 @@ const rejectReturnRequest = async (req, res) => {
       });
     }
 
-    // ✅ FIX: Dynamically determine if it's an entire order return
-    const isEntireOrderReturn = order.status === 'Return Request';
-    
+    // Get current return request items
     let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
     
-    if (!isEntireOrderReturn && returnRequestItems.length === 0) {
+    if (returnRequestItems.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No return requests found for this order'
       });
     }
 
+    //  Determine if this is entire order return or individual items
+    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
+    const allItemsBeingReturned = (activeItems.length + returnRequestItems.length) === order.orderedItems.length;
+    const isEntireOrderReturn = order.status === 'Return Request' && allItemsBeingReturned;
+    
     let rejectedItemsDescription = '';
 
     if (isEntireOrderReturn) {
-      // Entire order return rejection
+      // ENTIRE ORDER RETURN REJECTION
       order.status = 'Delivered';
       order.returnRejectedAt = new Date();
       order.rejectionReason = rejectionReason;
@@ -329,9 +347,9 @@ const rejectReturnRequest = async (req, res) => {
       
       rejectedItemsDescription = 'Entire order';
     } else {
-      // Individual item return rejection
+      //  INDIVIDUAL ITEM RETURN REJECTION
       // If itemIds provided, filter to those specific items
-      if (itemIds && Array.isArray(itemIds)) {
+      if (itemIds && Array.isArray(itemIds) && itemIds.length > 0) {
         returnRequestItems = returnRequestItems.filter(item => itemIds.includes(item._id.toString()));
       }
       
@@ -342,6 +360,7 @@ const rejectReturnRequest = async (req, res) => {
         });
       }
       
+      // Reject each individual item
       for (const item of returnRequestItems) {
         item.status = 'Active';
         item.returnRejectedAt = new Date();
@@ -357,7 +376,7 @@ const rejectReturnRequest = async (req, res) => {
       order.returnRejectedAt = new Date();
       order.rejectionReason = rejectionReason;
       
-      // Check if there are still pending return requests
+      // Update order status based on remaining items
       const stillPendingReturns = order.orderedItems.some(item => item.status === 'Return Request');
       
       if (!stillPendingReturns) {
@@ -369,6 +388,8 @@ const rejectReturnRequest = async (req, res) => {
           order.status = 'Partially Returned';
         } else if (hasActiveItems && !hasReturnedItems) {
           order.status = 'Delivered';
+        } else if (!hasActiveItems && hasReturnedItems) {
+          order.status = 'Returned';
         }
       }
     }
