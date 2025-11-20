@@ -561,7 +561,7 @@ function renderOrdersTable(orders, paginationData) {
             </td>
             <td>
                 <div class="order-amount">
-                    <strong>₹${calculateCurrentTotal(order).toFixed(2)}</strong>
+                   <strong>₹${(order.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
             </td>
             <td>

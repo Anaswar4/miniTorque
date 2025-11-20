@@ -114,7 +114,7 @@ const getReturnRequests = async (req, res) => {
 const approveReturnRequest = async (req, res) => {
   try {
     const orderId = req.params.id;
-    const { adminNote } = req.body;
+    const { adminNote, itemIds } = req.body; 
     
     if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
       return res.status(400).json({
@@ -124,7 +124,7 @@ const approveReturnRequest = async (req, res) => {
     }
 
     const order = await Order.findById(orderId)
-      .populate('userId', 'fullname email')
+      .populate('userId', 'fullName email')
       .populate('orderedItems.product', 'productName quantity');
 
     if (!order) {
@@ -133,8 +133,8 @@ const approveReturnRequest = async (req, res) => {
         message: 'Order not found'
       });
     }
-
-    const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+    
+    let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request'); 
     const isEntireOrderReturn = order.status === 'Return Request';
 
     if (!isEntireOrderReturn && returnRequestItems.length === 0) {
@@ -150,94 +150,101 @@ const approveReturnRequest = async (req, res) => {
     if (isEntireOrderReturn) {
       if (order.status === 'Returned' || order.returnApprovedAt) {
         return res.status(400).json({
-          success: false,
+          success: true,
           message: 'This return request has already been processed'
         });
       }
-      
       if (order.status !== 'Return Request') {
         return res.status(403).json({
           success: false,
           message: 'Return can only be approved from Return Request status'
         });
       }
-      
+
       order.status = 'Returned';
-      
+
       const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-      const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
-      const includedItems = [...activeItems, ...returnRequestItems];
-      
+      const returnRequestItemsAll = order.orderedItems.filter(item => item.status === 'Return Request');
+      const includedItems = [...activeItems, ...returnRequestItemsAll];
+
       let amountAfterDiscount = 0;
       includedItems.forEach(item => {
         amountAfterDiscount += item.totalPrice;
       });
-      
-      let currentTotal = amountAfterDiscount;
+
       if (includedItems.length > 0) {
-        currentTotal += order.shippingCharges;
+        amountAfterDiscount += order.shippingCharges;
       }
-      
-      refundAmount = currentTotal;
-      
+
+      refundAmount = amountAfterDiscount;
+
       for (const item of order.orderedItems) {
         if (item.status === 'Active' || item.status === 'Return Request') {
           item.status = 'Returned';
           item.returnApprovedAt = new Date();
-          
+
           if (!item.returnReason) {
             item.returnReason = 'Entire order return approved by admin';
           }
           
-          try {
-            await Product.findByIdAndUpdate(
-              item.product._id,
-              { $inc: { quantity: item.quantity } }
-            );
-          } catch (stockError) {
-            console.error('Error restoring product stock:', stockError);
-          }
+          // Restore product stock
+          await Product.findByIdAndUpdate(
+            item.product._id,
+            { $inc: { quantity: item.quantity } }
+          );
         }
       }
-      
+
       returnedItemsDescription = 'Entire order';
+
     } else {
-      const alreadyProcessedItems = returnRequestItems.filter(item => item.returnApprovedAt);
-      if (alreadyProcessedItems.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Some items in this return request have already been processed'
-        });
+      if (itemIds && Array.isArray(itemIds)) {
+        returnRequestItems = returnRequestItems.filter(item => itemIds.includes(item._id.toString()));
       }
       
-      for (const item of returnRequestItems) {
+      const itemsToApprove = returnRequestItems.filter(item => !item.returnApprovedAt);
+      if (itemsToApprove.length === 0) {
+        return res.status(400).json({
+          success: true,
+          message: 'All selected items in this return request have already been processed'
+        });
+      }
+
+      for (const item of itemsToApprove) {
         item.status = 'Returned';
         item.returnApprovedAt = new Date();
-        
+
         const itemRefundAmount = item.totalPrice || (item.price * item.quantity);
         refundAmount += itemRefundAmount;
-        
+
         if (returnedItemsDescription) {
           returnedItemsDescription += ', ';
         }
         returnedItemsDescription += `${item.product.productName} (₹${itemRefundAmount.toFixed(2)})`;
         
-        try {
-          await Product.findByIdAndUpdate(
-            item.product._id,
-            { $inc: { quantity: item.quantity } }
-          );
-        } catch (stockError) {
-          console.error('Error restoring individual item stock:', stockError);
-        }
+        // Restore product stock
+        await Product.findByIdAndUpdate(
+          item.product._id,
+          { $inc: { quantity: item.quantity } }
+        );
       }
-      
+
       const activeItems = order.orderedItems.filter(item => item.status === 'Active');
       if (activeItems.length === 0) {
         order.status = 'Returned';
       } else {
         order.status = 'Partially Returned';
       }
+    }
+
+    // Add refund to wallet
+    if (refundAmount > 0) {
+      const wallet = await Wallet.getOrCreateWallet(order.userId);
+      await wallet.addMoney(
+        refundAmount,
+        `Refund for returned items: ${returnedItemsDescription} (Order: ${order.orderId})`,
+        order.orderId
+      );
     }
 
     order.returnApprovedAt = new Date();
@@ -248,17 +255,6 @@ const approveReturnRequest = async (req, res) => {
       timestamp: new Date(),
       description: `Return approved for: ${returnedItemsDescription}. Refund: ₹${refundAmount.toFixed(2)}. ${adminNote || 'Return approved by admin'}`
     });
-
-    try {
-      const wallet = await Wallet.getOrCreateWallet(order.userId._id);
-      await wallet.addMoney(
-        refundAmount,
-        `Refund for returned items: ${returnedItemsDescription} (Order: ${order.orderId})`,
-        order.orderId
-      );
-    } catch (walletError) {
-      console.error('Error adding money to wallet:', walletError);
-    }
 
     await order.save();
 
@@ -271,7 +267,7 @@ const approveReturnRequest = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error approving return request:', error);
+    console.error('Error approving return:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to approve return request',
@@ -283,7 +279,7 @@ const approveReturnRequest = async (req, res) => {
 const rejectReturnRequest = async (req, res) => {
   try {
     const orderId = req.params.id;
-    const { rejectionReason } = req.body;
+    const { rejectionReason, itemIds } = req.body;
 
     if (!rejectionReason || rejectionReason.trim() === '') {
       return res.status(400).json({
@@ -293,7 +289,7 @@ const rejectReturnRequest = async (req, res) => {
     }
 
     const order = await Order.findById(orderId)
-      .populate('userId', 'fullname email')
+      .populate('userId', 'fullName email')
       .populate('orderedItems.product', 'productName');
 
     if (!order) {
@@ -303,9 +299,11 @@ const rejectReturnRequest = async (req, res) => {
       });
     }
 
-    const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+    // ✅ FIX: Dynamically determine if it's an entire order return
     const isEntireOrderReturn = order.status === 'Return Request';
-
+    
+    let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+    
     if (!isEntireOrderReturn && returnRequestItems.length === 0) {
       return res.status(400).json({
         success: false,
@@ -316,6 +314,7 @@ const rejectReturnRequest = async (req, res) => {
     let rejectedItemsDescription = '';
 
     if (isEntireOrderReturn) {
+      // Entire order return rejection
       order.status = 'Delivered';
       order.returnRejectedAt = new Date();
       order.rejectionReason = rejectionReason;
@@ -330,6 +329,19 @@ const rejectReturnRequest = async (req, res) => {
       
       rejectedItemsDescription = 'Entire order';
     } else {
+      // Individual item return rejection
+      // If itemIds provided, filter to those specific items
+      if (itemIds && Array.isArray(itemIds)) {
+        returnRequestItems = returnRequestItems.filter(item => itemIds.includes(item._id.toString()));
+      }
+      
+      if (returnRequestItems.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No valid items found to reject'
+        });
+      }
+      
       for (const item of returnRequestItems) {
         item.status = 'Active';
         item.returnRejectedAt = new Date();
@@ -341,8 +353,24 @@ const rejectReturnRequest = async (req, res) => {
         rejectedItemsDescription += item.product.productName;
       }
       
+      // Update order-level rejection info
       order.returnRejectedAt = new Date();
       order.rejectionReason = rejectionReason;
+      
+      // Check if there are still pending return requests
+      const stillPendingReturns = order.orderedItems.some(item => item.status === 'Return Request');
+      
+      if (!stillPendingReturns) {
+        // No more pending returns, check order status
+        const hasActiveItems = order.orderedItems.some(item => item.status === 'Active');
+        const hasReturnedItems = order.orderedItems.some(item => item.status === 'Returned');
+        
+        if (hasActiveItems && hasReturnedItems) {
+          order.status = 'Partially Returned';
+        } else if (hasActiveItems && !hasReturnedItems) {
+          order.status = 'Delivered';
+        }
+      }
     }
 
     order.orderTimeline.push({
@@ -363,7 +391,8 @@ const rejectReturnRequest = async (req, res) => {
     console.error('Error rejecting return request:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to reject return request'
+      message: 'Failed to reject return request',
+      error: error.message
     });
   }
 };
