@@ -99,8 +99,6 @@ const getProducts = async (req, res) => {
 
         // Execute aggregation
         const products = await Product.aggregate(pipeline);
-
-        //  Changed forEach to for...of + use calculateBestOffer
         for (const product of products) {
             if (product.categoryData) {
                 product.category = product.categoryData;
@@ -619,14 +617,15 @@ const getShopPage = async (req, res) => {
             }
         }
 
-        // Price range filter
+        // Price range filter - will be applied after calculating final price
+        let priceFilter = null;
         if (req.query.minPrice || req.query.maxPrice) {
-            baseMatch.salePrice = {};
+            priceFilter = {};
             if (req.query.minPrice) {
-                baseMatch.salePrice.$gte = parseFloat(req.query.minPrice);
+                priceFilter.$gte = parseFloat(req.query.minPrice);
             }
             if (req.query.maxPrice) {
-                baseMatch.salePrice.$lte = parseFloat(req.query.maxPrice);
+                priceFilter.$lte = parseFloat(req.query.maxPrice);
             }
         }
 
@@ -665,24 +664,47 @@ const getShopPage = async (req, res) => {
             {
                 $match: baseMatch
             },
-            // ADD CALCULATED FINAL PRICE FIELD
+            // ADD CALCULATED FINAL PRICE FIELD - FIXED
+            {
+                $addFields: {
+                    // Calculate best offer (max of product and category)
+                    bestOfferCalc: {
+                        $max: [
+                            { $ifNull: ["$productOffer", 0] },
+                            { $ifNull: ["$categoryData.categoryOffer", 0] }
+                        ]
+                    }
+                }
+            },
             {
                 $addFields: {
                     finalSellingPrice: {
                         $cond: {
-                            if: { $and: [{ $gt: ["$productOffer", 0] }, { $ne: ["$productOffer", null] }] },
+                            if: { $gt: ["$bestOfferCalc", 0] },
                             then: {
-                                $multiply: [
-                                    "$salePrice",
-                                    { $subtract: [1, { $divide: ["$productOffer", 100] }] }
+                                $subtract: [
+                                    "$regularPrice",
+                                    {
+                                        $multiply: [
+                                            "$regularPrice",
+                                            { $divide: ["$bestOfferCalc", 100] }
+                                        ]
+                                    }
                                 ]
                             },
-                            else: "$salePrice"
+                            else: { $ifNull: ["$salePrice", "$regularPrice"] }
                         }
                     }
                 }
             }
         ];
+
+        // Apply price range filter on calculated final price
+        if (priceFilter) {
+            pipeline.push({
+                $match: { finalSellingPrice: priceFilter }
+            });
+        }
 
         // Build sort object - UPDATED
         let sort = {};
@@ -728,8 +750,9 @@ const getShopPage = async (req, res) => {
             product.offerPercentage = offerDetails.bestOfferPercentage;
             product.offerType = offerDetails.offerType;
 
-            // Remove the temporary field
+            // Remove the temporary fields
             delete product.finalSellingPrice;
+            delete product.bestOfferCalc;
         }
 
         //  Get total count with SAME filters as main pipeline
@@ -747,9 +770,48 @@ const getShopPage = async (req, res) => {
             },
             {
                 $match: baseMatch  
-            },
-            { $count: "total" }
+            }
         ];
+
+        // Add price filter to count pipeline if present
+        if (priceFilter) {
+            countPipeline.push({
+                $addFields: {
+                    bestOfferCalc: {
+                        $max: [
+                            { $ifNull: ["$productOffer", 0] },
+                            { $ifNull: ["$categoryData.categoryOffer", 0] }
+                        ]
+                    }
+                }
+            });
+            countPipeline.push({
+                $addFields: {
+                    finalSellingPrice: {
+                        $cond: {
+                            if: { $gt: ["$bestOfferCalc", 0] },
+                            then: {
+                                $subtract: [
+                                    "$regularPrice",
+                                    {
+                                        $multiply: [
+                                            "$regularPrice",
+                                            { $divide: ["$bestOfferCalc", 100] }
+                                        ]
+                                    }
+                                ]
+                            },
+                            else: { $ifNull: ["$salePrice", "$regularPrice"] }
+                        }
+                    }
+                }
+            });
+            countPipeline.push({
+                $match: { finalSellingPrice: priceFilter }
+            });
+        }
+
+        countPipeline.push({ $count: "total" });
 
         const countResult = await Product.aggregate(countPipeline);
         const totalProducts = countResult.length > 0 ? countResult[0].total : 0;
@@ -844,6 +906,7 @@ const getShopPage = async (req, res) => {
         });
     }
 };
+
 
 
 //  Product Details function

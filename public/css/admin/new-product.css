@@ -181,8 +181,8 @@ body {
     border-radius: 0 4px 4px 0;
 }
 
-.error .error-message {
-    display: block;
+.error .error-message,.form-group.error .error-message {
+    display: block !important;
     animation: slideDown 0.3s ease;
 }
 

@@ -213,7 +213,10 @@
                                     %>
                                     <div class="amount-cell">
                                         <i class="fas fa-rupee-sign"></i>
-                                        <span class="amount-value">₹<%= currentTotal.toFixed(2) %></span>
+                                       <span class="amount-value">
+                                          ₹<%= order.totalPrice ? order.finalAmount.toLocaleString() : '0.00' %>
+                                        </span>
+
                                     </div>
                                 </td>
                                 <td>
@@ -558,7 +561,7 @@ function renderOrdersTable(orders, paginationData) {
             </td>
             <td>
                 <div class="order-amount">
-                    <strong>₹${calculateCurrentTotal(order).toFixed(2)}</strong>
+                   <strong>₹${(order.finalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
             </td>
             <td>

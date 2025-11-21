@@ -221,6 +221,14 @@ const addProduct = async (req, res) => {
             });
         }
 
+         if (productOffer && (parseFloat(productOffer) < 0 || parseFloat(productOffer) >= 100)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Product offer must be between 0 and 99',
+                field: 'productOffer'
+            });
+        }
+
         let imageData = [];
         try {
             imageData = JSON.parse(croppedImages || '[]');
@@ -348,6 +356,14 @@ const updateProduct = async (req, res) => {
             quantity: parseInt(quantity) || 0,
             features
         };
+
+         if (productOffer && (parseFloat(productOffer) < 0 || parseFloat(productOffer) >= 100)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Product offer must be between 0 and 99',
+                field: 'productOffer'
+            });
+        }
 
         let currentImages = [existingProduct.mainImage, ...existingProduct.subImages];
 

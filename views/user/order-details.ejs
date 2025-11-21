@@ -128,93 +128,94 @@
                         </h3>
                     </div>
 
-                    <% order.orderedItems.forEach(item => { %>
-                        <%
-                            // Calculate discount information for this item
-                            const regularPrice = item.product.regularPrice || item.price;
-                            const salePrice = item.price;
-                            const quantity = item.quantity;
-                            const discountPerItem = regularPrice - salePrice;
-                            const totalItemDiscount = discountPerItem * quantity;
-                            const discountPercentage = regularPrice > 0 ? Math.round((discountPerItem / regularPrice) * 100) : 0;
-                        %>
-                        <div class="order-item">
-                            <img src="/uploads/products/<%= item.product.mainImage %>"
-                                 alt="<%= item.product.productName %>"
-                                 class="item-image">
-                            <div class="item-details">
-                                <div class="item-name"><%= item.product.productName %></div>
-                                <div class="item-brand">Brand: <%= item.product.brand %></div>
-                                <div class="item-price">
-                                    <span class="current-price">₹<%= Math.round(salePrice) %></span>
-                                    <% if (discountPerItem > 0) { %>
-                                        <span class="original-price" style="text-decoration: line-through; color: #6c757d; margin-left: 0.5rem;">₹<%= Math.round(regularPrice) %></span>
-                                        <span class="discount-badge" style="background: #10b981; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;"><%= discountPercentage %>% OFF</span>
-                                    <% } %>
-                                </div>
-                                <div class="quantity-info">
-                                    Quantity: <%= quantity %> | Total: ₹<%= Math.round(item.totalPrice) %>
-                                    <% if (totalItemDiscount > 0) { %>
-                                        <br><small style="color: #10b981; font-weight: 600;">You saved: ₹<%= Math.round(totalItemDiscount) %> on this item</small>
-                                    <% } %>
-                                </div>
-                                <% if (item.status === 'Active') { %>
-                                    <%
-                                        // Check if any item in the order has a return request
-                                        const hasAnyReturnRequest = order.orderedItems.some(orderItem => orderItem.status === 'Return Request');
-                                        
-                                        // Check if this specific item has already been processed for return (approved, rejected, or attempted)
-                                        const itemAlreadyProcessedForReturn = item.returnApprovedAt || item.returnRejectedAt || item.returnAttempted;
-                                    %>
-                                    <div class="item-actions">
-                                        <% if ((order.status === 'Delivered' || order.status === 'Partially Returned' || hasAnyReturnRequest) && !itemAlreadyProcessedForReturn) { %>
-                                            <!-- For delivered, partially returned orders, or orders with any return requests, only show return button if item hasn't been processed -->
-                                            <button class="btn-return-item" onclick="openIndividualReturnModal('<%= item._id %>', '<%= item.product.productName %>')">
-                                                <i class="fas fa-undo"></i> Return
-                                            </button>
-                                        <% } else if (!['Shipped', 'Return Request', 'Returned', 'Cancelled', 'Partially Returned'].includes(order.status) && 
-                                                     !itemAlreadyProcessedForReturn &&
-                                                     ((order.paymentMethod === 'Cash on Delivery') || 
-                                                      (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed'))) { %>
-                                            <!-- For non-delivered orders without any return requests, show cancel button if item hasn't been processed -->
-                                            <button class="btn-cancel-item" onclick="cancelOrderItem('<%= order.orderId %>', '<%= item._id %>')">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
-                                        <% } %>
-                                        
-                                        <% if (itemAlreadyProcessedForReturn) { %>
-                                            <!-- Show status for items that have already been processed for return -->
-                                            <div class="item-status-info">
-                                                <% if (item.returnApprovedAt) { %>
-                                                    <span class="status-badge status-completed">Return Processed</span>
-                                                    <small class="text-success">Return was approved</small>
-                                                <% } else if (item.returnRejectedAt) { %>
-                                                    <span class="status-badge status-rejected">Return Rejected</span>
-                                                    <small class="text-muted">Return was rejected - no further returns allowed</small>
-                                                <% } else if (item.returnAttempted && item.status === 'Active') { %>
-                                                    <span class="status-badge status-rejected">Return Not Available</span>
-                                                    <small class="text-muted">Return attempt already made - only one return allowed per item</small>
-                                                <% } %>
-                                            </div>
-                                        <% } %>
-                                    </div>
-                                <% } else if (item.status === 'Return Request') { %>
-                                    <div class="item-status-info">
-                                        <span class="status-badge status-pending">Return Requested</span>
-                                        <small class="text-muted">Admin will review your request</small>
-                                    </div>
-                                <% } else if (item.status === 'Returned') { %>
-                                    <div class="item-status-info">
-                                        <span class="status-badge status-completed">Returned</span>
-                                        <small class="text-success">Item has been returned</small>
-                                    </div>
-                                <% } %>
-                            </div>
-                            <div class="item-status <%= item.status.toLowerCase() %>">
-                                <%= item.status %>
-                            </div>
-                        </div>
-                    <% }); %>
+                   <% order.orderedItems.forEach(item => { %>
+    <%
+        const regularPrice = item.product.regularPrice || item.price;
+        const salePrice = item.price;
+        const quantity = item.quantity;
+        const discountPerItem = regularPrice - salePrice;
+        const totalItemDiscount = discountPerItem * quantity;
+        const discountPercentage = regularPrice > 0 ? Math.round((discountPerItem / regularPrice) * 100) : 0;
+        const hasAnyReturnRequest = order.orderedItems.some(orderItem => orderItem.status === 'Return Request');
+        const itemAlreadyProcessedForReturn = item.returnApprovedAt || item.returnRejectedAt || item.returnAttempted;
+    %>
+    <div class="order-item">
+        <img src="/uploads/products/<%= item.product.mainImage %>"
+             alt="<%= item.product.productName %>"
+             class="item-image">
+        <div class="item-details">
+            <div class="item-name"><%= item.product.productName %></div>
+            <div class="item-brand">Brand: <%= item.product.brand %></div>
+            <div class="item-price">
+                <span class="current-price">₹<%= Math.round(salePrice) %></span>
+                <% if (discountPerItem > 0) { %>
+                    <span class="original-price" style="text-decoration: line-through; color: #6c757d; margin-left: 0.5rem;">₹<%= Math.round(regularPrice) %></span>
+                    <span class="discount-badge" style="background: #10b981; color: white; padding: 0.125rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;"><%= discountPercentage %>% OFF</span>
+                <% } %>
+            </div>
+            <div class="quantity-info">
+                Quantity: <%= quantity %> | Total: ₹<%= Math.round(item.totalPrice) %>
+                <% if (totalItemDiscount > 0) { %>
+                    <br><small style="color: #10b981; font-weight: 600;">You saved: ₹<%= Math.round(totalItemDiscount) %> on this item</small>
+                <% } %>
+            </div>
+            <div class="item-actions">
+    <% // Define all statuses where an eligible item can still be returned
+    const allowedReturnOrderStatuses = ['Delivered', 'Partially Returned', 'Return Approved', 'Return Request','Returned'];
+    %>
+    <% // Show return button for delivered/active
+    if (
+        (allowedReturnOrderStatuses.includes(order.status) || hasAnyReturnRequest) &&
+        (item.status === 'Delivered' || item.status === 'Active') &&
+        !itemAlreadyProcessedForReturn
+    ) { %>
+        <button class="btn-return-item" onclick="openIndividualReturnModal('<%= item._id %>', '<%= item.product.productName %>')">
+            <i class="fas fa-undo"></i> Return
+        </button>
+    <% } // Show cancel button for cancellable items
+    else if (
+        !['Shipped', 'Return Request', 'Returned', 'Cancelled', 'Partially Returned', 'Delivered'].includes(order.status) &&
+        (item.status === 'Active' || item.status === 'Pending' || item.status === 'Processing' || item.status === 'Shipped') &&
+        !itemAlreadyProcessedForReturn &&
+        ((order.paymentMethod === 'Cash on Delivery') ||
+         (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed'))
+    ) { %>
+        <button class="btn-cancel-item" onclick="cancelOrderItem('<%= order.orderId %>', '<%= item._id %>')">
+            <i class="fas fa-times"></i> Cancel
+        </button>
+    <% } %> <% if (itemAlreadyProcessedForReturn) { %>
+        <div class="item-status-info">
+            <% if (item.returnApprovedAt) { %>
+                <span class="status-badge status-completed">Return Processed</span>
+                <small class="text-success">Return was approved</small>
+            <% } else if (item.returnRejectedAt) { %>
+                <span class="status-badge status-rejected">Return Rejected</span>
+                <small class="text-muted">Return was rejected - no further returns allowed</small>
+            <% } else if (item.returnAttempted) { %>
+                <!-- <span class="status-badge status-rejected">Return Not Available</span> -->
+                <!-- <small class="text-muted">Return attempt already made - only one return allowed per item</small> -->
+            <% } %>
+        </div>
+    <% } %>
+    <% if (item.status === 'Return Request') { %>
+        <div class="item-status-info">
+            <span class="status-badge status-pending">Return Requested</span>
+            <small class="text-muted">Admin will review your request</small>
+        </div>
+    <% } else if (item.status === 'Returned') { %>
+        <div class="item-status-info">
+            <span class="status-badge status-completed">Returned</span>
+            <small class="text-success">Item has been returned</small>
+        </div>
+    <% } %>
+</div>
+            <div class="item-status <%= item.status.toLowerCase() %>">
+                <%= item.status %>
+            </div>
+        </div>
+    </div>
+<% }); %>
+
                 </div>
 
                 <!-- Shipping Address -->
@@ -249,249 +250,233 @@
 
             <!-- Order Summary Sidebar -->
             <div class="order-summary fade-in">
-                <h3 class="card-title mb-3">
-                    <i class="fas fa-receipt"></i>
-                    Order Summary
-                </h3>
+    <h3 class="card-title mb-3">
+        <i class="fas fa-receipt"></i>
+        Order Summary
+    </h3>
 
-                <%
-                    // Check if entire order is cancelled
-                    const isEntireOrderCancelled = order.status === 'Cancelled';
-                    
-                    // Calculate current totals including active items and return request items
-                    const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-                    const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
-                    const cancelledItems = order.orderedItems.filter(item => item.status === 'Cancelled');
-                    
-                    // Items that should be included in total calculation (Active + Return Request)
-                    const includedItems = [...activeItems, ...returnRequestItems];
-                    
-                    // If entire order is cancelled, set all values to 0
-                    let currentSubtotal = 0; // Based on regular prices
-                    let amountAfterDiscount = 0; // Amount customer actually pays (sale prices)
-                    let totalDiscount = 0; // Total discount for included items
-                    let currentTotal = 0; // Final total
-                    
-                    if (!isEntireOrderCancelled) {
-                        includedItems.forEach(item => {
-                            // Get regular price from product (assuming it's stored in the product)
-                            const regularPrice = item.product.regularPrice || item.price; // Fallback to item.price if regularPrice not available
-                            const salePrice = item.price; // This is the sale price stored in the order
-                            const quantity = item.quantity;
-                            
-                            // Subtotal based on regular prices
-                            currentSubtotal += regularPrice * quantity;
-                            
-                            // Amount customer actually pays (sale price total)
-                            amountAfterDiscount += item.totalPrice;
-                            
-                            // Calculate discount for this item
-                            const itemDiscount = (regularPrice - salePrice) * quantity;
-                            totalDiscount += Math.max(0, itemDiscount);
-                        });
-                        
-                        // Final total calculation
-                        currentTotal = amountAfterDiscount;
-                        if (currentSubtotal > 0) {
-                            currentTotal += order.shippingCharges;
-                        }
-                        
-                        // Subtract coupon discount if applied
-                        if (order.couponApplied && order.couponDiscount > 0) {
-                            currentTotal -= order.couponDiscount;
-                        }
-                    }
-                    
-                    // Calculate cancelled amounts
-                    let cancelledSubtotal = 0; // Based on regular prices
-                    let cancelledAmountAfterDiscount = 0; // Amount that was going to be paid
-                    let cancelledDiscount = 0; // Discount on cancelled items
-                    
-                    cancelledItems.forEach(item => {
-                        const regularPrice = item.product.regularPrice || item.price;
-                        const salePrice = item.price;
-                        const quantity = item.quantity;
-                        
-                        cancelledSubtotal += regularPrice * quantity;
-                        cancelledAmountAfterDiscount += item.totalPrice;
-                        
-                        const itemDiscount = (regularPrice - salePrice) * quantity;
-                        cancelledDiscount += Math.max(0, itemDiscount);
-                    });
-                    
-                    // Additional variables for cancel button logic
-                    const canCancelOrder = !['Shipped', 'Delivered', 'Return Request', 'Returned', 'Cancelled'].includes(order.status);
-                    const hasActiveItems = activeItems.length > 0;
-                    
-                    // For online payments, only allow cancellation after payment is completed
-                    // For COD, allow cancellation anytime before shipping
-                    const canCancelBasedOnPayment = (order.paymentMethod === 'Cash on Delivery') || 
-                                                   (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed');
-                %>
+    <%
+        const isEntireOrderCancelled = order.status === 'Cancelled';
 
-                <div class="summary-row">
-                    <span class="summary-label">
-                        <% if (cancelledItems.length > 0) { %>
-                            <% if (returnRequestItems.length > 0) { %>
-                                Subtotal (Active + Return Requested)
-                            <% } else { %>
-                                Subtotal (Active Items)
-                            <% } %>
-                        <% } else { %>
-                            Subtotal
-                        <% } %>
-                    </span>
-                    <span class="summary-value">₹<%= Math.round(currentSubtotal) %></span>
-                </div>
+        // Calculate totals based on item statuses that matter
+        const activeItems = order.orderedItems.filter(item => 
+            ['Pending', 'Processing', 'Shipped', 'Delivered'].includes(item.status)
+        );
+        const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
+        const cancelledItems = order.orderedItems.filter(item => item.status === 'Cancelled');
 
-                <% if (cancelledSubtotal > 0) { %>
-                <div class="summary-row" style="color: #ef4444;">
-                    <span class="summary-label">Cancelled Items (Regular Price)</span>
-                    <span class="summary-value">-₹<%= Math.round(cancelledSubtotal) %></span>
-                </div>
-                <% } %>
+        // Include for subtotal and discount calculation
+        const includedItems = [...activeItems, ...returnRequestItems];
 
-                <% if (totalDiscount > 0) { %>
-                <div class="summary-row">
-                    <span class="summary-label">
-                        <% if (cancelledItems.length > 0) { %>
-                            <% if (returnRequestItems.length > 0) { %>
-                                Discount (Active + Return Requested)
-                            <% } else { %>
-                                Discount (Active Items)
-                            <% } %>
-                        <% } else { %>
-                            Discount
-                        <% } %>
-                    </span>
-                    <span class="summary-value" style="color: var(--success-color);">-₹<%= Math.round(totalDiscount) %></span>
-                </div>
-                <% } %>
+        let currentSubtotal = 0;
+        let amountAfterDiscount = 0;
+        let totalDiscount = 0;
+        let currentTotal = 0;
 
-                <% if (cancelledDiscount > 0) { %>
-                <div class="summary-row" style="color: #6c757d;">
-                    <span class="summary-label">Discount on Cancelled Items</span>
-                    <span class="summary-value">+₹<%= Math.round(cancelledDiscount) %></span>
-                </div>
-                <% } %>
+        if (!isEntireOrderCancelled) {
+            includedItems.forEach(item => {
+                const regularPrice = item.product?.regularPrice ?? item.price;
+                const salePrice = item.price;
+                const quantity = item.quantity;
 
-                <div class="summary-row">
-                    <span class="summary-label">Shipping</span>
-                    <span class="summary-value">
-                        <% if (isEntireOrderCancelled) { %>
-                            ₹0.00
-                        <% } else if (currentSubtotal > 0) { %>
-                            <% if (order.shippingCharges === 0) { %>
-                                <span style="color: var(--success-color);">FREE</span>
-                            <% } else { %>
-                                ₹<%= Math.round(order.shippingCharges) %>
-                            <% } %>
-                        <% } else { %>
-                            ₹0.00
-                        <% } %>
-                    </span>
-                </div>
+                currentSubtotal += regularPrice * quantity;
+                amountAfterDiscount += item.totalPrice;
 
-                <% if (order.couponApplied && order.couponDiscount > 0) { %>
-                <div class="summary-row">
-                    <span class="summary-label">Coupon Discount</span>
-                    <span class="summary-value" style="color: var(--success-color);">
-                        <% if (isEntireOrderCancelled) { %>
-                            -₹0.00
-                        <% } else { %>
-                            -₹<%= Math.round(order.couponDiscount) %>
-                        <% } %>
-                    </span>
-                </div>
-                <% } %>
+                const itemDiscount = (regularPrice - salePrice) * quantity;
+                totalDiscount += Math.max(0, itemDiscount);
+            });
 
-                <div class="summary-row">
-                    <span class="summary-label">
-                        <% if (cancelledItems.length > 0) { %>
-                            Current Total
-                        <% } else { %>
-                            Total
-                        <% } %>
-                    </span>
-                    <span class="summary-value">₹<%= Math.round(currentTotal) %></span>
-                </div>
+            currentTotal = amountAfterDiscount + order.shippingCharges;
 
-                <% if (isEntireOrderCancelled) { %>
-                <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
-                    <i class="fas fa-times-circle" style="color: #dc2626; margin-right: 0.5rem;"></i>
-                    <strong>Order Cancelled:</strong> This entire order has been cancelled. All amounts have been set to zero and any applicable refunds have been processed.
-                </div>
-                <% } else if (returnRequestItems.length > 0) { %>
-                <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
-                    <i class="fas fa-info-circle" style="color: #0369a1; margin-right: 0.5rem;"></i>
-                    <strong>Note:</strong> Items with return requests are still included in the total until the admin processes the return.
-                </div>
-                <% } %>
+            if (order.couponApplied && order.couponDiscount > 0) {
+                currentTotal -= order.couponDiscount;
+            }
+        }
+        
+        // Cancelled items totals
+        let cancelledSubtotal = 0;
+        let cancelledAmountAfterDiscount = 0;
+        let cancelledDiscount = 0;
 
-                <% if (order.paymentStatus === 'Failed') { %>
-                <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
-                    <i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right: 0.5rem;"></i>
-                    <strong>Payment Failed:</strong> Your order has been created but payment was not successful. Please retry payment to complete your order and access your invoice.
-                </div>
-                <% } %>
+        cancelledItems.forEach(item => {
+            const regularPrice = item.product?.regularPrice ?? item.price;
+            const salePrice = item.price;
+            const quantity = item.quantity;
 
-                <!-- Download Invoice Button / Retry Payment Button -->
-                <% if (order.paymentStatus === 'Failed') { %>
-                    <a href="/checkout/retry-payment/<%= order.orderId %>" class="btn-retry-payment">
-                        <i class="fas fa-redo"></i>
-                        Retry Payment
-                    </a>
-                <% } else if (
-                    order.status !== 'Cancelled' &&
-                    (
-                        (order.paymentMethod === 'Cash on Delivery') ||
-                        (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed')
-                    )
-                ) { %>
-                    <button class="btn-download-invoice" onclick="downloadInvoice('<%= order.orderId %>')">
-                        <i class="fas fa-download"></i>
-                        Download Invoice
-                    </button>
-                <% } %>
+            cancelledSubtotal += regularPrice * quantity;
+            cancelledAmountAfterDiscount += item.totalPrice;
 
-                <!-- Cancel Order Button / Return Button -->
-                <%
-                    // Check if any item in the order has a return request for order summary button logic
-                    const hasAnyReturnRequestForSummary = order.orderedItems.some(orderItem => orderItem.status === 'Return Request');
-                    // Check if there are any items that can still be returned (Active and not attempted)
-                    const hasReturnableItems = order.orderedItems.some(orderItem => orderItem.status === 'Active' && !orderItem.returnAttempted);
-                %>
-                <% if ((order.status === 'Delivered' || order.status === 'Partially Returned' || hasAnyReturnRequestForSummary) && hasReturnableItems) { %>
-                    <button class="btn-return-order" onclick="openReturnModal()">
-                        <i class="fas fa-undo"></i>
-                        Return Order
-                    </button>
-                <% } else if (canCancelOrder && hasActiveItems && canCancelBasedOnPayment) { %>
-                    <button class="btn-cancel-order" onclick="openCancelOrderModal()">
-                        <i class="fas fa-times"></i>
-                        <% if (order.status === 'Partially Cancelled') { %>
-                            Cancel Remaining Items
-                        <% } else { %>
-                            Cancel Order
-                        <% } %>
-                    </button>
-                <% } else if (canCancelOrder && hasActiveItems && !canCancelBasedOnPayment) { %>
-                    <div class="payment-pending-notice">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Cancellation will be available after payment confirmation</span>
-                    </div>
-                <% } else if (!hasActiveItems && order.status === 'Partially Cancelled') { %>
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-size: 0.875rem;">
-                        <i class="fas fa-info-circle"></i>
-                        All items have been cancelled
-                    </div>
+            const itemDiscount = (regularPrice - salePrice) * quantity;
+            cancelledDiscount += Math.max(0, itemDiscount);
+        });
+
+        // Cancellation and order status related variables
+        const canCancelOrder = !['Shipped', 'Delivered', 'Return Request', 'Returned', 'Cancelled'].includes(order.status);
+        const hasActiveItems = activeItems.length > 0;
+        const canCancelBasedOnPayment = (order.paymentMethod === 'Cash on Delivery') ||
+                                        (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed');
+    %>
+
+    <div class="summary-row">
+        <span class="summary-label">
+            <% if (cancelledItems.length > 0) { %>
+                <% if (returnRequestItems.length > 0) { %>
+                    Subtotal (Active + Return Requested)
                 <% } else { %>
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-size: 0.875rem;">
-                        <i class="fas fa-info-circle"></i>
-                        Order cannot be cancelled at this stage
-                    </div>
+                    Subtotal (Active Items)
                 <% } %>
-            </div>
+            <% } else { %>
+                Subtotal
+            <% } %>
+        </span>
+        <span class="summary-value">₹<%= Math.round(currentSubtotal) %></span>
+    </div>
+
+    <% if (cancelledSubtotal > 0) { %>
+    <div class="summary-row" style="color: #ef4444;">
+        <span class="summary-label">Cancelled Items (Regular Price)</span>
+        <span class="summary-value">-₹<%= Math.round(cancelledSubtotal) %></span>
+    </div>
+    <% } %>
+
+    <% if (totalDiscount > 0) { %>
+    <div class="summary-row">
+        <span class="summary-label">
+            <% if (cancelledItems.length > 0) { %>
+                <% if (returnRequestItems.length > 0) { %>
+                    Discount (Active + Return Requested)
+                <% } else { %>
+                    Discount (Active Items)
+                <% } %>
+            <% } else { %>
+                Discount
+            <% } %>
+        </span>
+        <span class="summary-value" style="color: var(--success-color);">-₹<%= Math.round(totalDiscount) %></span>
+    </div>
+    <% } %>
+
+    <% if (cancelledDiscount > 0) { %>
+    <div class="summary-row" style="color: #6c757d;">
+        <span class="summary-label">Discount on Cancelled Items</span>
+        <span class="summary-value">+₹<%= Math.round(cancelledDiscount) %></span>
+    </div>
+    <% } %>
+
+    <div class="summary-row">
+        <span class="summary-label">Shipping</span>
+        <span class="summary-value">
+            <% if (isEntireOrderCancelled) { %>
+                ₹0.00
+            <% } else if (currentSubtotal > 0) { %>
+                <% if (order.shippingCharges === 0) { %>
+                    <span style="color: var(--success-color);">FREE</span>
+                <% } else { %>
+                    ₹<%= Math.round(order.shippingCharges) %>
+                <% } %>
+            <% } else { %>
+                ₹0.00
+            <% } %>
+        </span>
+    </div>
+
+    <% if (order.couponApplied && order.couponDiscount > 0) { %>
+    <div class="summary-row">
+        <span class="summary-label">Coupon Discount</span>
+        <span class="summary-value" style="color: var(--success-color);">
+            <% if (isEntireOrderCancelled) { %>
+                -₹0.00
+            <% } else { %>
+                -₹<%= Math.round(order.couponDiscount) %>
+            <% } %>
+        </span>
+    </div>
+    <% } %>
+
+    <div class="summary-row">
+        <span class="summary-label">
+            <% if (cancelledItems.length > 0) { %>
+                Current Total
+            <% } else { %>
+                Total
+            <% } %>
+        </span>
+        <span class="summary-value">₹<%= Math.round(currentTotal) %></span>
+    </div>
+
+    <% if (isEntireOrderCancelled) { %>
+    <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
+        <i class="fas fa-times-circle" style="color: #dc2626; margin-right: 0.5rem;"></i>
+        <strong>Order Cancelled:</strong> This entire order has been cancelled. All amounts have been set to zero and any applicable refunds have been processed.
+    </div>
+    <% } else if (returnRequestItems.length > 0) { %>
+    <div style="margin-top: 1rem; padding: 0.75rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; font-size: 0.875rem; color: #0c4a6e;">
+        <i class="fas fa-info-circle" style="color: #0369a1; margin-right: 0.5rem;"></i>
+        <strong>Note:</strong> Items with return requests are still included in the total until the admin processes the return.
+    </div>
+    <% } %>
+
+    <% if (order.paymentStatus === 'Failed') { %>
+    <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
+        <i class="fas fa-exclamation-triangle" style="color: #ef4444; margin-right: 0.5rem;"></i>
+        <strong>Payment Failed:</strong> Your order has been created but payment was not successful. Please retry payment to complete your order and access your invoice.
+    </div>
+    <% } %>
+
+    <!-- Download Invoice Button / Retry Payment Button -->
+    <% if (order.paymentStatus === 'Failed') { %>
+        <a href="/checkout/retry-payment/<%= order.orderId %>" class="btn-retry-payment">
+            <i class="fas fa-redo"></i> Retry Payment
+        </a>
+    <% } else if (
+        order.status !== 'Cancelled' &&
+        (
+            (order.paymentMethod === 'Cash on Delivery') ||
+            (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus === 'Completed')
+        )
+    ) { %>
+        <button class="btn-download-invoice" onclick="downloadInvoice('<%= order.orderId %>')">
+            <i class="fas fa-download"></i> Download Invoice
+        </button>
+    <% } %>
+
+    <!-- Cancel Order Button / Return Button -->
+    <%
+        const hasAnyReturnRequestForSummary = order.orderedItems.some(orderItem => orderItem.status === 'Return Request');
+        const hasReturnableItems = order.orderedItems.some(orderItem => (orderItem.status === 'Active' || orderItem.status === 'Delivered') && !orderItem.returnAttempted);
+    %>
+    <% if ((order.status === 'Delivered' || order.status === 'Partially Returned' || hasAnyReturnRequestForSummary) && hasReturnableItems) { %>
+        <button class="btn-return-order" onclick="openReturnModal()">
+            <i class="fas fa-undo"></i>
+            Return Order
+        </button>
+    <% } else if (canCancelOrder && hasActiveItems && canCancelBasedOnPayment) { %>
+        <button class="btn-cancel-order" onclick="openCancelOrderModal()">
+            <i class="fas fa-times"></i>
+            <% if (order.status === 'Partially Cancelled') { %>
+                Cancel Remaining Items
+            <% } else { %>
+                Cancel Order
+            <% } %>
+        </button>
+    <% } else if (canCancelOrder && hasActiveItems && !canCancelBasedOnPayment) { %>
+        <div class="payment-pending-notice">
+            <i class="fas fa-info-circle"></i>
+            <span>Cancellation will be available after payment confirmation</span>
+        </div>
+    <% } else if (!hasActiveItems && order.status === 'Partially Cancelled') { %>
+        <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-size: 0.875rem;">
+            <i class="fas fa-info-circle"></i>
+            All items have been cancelled
+        </div>
+    <% } else { %>
+        <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-size: 0.875rem;">
+            <i class="fas fa-info-circle"></i>
+            Order cannot be cancelled at this stage
+        </div>
+    <% } %>
+</div>
+
         </div>
     </div>
 
@@ -658,7 +643,8 @@
                     </h4>
 
                     <% 
-                    const returnableItems = order.orderedItems.filter(item => item.status === 'Active' && !item.returnAttempted);
+                    
+                    const returnableItems = order.orderedItems.filter(item => (item.status === 'Active' || item.status === 'Delivered') && !item.returnAttempted);
                     returnableItems.forEach((item, index) => { 
                     %>
                         <div class="return-product-item" data-item-id="<%= item._id %>">
@@ -1361,6 +1347,7 @@
             
             // Prepare return request data with selected items and their reasons
             const returnItems = [];
+            
             for (const itemId of selectedReturnItems) {
                 const reason = returnReasons.get(itemId);
                 if (reason) {

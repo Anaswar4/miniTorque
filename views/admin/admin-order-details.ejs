@@ -1,597 +1,736 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
-      <link rel="stylesheet" href="/css/admin/order-details.css"/>
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <link rel="stylesheet" href="/css/admin/order-details.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <title><%= title %></title>
+    <title>
+        <%= title %>
+    </title>
 </head>
+
 <body>
     <%- include("../partials/sidebar") %>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Breadcrumbs -->
-        <nav aria-label="breadcrumb" class="breadcrumb-nav">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="/admin/get-orders">Order Management</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Order Details</li>
-            </ol>
-        </nav>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="breadcrumb-nav">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/get-orders">Order Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Order Details</li>
+                </ol>
+            </nav>
 
-        <!-- Page Header -->
-        <div class="page-header">
-            <div class="header-content">
-                <div class="header-left">
-                    <h1 class="page-title">Order Details</h1>
-                    <p class="page-subtitle">Order ID: <span class="order-id"><%= order.orderId %></span></p>
-                </div>
-                <div class="header-actions">
-                    <a href="/admin/get-orders" class="btn btn-outline">
-                        <i class="fas fa-arrow-left"></i>
-                        Back to Orders
-                    </a>
-                    <% 
-                        // Check if order is in final state
-                        const finalStates = ['Delivered', 'Returned'];
-                        const isFinalState = finalStates.includes(order.status);
-                        
-                        // Check if order was entirely cancelled by user
-                        const isEntirelyUserCancelled = order.status === 'Cancelled' && 
-                            order.orderedItems.every(item => 
-                                item.status === 'Cancelled' && 
-                                item.cancellationReason && 
-                                !item.cancellationReason.includes('by admin')
-                            );
-                        
-                        // Allow status updates for partially cancelled orders since they have active items
-                        const isPartiallyCancelled = order.status === 'Partially Cancelled';
-                        
-                        // Check payment status - only allow updates for completed payments (except COD)
-                        const hasPaymentIssue = order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus !== 'Completed';
-                        
-                        const canUpdateStatus = ((!isFinalState && !isEntirelyUserCancelled) || isPartiallyCancelled) && !hasPaymentIssue;
-                    %>
-                    
-                    <% if (canUpdateStatus) { %>
-                        <button class="btn btn-primary" onclick="updateOrderStatus('<%= order._id %>', '<%= order.status %>')">
-                            <i class="fas fa-edit"></i>
-                            Update Status
-                        </button>
-                    <% } else { %>
-                        <% 
-                            let lockReason = 'Order is in final state';
-                            if (isEntirelyUserCancelled) {
-                                lockReason = 'Order was cancelled by customer';
-                            } else if (hasPaymentIssue) {
-                                lockReason = 'Payment not completed - only orders with completed payments can be updated';
-                            }
-                        %>
-                        <button class="btn btn-disabled" disabled title="<%= lockReason %>">
-                            <i class="fas fa-lock"></i>
-                            Status Locked
-                        </button>
-                    <% } %>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alert for User Cancellation -->
-        <% if (isUserCancelled || hasUserCancellation) { %>
-        <div class="alert-container">
-            <div class="alert alert-warning">
-                <div class="alert-content">
-                    <i class="fas fa-exclamation-triangle alert-icon"></i>
-                    <div class="alert-text">
-                        <h6 class="alert-title">Order Status Locked</h6>
-                        <p class="alert-message">
-                            <% if (isUserCancelled) { %>
-                                This order has been cancelled by the customer and cannot be modified.
-                            <% } else if (hasUserCancellation) { %>
-                                This order contains items cancelled by the customer and cannot be modified.
-                            <% } %>
-                        </p>
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="page-title">Order Details</h1>
+                        <p class="page-subtitle">Order ID: <span class="order-id">
+                                <%= order.orderId %>
+                            </span></p>
                     </div>
-                </div>
-            </div>
-        </div>
-        <% } %>
-
-        <!-- Alert for Payment Issues -->
-        <% if (hasPaymentIssue) { %>
-        <div class="alert-container">
-            <div class="alert alert-info">
-                <div class="alert-content">
-                    <i class="fas fa-credit-card alert-icon"></i>
-                    <div class="alert-text">
-                        <h6 class="alert-title">Payment Required</h6>
-                        <p class="alert-message">
-                            This order's payment status is "<%= order.paymentStatus %>". Only orders with completed payments can have their status updated. The customer needs to complete the payment first.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <% } %>
-
-        <!-- Order Details Grid -->
-        <div class="order-details-grid">
-            <!-- Row 1: Order Summary & Customer/Shipping Info -->
-            <div class="details-row">
-                <!-- Order Summary Card -->
-                <div class="detail-card order-summary-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-receipt"></i>
-                            Order Summary
-                        </h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="detail-item">
-                            <span class="detail-label">Order ID</span>
-                            <span class="detail-value"><%= order.orderId %></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Order Date</span>
-                            <span class="detail-value"><%= new Date(order.createdAt).toLocaleDateString() %></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Order Time</span>
-                            <span class="detail-value"><%= new Date(order.createdAt).toLocaleTimeString() %></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Status</span>
-                            <span class="status-badge status-<%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
-                                <%= order.status %>
-                            </span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Payment Method</span>
-                            <span class="detail-value"><%= order.paymentMethod %></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Payment Status</span>
-                            <span class="status-badge status-<%= order.paymentStatus.toLowerCase() %>" style="font-size: 0.75rem;">
-                                <%= order.paymentStatus %>
-                            </span>
-                        </div>
-                        <% if (order.estimatedDelivery) { %>
-                        <div class="detail-item">
-                            <span class="detail-label">Estimated Delivery</span>
-                            <span class="detail-value"><%= new Date(order.estimatedDelivery).toLocaleDateString() %></span>
-                        </div>
-                        <% } %>
+                    <div class="header-actions">
+                        <a href="/admin/get-orders" class="btn btn-outline">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Orders
+                        </a>
                         <%
-                            // Check if entire order is cancelled
-                            const isEntireOrderCancelled = order.status === 'Cancelled';
-                            
-                            // Calculate current total (same as user order details page Order Summary card)
-                            const activeItems = order.orderedItems.filter(item => item.status === 'Active');
-                            const returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
-                            const includedItems = [...activeItems, ...returnRequestItems];
-                            
-                            let amountAfterDiscount = 0;
-                            let currentTotal = 0;
-                            
-                            if (!isEntireOrderCancelled) {
-                                includedItems.forEach(item => {
-                                    amountAfterDiscount += item.totalPrice;
-                                });
-                                
-                                currentTotal = amountAfterDiscount;
-                                if (includedItems.length > 0) {
-                                    currentTotal += order.shippingCharges;
-                                }
-                                
-                                // Subtract coupon discount if applied
-                                if (order.couponApplied && order.couponDiscount > 0) {
-                                    currentTotal -= order.couponDiscount;
-                                }
-                            }
-                        %>
-                        <div class="detail-item">
-                            <span class="detail-label" style="font-weight: 700;">Total Amount</span>
-                            <span class="detail-value" style="font-weight: 700; color: <% if (isEntireOrderCancelled) { %>#dc2626<% } else { %>#059669<% } %>; font-size: 1.1em;">₹<%= currentTotal.toLocaleString() %></span>
-                        </div>
-                        <% if (isEntireOrderCancelled) { %>
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
-                            <i class="fas fa-times-circle" style="color: #dc2626; margin-right: 0.5rem;"></i>
-                            <strong>Order Cancelled:</strong> This entire order has been cancelled by the customer. All amounts have been set to zero and refunds have been processed.
-                        </div>
-                        <% } %>
-                    </div>
-                </div>
+// Check if order is in final state
+const finalStates = ['Delivered', 'Returned'];
+const partialStates = ['Partially Delivered', 'Partially Cancelled', 'Partially Returned'];
+const isFinalState = finalStates.includes(order.status) && !partialStates.includes(order.status);
 
-                <!-- Customer & Shipping Combined Card -->
-                <div class="detail-card customer-shipping-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-user"></i>
-                            Customer & Shipping Information
-                        </h3>
-                    </div>
-                    <div class="card-content">
-                        <!-- Customer Section -->
-                        <div class="section">
-                            <h4 class="section-title">Customer Details</h4>
-                            <div class="customer-profile">
-                                <div class="customer-avatar">
-                                    <%= (order.userId?.fullName || order.shippingAddress.name).charAt(0).toUpperCase() %>
-                                </div>
-                                <div class="customer-info">
-                                    <h5 class="customer-name"><%= order.userId?.fullName || order.shippingAddress.name %></h5>
-                                    <p class="customer-email"><%= order.userId?.email || 'N/A' %></p>
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Phone</span>
-                                <span class="detail-value"><%= order.shippingAddress.phone %></span>
-                            </div>
-                            <% if (order.shippingAddress.altPhone) { %>
-                            <div class="detail-item">
-                                <span class="detail-label">Alt Phone</span>
-                                <span class="detail-value"><%= order.shippingAddress.altPhone %></span>
-                            </div>
-                            <% } %>
-                        </div>
+// Check if order was entirely cancelled by user
+const isEntirelyUserCancelled = order.status === 'Cancelled' && 
+  order.orderedItems.every(item => 
+    item.status === 'Cancelled' && 
+    item.cancellationReason && 
+    !item.cancellationReason.includes('by admin')
+  );
 
-                        <!-- Section Divider -->
-                        <div class="section-divider"></div>
+// Allow status updates for partially cancelled orders since they have active items
+const isPartiallyCancelled = order.status === 'Partially Cancelled';
 
-                        <!-- Shipping Address Section -->
-                        <div class="section">
-                            <h4 class="section-title">Shipping Address</h4>
-                            <div class="address-content">
-                                <p class="address-name"><%= order.shippingAddress.name %></p>
-                                <p class="address-line"><%= order.shippingAddress.addressType %></p>
-                                <p class="address-line"><%= order.shippingAddress.landMark %></p>
-                                <p class="address-line"><%= order.shippingAddress.city %>, <%= order.shippingAddress.state %> - <%= order.shippingAddress.pincode %></p>
-                            </div>
-                        </div>
+// Check payment status - only allow updates for completed payments (except COD)
+const hasPaymentIssue = order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus !== 'Completed';
+
+// Determine if status can be updated
+const canUpdateStatus = ((!isFinalState && !isEntirelyUserCancelled) || isPartiallyCancelled || partialStates.includes(order.status)) && !hasPaymentIssue;
+%>
+
+
+                            <% if (canUpdateStatus) { %>
+                                <button class="btn btn-primary"
+                                    onclick="updateOrderStatus('<%= order._id %>', '<%= order.status %>')">
+                                    <i class="fas fa-edit"></i>
+                                    Update Status
+                                </button>
+                                <% } else { %>
+                                    <% let lockReason='Order is in final state' ; if (isEntirelyUserCancelled) {
+                                        lockReason='Order was cancelled by customer' ; } else if (hasPaymentIssue) {
+                                        lockReason='Payment not completed - only orders with completed payments can be updated'
+                                        ; } %>
+                                        <button class="btn btn-disabled" disabled title="<%= lockReason %>">
+                                            <i class="fas fa-lock"></i>
+                                            Status Locked
+                                        </button>
+                                        <% } %>
                     </div>
                 </div>
             </div>
 
-            <!-- Row 2: Order Items Table -->
-            <div class="details-row">
-                <div class="detail-card items-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-shopping-cart"></i>
-                            Ordered Items
-                        </h3>
+            <!-- Alert for User Cancellation -->
+            <% if (isUserCancelled || hasUserCancellation) { %>
+                <div class="alert-container">
+                    <div class="alert alert-warning">
+                        <div class="alert-content">
+                            <i class="fas fa-exclamation-triangle alert-icon"></i>
+                            <div class="alert-text">
+                                <h6 class="alert-title">Order Status Locked</h6>
+                                <p class="alert-message">
+                                    <% if (isUserCancelled) { %>
+                                        This order has been cancelled by the customer and cannot be modified.
+                                        <% } else if (hasUserCancellation) { %>
+                                            This order contains items cancelled by the customer and cannot be modified.
+                                            <% } %>
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-content">
-                        <div class="table-container">
-                            <table class="items-table">
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th>Quantity</th>
-                                        <th>Unit Price</th>
-                                        <th>Total Price</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% order.orderedItems.forEach(item => { %>
-                                    <tr>
-                                        <td>
-                                            <div class="product-info">
-                                                <div class="product-image-container">
-                                                    <% if (item.product && item.product.productImages && item.product.productImages.length > 0) { %>
-                                                    <img src="/uploads/products/<%= item.product.productImages[0] %>" alt="<%= item.product?.productName || 'Product' %>" class="product-image">
-                                                    <% } else { %>
-                                                    <div class="product-placeholder">
-                                                        <i class="fas fa-image"></i>
+                </div>
+                <% } %>
+
+                    <!-- Alert for Payment Issues -->
+                    <% if (hasPaymentIssue) { %>
+                        <div class="alert-container">
+                            <div class="alert alert-info">
+                                <div class="alert-content">
+                                    <i class="fas fa-credit-card alert-icon"></i>
+                                    <div class="alert-text">
+                                        <h6 class="alert-title">Payment Required</h6>
+                                        <p class="alert-message">
+                                            This order's payment status is "<%= order.paymentStatus %>". Only orders
+                                                with completed payments can have their status updated. The customer
+                                                needs to complete the payment first.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+
+                            <!-- Order Details Grid -->
+                            <div class="order-details-grid">
+                                <!-- Row 1: Order Summary & Customer/Shipping Info -->
+                                <div class="details-row">
+                                    <!-- Order Summary Card -->
+                                    <div class="detail-card order-summary-card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-receipt"></i>
+                                                Order Summary
+                                            </h3>
+                                        </div>
+                                        <div class="card-content">
+                                            <div class="detail-item">
+                                                <span class="detail-label">Order ID</span>
+                                                <span class="detail-value">
+                                                    <%= order.orderId %>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">Order Date</span>
+                                                <span class="detail-value">
+                                                    <%= new Date(order.createdAt).toLocaleDateString() %>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">Order Time</span>
+                                                <span class="detail-value">
+                                                    <%= new Date(order.createdAt).toLocaleTimeString() %>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">Status</span>
+                                                <span
+                                                    class="status-badge status-<%= order.status.toLowerCase().replace(/\s+/g, '-') %>">
+                                                    <%= order.status %>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">Payment Method</span>
+                                                <span class="detail-value">
+                                                    <%= order.paymentMethod %>
+                                                </span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">Payment Status</span>
+                                                <span
+                                                    class="status-badge status-<%= order.paymentStatus.toLowerCase() %>"
+                                                    style="font-size: 0.75rem;">
+                                                    <%= order.paymentStatus %>
+                                                </span>
+                                            </div>
+                                            <% if (order.estimatedDelivery) { %>
+                                                <div class="detail-item">
+                                                    <span class="detail-label">Estimated Delivery</span>
+                                                    <span class="detail-value">
+                                                        <%= new Date(order.estimatedDelivery).toLocaleDateString() %>
+                                                    </span>
+                                                </div>
+                                                <% } %>
+                                                    <%
+                                                       // Check if entire order is cancelled
+                                                        const isEntireOrderCancelled = order.status === 'Cancelled';
+                                                    %>
+                                                        <div class="detail-item">
+                                                            <span class="detail-label" style="font-weight: 700;">Total
+                                                                Amount</span>
+                                                            <span class="detail-value"
+                                                                style="font-weight: 700; color: <% if (isEntireOrderCancelled) { %>#dc2626<% } else { %>#059669<% } %>; font-size: 1.1em;">₹
+                                                                <%= order.finalAmountActive.toLocaleString() %></span>
+                                                        </div>
+                                                        <% if (isEntireOrderCancelled) { %>
+                                                            <div
+                                                                style="margin-top: 1rem; padding: 0.75rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.875rem; color: #991b1b;">
+                                                                <i class="fas fa-times-circle"
+                                                                    style="color: #dc2626; margin-right: 0.5rem;"></i>
+                                                                <strong>Order Cancelled:</strong> This entire order has
+                                                                been cancelled by the customer. All amounts have been
+                                                                set to zero and refunds have been processed.
+                                                            </div>
+                                                            <% } %>
+                                        </div>
+                                    </div>
+
+                                    <!-- Customer & Shipping Combined Card -->
+                                    <div class="detail-card customer-shipping-card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-user"></i>
+                                                Customer & Shipping Information
+                                            </h3>
+                                        </div>
+                                        <div class="card-content">
+                                            <!-- Customer Section -->
+                                            <div class="section">
+                                                <h4 class="section-title">Customer Details</h4>
+                                                <div class="customer-profile">
+                                                    <div class="customer-avatar">
+                                                        <%= (order.userId?.fullName ||
+                                                            order.shippingAddress.name).charAt(0).toUpperCase() %>
+                                                    </div>
+                                                    <div class="customer-info">
+                                                        <h5 class="customer-name">
+                                                            <%= order.userId?.fullName || order.shippingAddress.name %>
+                                                        </h5>
+                                                        <p class="customer-email">
+                                                            <%= order.userId?.email || 'N/A' %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="detail-label">Phone</span>
+                                                    <span class="detail-value">
+                                                        <%= order.shippingAddress.phone %>
+                                                    </span>
+                                                </div>
+                                                <% if (order.shippingAddress.altPhone) { %>
+                                                    <div class="detail-item">
+                                                        <span class="detail-label">Alt Phone</span>
+                                                        <span class="detail-value">
+                                                            <%= order.shippingAddress.altPhone %>
+                                                        </span>
                                                     </div>
                                                     <% } %>
-                                                </div>
-                                                <div class="product-details">
-                                                    <h6 class="product-name"><%= item.product?.productName || 'Product not found' %></h6>
-                                                    <% if (item.product) { %>
-                                                    <p class="product-price">Regular Price: ₹<%= item.product.regularPrice.toLocaleString() %></p>
-                                                    <% } %>
+                                            </div>
+
+                                            <!-- Section Divider -->
+                                            <div class="section-divider"></div>
+
+                                            <!-- Shipping Address Section -->
+                                            <div class="section">
+                                                <h4 class="section-title">Shipping Address</h4>
+                                                <div class="address-content">
+                                                    <p class="address-name">
+                                                        <%= order.shippingAddress.name %>
+                                                    </p>
+                                                    <p class="address-line">
+                                                        <%= order.shippingAddress.addressType %>
+                                                    </p>
+                                                    <p class="address-line">
+                                                        <%= order.shippingAddress.landMark %>
+                                                    </p>
+                                                    <p class="address-line">
+                                                        <%= order.shippingAddress.city %>, <%=
+                                                                order.shippingAddress.state %> - <%=
+                                                                    order.shippingAddress.pincode %>
+                                                    </p>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <span class="quantity-badge"><%= item.quantity %></span>
-                                        </td>
-                                        <td class="price-cell">₹<%= item.price.toLocaleString() %></td>
-                                        <td class="price-cell total-price">₹<%= item.totalPrice.toLocaleString() %></td>
-                                        <td>
-                                            <span class="item-status status-<%= item.status.toLowerCase() %>">
-                                                <%= item.status %>
-                                            </span>
-                                            <% if (item.status === 'Cancelled' && item.cancellationReason && !item.cancellationReason.includes('by admin')) { %>
-                                                <div class="cancellation-info">
-                                                    <small class="cancellation-text">
-                                                        <i class="fas fa-user"></i> Cancelled by customer
-                                                    </small>
-                                                    <% if (item.cancelledAt) { %>
-                                                    <small class="cancellation-date">
-                                                        <i class="fas fa-clock"></i> <%= new Date(item.cancelledAt).toLocaleDateString() %>
-                                                    </small>
-                                                    <% } %>
-                                                </div>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                    <% }) %>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Row 3: Order Timeline (Full Width) -->
-            <% if (order.orderTimeline && order.orderTimeline.length > 0) { %>
-            <div class="details-row full-width">
-                <!-- Order Timeline Card -->
-                <div class="detail-card timeline-card full-width-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-history"></i>
-                            Order Timeline
-                        </h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="timeline">
-                            <% order.orderTimeline.reverse().forEach((timeline, index) => { %>
-                            <div class="timeline-item">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">
-                                    <div class="timeline-header">
-                                        <span class="timeline-status"><%= timeline.status %></span>
-                                        <span class="timeline-date"><%= new Date(timeline.timestamp).toLocaleString() %></span>
+                                        </div>
                                     </div>
-                                    <p class="timeline-description"><%= timeline.description %></p>
                                 </div>
+
+                                <!-- Row 2: Order Items Table -->
+                                <div class="details-row">
+                                    <div class="detail-card items-card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">
+                                                <i class="fas fa-shopping-cart"></i>
+                                                Ordered Items
+                                            </h3>
+                                        </div>
+                                        <div class="card-content">
+                                            <div class="table-container">
+                                                <table class="items-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Product</th>
+                                                            <th>Quantity</th>
+                                                            <th>Unit Price</th>
+                                                            <th>Total Price</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% order.orderedItems.forEach(item=> { %>
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="product-info">
+                                                                        <div class="product-image-container">
+                                                                            <% if (item.product &&
+                                                                                item.product.mainImage &&
+                                                                                item.product.mainImage.length> 0) {
+                                                                                %>
+                                                                                <img src="/uploads/products/<%= item.product.mainImage %>"
+                                                                                    alt="<%= item.product?.productName || 'Product' %>"
+                                                                                    class="product-image">
+                                                                                <% } else { %>
+                                                                                    <div class="product-placeholder">
+                                                                                        <i class="fas fa-image"></i>
+                                                                                    </div>
+                                                                                    <% } %>
+                                                                        </div>
+                                                                        <div class="product-details">
+                                                                            <h6 class="product-name">
+                                                                                <%= item.product?.productName
+                                                                                    || 'Product not found' %>
+                                                                            </h6>
+                                                                            <% if (item.product) { %>
+                                                                                <p class="product-price">Regular Price:
+                                                                                    ₹<%= item.product.regularPrice.toLocaleString()
+                                                                                        %>
+                                                                                </p>
+                                                                                <% } %>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="quantity-badge">
+                                                                        <%= item.quantity %>
+                                                                    </span>
+                                                                </td>
+                                                                <td class="price-cell">₹<%= item.price.toLocaleString()
+                                                                        %>
+                                                                </td>
+                                                                <td class="price-cell total-price">₹<%=
+                                                                        item.totalPrice.toLocaleString() %>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="item-status status-<%= item.status.toLowerCase() %>">
+                                                                        <%= item.status %>
+                                                                    </span>
+                                                                    <% if (item.status==='Cancelled' &&
+                                                                        item.cancellationReason &&
+                                                                        !item.cancellationReason.includes('by admin')) {
+                                                                        %>
+                                                                        <div class="cancellation-info">
+                                                                            <small class="cancellation-text">
+                                                                                <i class="fas fa-user"></i> Cancelled by
+                                                                                customer
+                                                                            </small>
+                                                                            <% if (item.cancelledAt) { %>
+                                                                                <small class="cancellation-date">
+                                                                                    <i class="fas fa-clock"></i>
+                                                                                    <%= new
+                                                                                        Date(item.cancelledAt).toLocaleDateString()
+                                                                                        %>
+                                                                                </small>
+                                                                                <% } %>
+                                                                        </div>
+                                                                        <% } %>
+                                                                </td>
+                                                            </tr>
+                                                            <% }) %>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Order Timeline (Full Width) -->
+                                <% if (order.orderTimeline && order.orderTimeline.length> 0) { %>
+                                    <div class="details-row full-width">
+                                        <!-- Order Timeline Card -->
+                                        <div class="detail-card timeline-card full-width-card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">
+                                                    <i class="fas fa-history"></i>
+                                                    Order Timeline
+                                                </h3>
+                                            </div>
+                                            <div class="card-content">
+                                                <div class="timeline">
+                                                    <% order.orderTimeline.reverse().forEach((timeline, index)=> { %>
+                                                        <div class="timeline-item">
+                                                            <div class="timeline-marker"></div>
+                                                            <div class="timeline-content">
+                                                                <div class="timeline-header">
+                                                                    <span class="timeline-status">
+                                                                        <%= timeline.status %>
+                                                                    </span>
+                                                                    <span class="timeline-date">
+                                                                        <%= new
+                                                                            Date(timeline.timestamp).toLocaleString() %>
+                                                                    </span>
+                                                                </div>
+                                                                <p class="timeline-description">
+                                                                    <%= timeline.description %>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% } %>
                             </div>
-                            <% }) %>
+        </div>
+
+        <!-- Status Update Modal -->
+        <!-- Status Update Modal - Update Individual Items -->
+        <div class="modal fade" id="statusUpdateModal" tabindex="-1" aria-labelledby="statusUpdateModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="statusUpdateModalLabel">
+                            <i class="fas fa-tasks"></i> Update Item Status
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="updateOrderId">
+
+                        <!-- Instructions -->
+                        <div class="modal-instructions">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Select one or more items to update their status individually</span>
+                        </div>
+
+                        <!-- Items List Container -->
+                        <div id="itemsListContainer">
+                            <!-- Items will be populated dynamically -->
+                        </div>
+
+                        <!-- Update Button -->
+                        <button type="button" class="btn btn-success w-100 mt-3" onclick="confirmItemsStatusUpdate()">
+                            <i class="fas fa-check-circle"></i> Update Selected Items
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Update order status - Opens modal with items
+            function updateOrderStatus(orderId, currentStatus) {
+                fetch(`/admin/get-orders/${orderId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.order) {
+                            const order = data.order;
+
+                            // Check payment status
+                            if (order.paymentStatus !== 'Completed') {
+                                Swal.fire({
+                                    title: 'Payment Required',
+                                    text: `Cannot update item status. Payment status is "${order.paymentStatus}". Only orders with completed payments can be updated.`,
+                                    icon: 'warning',
+                                    confirmButtonColor: '#000000'
+                                });
+                                return;
+                            }
+
+                            // Check if order was cancelled by customer
+                            const isUserCancelled = order.status === 'Cancelled' &&
+                                order.orderedItems.every(item =>
+                                    item.status === 'Cancelled' &&
+                                    item.cancellationReason &&
+                                    !item.cancellationReason.includes('by admin')
+                                );
+
+                            if (isUserCancelled) {
+                                Swal.fire({
+                                    title: 'Order Locked',
+                                    text: 'Cannot update status of an order that was cancelled by the customer.',
+                                    icon: 'warning',
+                                    confirmButtonColor: '#000000'
+                                });
+                                return;
+                            }
+
+                            // Set order ID and populate items list
+                            document.getElementById('updateOrderId').value = orderId;
+                            populateItemsList(order);
+
+                            const modal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
+                            modal.show();
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Failed to load order details.',
+                                icon: 'error',
+                                confirmButtonColor: '#000000'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching order details:', error);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to load order details.',
+                            icon: 'error',
+                            confirmButtonColor: '#000000'
+                        });
+                    });
+            }
+
+            // Populate items list in modal
+            function populateItemsList(order) {
+                const container = document.getElementById('itemsListContainer');
+                container.innerHTML = '';
+
+                if (!order.orderedItems || order.orderedItems.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center">No items found</p>';
+                    return;
+                }
+
+                order.orderedItems.forEach((item, index) => {
+                    // Check if item can be updated
+                    const finalStates = ['Cancelled', 'Returned', 'Delivered'];
+                    const partialStates = ['Partially Delivered', 'Partially Cancelled', 'Partially Returned'];
+                    const isItemFinalState = finalStates.includes(item.status);
+                    const isItemUserCancelled = item.status === 'Cancelled' &&
+                        item.cancellationReason &&
+                        !item.cancellationReason.includes('by admin');
+
+                    const canUpdate = !isItemFinalState && !isItemUserCancelled;
+                    const disabledClass = !canUpdate ? 'disabled' : '';
+
+                    // Get product image
+                    let productImage = '';
+                      if (item.product && item.product.mainImage) {
+                          productImage = `/uploads/products/${item.product.mainImage}`;
+                    }
+                    // Build item card
+                    const itemCard = document.createElement('div');
+                    itemCard.className = `item-card ${disabledClass}`;
+                    itemCard.innerHTML = `
+            <div class="item-card-header">
+                <input type="checkbox" 
+                       class="item-checkbox" 
+                       data-item-index="${index}"
+                       ${!canUpdate ? 'disabled' : ''}
+                       onchange="toggleItemSelection(this)">
+                <div class="item-card-content">
+                    ${productImage ?
+                            `<img src="${productImage}" alt="${item.product?.productName || 'Product'}" class="item-image-small">` :
+                            `<div class="item-image-placeholder"><i class="fas fa-image"></i></div>`
+                        }
+                    <div class="item-details-small">
+                        <div class="item-name-small">${item.product?.productName || 'Product not found'}</div>
+                        <div class="item-meta">
+                            Qty: ${item.quantity} | Price: ₹${item.price.toLocaleString()} | 
+                            Total: ₹${item.totalPrice.toLocaleString()}
+                        </div>
+                        <div class="mt-1">
+                            <span class="current-status-badge ${item.status.toLowerCase().replace(/\s+/g, '-')}">
+                                Current: ${item.status}
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-            <% } %>
-        </div>
-    </div>
+            ${canUpdate ? `
+                <div class="item-status-form">
+                    <label>New Status:</label>
+                    <select class="form-select item-status-select" data-item-index="${index}" disabled>
+    <option value="">Select status...</option>
+    <option value="Pending" ${item.status === 'Pending' ? 'selected' : ''}>Pending</option>
+    <option value="Processing" ${item.status === 'Processing' ? 'selected' : ''}>Processing</option>
+    <option value="Shipped" ${item.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+    <option value="Delivered" ${item.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+    <option value="Cancelled" ${item.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+    <option value="Return Request" ${item.status === 'Return Request' ? 'selected' : ''}>Return Request</option>
+    <option value="Returned" ${item.status === 'Returned' ? 'selected' : ''}>Returned</option>
+</select>
 
-    <!-- Status Update Modal -->
-    <div class="modal fade" id="statusUpdateModal" tabindex="-1" aria-labelledby="statusUpdateModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="statusUpdateModalLabel">Update Order Status</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="statusUpdateForm">
-                        <input type="hidden" id="updateOrderId">
-                        <div class="form-group">
-                            <label for="newStatus" class="form-label">Select New Status</label>
-                            <select class="form-select" id="newStatus" required>
-                                <option value="">Choose status...</option>
-                                <!-- Options will be populated dynamically based on current status -->
-                            </select>
-                        </div>
-                    </form>
+            ` : `
+                <div class="disabled-reason">
+                    <i class="fas fa-lock"></i>
+                    ${isItemUserCancelled ? 'Cancelled by customer - cannot modify' : 'Item in final state - cannot modify'}
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmStatusUpdate()">Update Status</button>
-                </div>
-            </div>
-        </div>
-    </div>
+            `}
+        `;
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Update order status
-function updateOrderStatus(orderId, currentStatus) {
-    // First, get the order data to check payment status
-    fetch(`/get-orders/${orderId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.order) {
-                const order = data.order;
-                
-                // Check payment status - prevent updates for incomplete payments (except COD)
-                if (order.paymentMethod !== 'Cash on Delivery' && order.paymentStatus !== 'Completed') {
-                    Swal.fire({
-                        title: 'Payment Required',
-                        text: `Cannot update order status. Payment status is "${order.paymentStatus}". Only orders with completed payments can be updated.`,
-                        icon: 'warning',
-                        confirmButtonColor: '#000000'
-                    });
-                    return;
-                }
-                
-                // Check if order was cancelled by customer
-                const isUserCancelled = order.status === 'Cancelled' && 
-                    order.orderedItems.every(item => 
-                        item.status === 'Cancelled' && 
-                        item.cancellationReason && 
-                        !item.cancellationReason.includes('by admin')
-                    );
-                
-                if (isUserCancelled) {
-                    Swal.fire({
-                        title: 'Order Locked',
-                        text: 'Cannot update status of an order that was cancelled by the customer.',
-                        icon: 'warning',
-                        confirmButtonColor: '#000000'
-                    });
-                    return;
-                }
-                
-                // If all checks pass, proceed with status update
-                document.getElementById('updateOrderId').value = orderId;
-                populateStatusOptions(currentStatus);
-                
-                const modal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
-                modal.show();
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to load order details.',
-                    icon: 'error',
-                    confirmButtonColor: '#000000'
+                    container.appendChild(itemCard);
                 });
             }
-        })
-        .catch(error => {
-            console.error('Error fetching order details:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to load order details.',
-                icon: 'error',
-                confirmButtonColor: '#000000'
-            });
-        });
-}
 
-// Populate status options based on current status and flow restrictions
-function populateStatusOptions(currentStatus) {
-    const statusSelect = document.getElementById('newStatus');
-    statusSelect.innerHTML = '<option value="">Choose status...</option>';
-    
-    // Define the sequential flow
-    const statusFlow = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Return Request', 'Returned'];
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    
-    let allowedStatuses = [];
-    
-    switch (currentStatus) {
-        case 'Pending':
-            allowedStatuses = ['Processing', 'Cancelled'];
-            break;
-        case 'Processing':
-            allowedStatuses = ['Shipped', 'Cancelled'];
-            break;
-        case 'Shipped':
-            allowedStatuses = ['Delivered'];
-            break;
-        case 'Delivered':
-            allowedStatuses = ['Return Request'];
-            break;
-        case 'Return Request':
-            allowedStatuses = ['Returned'];
-            break;
-        case 'Partially Cancelled':
-            // For partially cancelled orders, allow progression of remaining items
-            allowedStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
-            break;
-        case 'Returned':
-        case 'Cancelled':
-            // Final states - no further changes allowed
-            allowedStatuses = [];
-            break;
-        default:
-            // For any other status, allow next in sequence
-            if (currentIndex !== -1 && currentIndex < statusFlow.length - 1) {
-                allowedStatuses = [statusFlow[currentIndex + 1]];
+            // Toggle item selection
+            function toggleItemSelection(checkbox) {
+                const itemIndex = checkbox.getAttribute('data-item-index');
+                const itemCard = checkbox.closest('.item-card');
+                const statusSelect = itemCard.querySelector(`.item-status-select[data-item-index="${itemIndex}"]`);
+
+                if (checkbox.checked) {
+                    itemCard.classList.add('selected');
+                    if (statusSelect) statusSelect.disabled = false;
+                } else {
+                    itemCard.classList.remove('selected');
+                    if (statusSelect) statusSelect.disabled = true;
+                }
             }
-    }
-    
-    // Add options to select
-    allowedStatuses.forEach(status => {
-        const option = document.createElement('option');
-        option.value = status;
-        option.textContent = status;
-        statusSelect.appendChild(option);
-    });
-    
-    // If no allowed statuses, show message
-    if (allowedStatuses.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = 'No status changes allowed';
-        option.disabled = true;
-        statusSelect.appendChild(option);
-    }
-}
 
-// Confirm status update
-async function confirmStatusUpdate() {
-    const orderId = document.getElementById('updateOrderId').value;
-    const newStatus = document.getElementById('newStatus').value;
-    
-    if (!newStatus) {
-        Swal.fire({
-            title: 'Error',
-            text: 'Please select a status.',
-            icon: 'error',
-            confirmButtonColor: '#000000'
-        });
-        return;
-    }
+            // Confirm items status update
+            async function confirmItemsStatusUpdate() {
+                const orderId = document.getElementById('updateOrderId').value;
 
-    try {
-        const response = await fetch(`/get-orders/${orderId}/status`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: newStatus })
-        });
+                // Get all selected items
+                const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
 
-        const data = await response.json();
-        
-        if (data.success) {
-            Swal.fire({
-                title: 'Success!',
-                text: 'Order status updated successfully.',
-                icon: 'success',
-                confirmButtonColor: '#000000'
-            }).then(() => {
-                // Reload the page to show updated status
-                window.location.reload();
-            });
-            
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('statusUpdateModal')).hide();
-        } else {
-            // Handle specific error cases
-            let errorTitle = 'Error';
-            let errorIcon = 'error';
-            
-            if (response.status === 403) {
-                errorTitle = 'Action Not Allowed';
-                errorIcon = 'warning';
+                if (selectedCheckboxes.length === 0) {
+                    Swal.fire({
+                        title: 'No Items Selected',
+                        text: 'Please select at least one item to update.',
+                        icon: 'warning',
+                        confirmButtonColor: '#000000'
+                    });
+                    return;
+                }
+
+                // Build updates array
+                const updates = [];
+                let hasError = false;
+
+                selectedCheckboxes.forEach(checkbox => {
+                    const itemIndex = parseInt(checkbox.getAttribute('data-item-index'));
+                    const statusSelect = document.querySelector(`.item-status-select[data-item-index="${itemIndex}"]`);
+                    const newStatus = statusSelect ? statusSelect.value : '';
+
+                    if (!newStatus) {
+                        hasError = true;
+                        return;
+                    }
+
+                    updates.push({
+                        itemIndex: itemIndex,
+                        status: newStatus
+                    });
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Please select a status for all selected items.',
+                        icon: 'error',
+                        confirmButtonColor: '#000000'
+                    });
+                    return;
+                }
+
+                // Show confirmation
+                const result = await Swal.fire({
+                    title: 'Confirm Update',
+                    text: `Update status for ${updates.length} item(s)?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#000000',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, update',
+                    cancelButtonText: 'Cancel'
+                });
+
+                if (!result.isConfirmed) return;
+
+                try {
+                    const response = await fetch(`/admin/get-orders/${orderId}/items/bulk-status`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ updates: updates })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        let successMessage = `Successfully updated ${updates.length} item(s).`;
+                        if (data.orderStatusChanged) {
+                            successMessage += `\nOrder status changed to: ${data.newOrderStatus}`;
+                        }
+
+                        Swal.fire({
+                            title: 'Success!',
+                            text: successMessage,
+                            icon: 'success',
+                            confirmButtonColor: '#000000'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+
+                        bootstrap.Modal.getInstance(document.getElementById('statusUpdateModal')).hide();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.message || 'Failed to update items.',
+                            icon: 'error',
+                            confirmButtonColor: '#000000'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error updating items:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to update items. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#000000'
+                    });
+                }
             }
-            
-            Swal.fire({
-                title: errorTitle,
-                text: data.message || 'Failed to update order status. Please try again.',
-                icon: errorIcon,
-                confirmButtonColor: '#000000'
+
+            // Initialize page
+            document.addEventListener('DOMContentLoaded', function () {
+                console.log('Order details page loaded');
             });
-        }
-    } catch (error) {
-        console.error('Error updating order status:', error.message);
-        Swal.fire({
-            title: 'Error',
-            text: 'Failed to update order status. Please try again.',
-            icon: 'error',
-            confirmButtonColor: '#000000'
-        });
-    }
-}
+        </script>
 
-
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    // Add any initialization code here if needed
-    // Order details page loaded
-});
-</script>
 </body>
+
 </html>

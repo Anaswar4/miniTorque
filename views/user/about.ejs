@@ -207,6 +207,62 @@
         .story-image:hover img {
             transform: scale(1.05);
         }
+        /* 3D Marquee Effect for Story Section */
+.marquee-box {
+    display: flex;
+    height: 200px;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.marquee-inner {
+    width: 50%;
+    height: 100%;
+    line-height: 200px;
+    font-size: 3em;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    position: relative;
+}
+
+.marquee-left {
+    background-color: #dc2626;
+    color: #7f1d1d;
+    transform-origin: right;
+    transform: perspective(100px) rotateY(-15deg);
+}
+
+.marquee-right {
+    background-color: #ef4444;
+    color: #fee2e2;
+    transform-origin: left;
+    transform: perspective(100px) rotateY(15deg);
+}
+
+.marquee-inner span {
+    position: absolute;
+    animation: marquee 5s linear infinite;
+}
+
+.marquee-left span {
+    animation-delay: 2.5s;
+    left: -100%;
+}
+
+@keyframes marquee {
+    from {
+        left: 100%;
+    }
+    to {
+        left: -100%;
+    }
+}
+
 
         /* Video Section */
         .video-section {
@@ -407,24 +463,43 @@
             transform: scale(1.02);
         }
 
-        /* Footer CTA */
-        .footer-cta {
-            background: linear-gradient(135deg, #2F2F2F, #3E3E3E);
-            padding: 80px 0;
-            text-align: center;
-            color: white;
-        }
+/* Footer CTA with Interactive Canvas */
+.footer-cta {
+    position: relative;
+    padding: 80px 0;
+    text-align: center;
+    color: white;
+    overflow: hidden;
+    min-height: 400px;
+}
 
-        .footer-cta h3 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
+#sparkleCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: #000000;
+}
 
-        .footer-cta p {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
+.footer-cta-content {
+    position: relative;
+    z-index: 2;
+}
+
+.footer-cta h3 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.footer-cta p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -464,6 +539,30 @@
             .section {
                 padding: 60px 0;
             }
+                /* 3D Marquee Responsive */
+    .marquee-box {
+        height: 120px;
+        max-width: 280px;
+    }
+    
+    .marquee-inner {
+        line-height: 120px;
+        font-size: 1.8em;
+    }
+      .footer-cta {
+        padding: 60px 20px;
+        min-height: 350px;
+    }
+    
+    .footer-cta h3 {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+    
+    .footer-cta p {
+        font-size: 1rem;
+        margin-bottom: 25px;
+    }
         }
 
         /* Scroll animations */
@@ -509,24 +608,32 @@
     </section>
 
     <!-- Story Section -->
-    <section class="section" id="story">
-        <div class="container">
-            <div class="section-title fade-in">
-                <h2>Our Story</h2>
-                <p>Born from a passion for automotive excellence and precision craftsmanship</p>
+<section class="section" id="story">
+    <div class="container">
+        <div class="section-title fade-in">
+            <h2>Our Story</h2>
+            <p>Born from a passion for automotive excellence and precision craftsmanship</p>
+        </div>
+        <div class="story-grid">
+            <div class="story-content fade-in">
+                <h3>Founded on Passion</h3>
+                <p>miniTorque was born in 2018 from a simple yet powerful vision: to bring the world's finest diecast car collections to enthusiasts and collectors who share our passion for automotive excellence. What started as a small venture has grown into a trusted destination for premium diecast models.</p>
+                <p>Our founder, a lifelong car enthusiast and collector, recognized the need for a specialized platform where quality, authenticity, and customer service converge. Today, we proudly serve thousands of collectors worldwide, from first-time buyers to seasoned enthusiasts.</p>
             </div>
-            <div class="story-grid">
-                <div class="story-content fade-in">
-                    <h3>Founded on Passion</h3>
-                    <p>miniTorque was born in 2018 from a simple yet powerful vision: to bring the world's finest diecast car collections to enthusiasts and collectors who share our passion for automotive excellence. What started as a small venture has grown into a trusted destination for premium diecast models.</p>
-                    <p>Our founder, a lifelong car enthusiast and collector, recognized the need for a specialized platform where quality, authenticity, and customer service converge. Today, we proudly serve thousands of collectors worldwide, from first-time buyers to seasoned enthusiasts.</p>
-                </div>
-                <div class="story-image fade-in">
-                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'><rect width='800' height='400' fill='%23f0f0f0'/><rect x='100' y='150' width='120' height='60' rx='10' fill='%23dc2626'/><rect x='250' y='160' width='100' height='50' rx='8' fill='%23000'/><rect x='400' y='140' width='130' height='70' rx='12' fill='%23dc2626'/><rect x='570' y='155' width='110' height='55' rx='9' fill='%23000'/><text x='400' y='350' text-anchor='middle' fill='%23666' font-size='16'>Premium Diecast Collection</text></svg>" alt="miniTorque Diecast Collection" loading="lazy">
+            <div class="story-image fade-in">
+                <div class="marquee-box">
+                    <div class="marquee-inner marquee-left">
+                        <span>Big Dreams</span>
+                    </div>
+                    <div class="marquee-inner marquee-right">
+                        <span>Small Start</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
 
     <!-- Mission & Values Section -->
     <section class="section">
@@ -643,18 +750,21 @@
         </div>
     </section>
 
-    <!-- Footer CTA -->
-    <section class="footer-cta">
-        <div class="container">
-            <div class="fade-in">
-                <h3>Ready to Start Your Collection?</h3>
-                <p>Join thousands of satisfied collectors who trust miniTorque for their diecast needs</p>
-                <a href="/shopPage" class="cta-button">Browse Our Collection</a>
-            </div>
+   
+<!-- Footer CTA -->
+<section class="footer-cta">
+    <canvas id="sparkleCanvas"></canvas>
+    <div class="container footer-cta-content">
+        <div class="fade-in">
+            <h3>Ready to Start Your Collection?</h3>
+            <p>Join thousands of satisfied collectors who trust miniTorque for their diecast needs</p>
+            <a href="/shopPage" class="cta-button">Browse Our Collection</a>
         </div>
-    </section>
-    <%- include("../partials/footer") %>
+    </div>
+</section>
 
+<%- include("../partials/footer") %>
+<script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
     <script>
         // Scroll animations
         const observerOptions = {
@@ -950,4 +1060,138 @@
                 }
             });
         });
+        // Sparkle Canvas Footer CTA
+    var canvas;
+    var stage;
+    var sprite;
+    var fader;
+    var spkls;
+
+    function initSparkles() {
+        canvas = document.getElementById("sparkleCanvas");
+        if (!canvas) return; // Exit if canvas not found
+        
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        stage = new createjs.StageGL(canvas, {preserveBuffer:true, antialias:true});
+        stage.autoClear = false;
+        stage.setClearColor(0x000000);
+        
+        stage.addEventListener("stagemousemove", moveCanvas);
+        stage.addEventListener("stagemousedown", clickCanvas);
+        
+        var img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = imageLoaded;
+        img.src = "/uploads/other/spritesheet_sparkle.png";
+    }
+
+    function handleSparkleResize() {
+        if (!canvas) return;
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        if (fader) {
+            fader.graphics.clear().beginFill("rgba(0,0,0, 0.3)").drawRect(0, 0, canvas.width, canvas.height).endFill();
+            fader.cache(0, 0, canvas.width, canvas.height, 1/32);
+        }
+        if (stage) {
+            stage.updateViewport(canvas.width, canvas.height);
+            stage.update();
+        }
+    }
+
+    function imageLoaded() {
+        var data = {
+            images: [this],
+            frames: {
+                width: 21,
+                height: 23,
+                regX: 10,
+                regY: 11
+            }
+        };
+        
+        sprite = new createjs.Sprite(new createjs.SpriteSheet(data));
+        
+        fader = new createjs.Shape();
+        stage.addChild(fader);
+        var gfx = fader.graphics;
+        gfx.beginFill("rgba(0,0,0, 0.3)").drawRect(0, 0, canvas.width, canvas.height).endFill();
+        fader.cache(0, 0, canvas.width, canvas.height, 1/32);
+        
+        spkls = new createjs.Container();
+        stage.addChild(spkls);
+        
+        createjs.Ticker.timingMode = createjs.Ticker.RAF;
+        createjs.Ticker.addEventListener("tick", tick);
+        
+        handleSparkleResize();
+        window.addEventListener("resize", handleSparkleResize);
+    }
+
+    function tick(event) {
+        var l = spkls.numChildren;
+        var m = event.delta / 16;
+        
+        for (var i = 0; i < l; i++) {
+            var sparkle = spkls.getChildAt(i);
+            if (--sparkle.life <= 0) {
+                spkls.removeChild(sparkle);
+                i--; l--;
+                continue;
+            }
+            
+            sparkle.vY += 0.1 * m;
+            sparkle.x += sparkle.vX * m;
+            sparkle.y += sparkle.vY * m;
+            sparkle.alpha = sparkle.alphaStart * (sparkle.life / sparkle.lifeMax);
+            
+            if (sparkle.y > canvas.height) {
+                sparkle.vY *= -(Math.random() * 0.1 + 0.8);
+                sparkle.vX += Math.cos(Math.random() * Math.PI * 2) * 3;
+            } else if (sparkle.y < 0) {
+                sparkle.vY *= 0.9;
+            }
+            if (sparkle.x > canvas.width || sparkle.x < 0) {
+                sparkle.vX *= -1;
+            }
+        }
+        
+        stage.update(event);
+    }
+
+    function clickCanvas(evt) {
+        addSparkles(Math.random() * 500 + 200 | 0, stage.mouseX, stage.mouseY, 1);
+    }
+
+    function moveCanvas(evt) {
+        addSparkles((Math.random() * 6 + 3) | 0, stage.mouseX, stage.mouseY, 0.1);
+    }
+
+    function addSparkles(count, x, y, speed) {
+        if (!sprite) return; // Safety check
+        
+        for (var i = 0; i < count; i++) {
+            var sparkle = sprite.clone();
+            sparkle.x = x;
+            sparkle.y = y;
+            sparkle.rotation = Math.random() * 360;
+            sparkle.alpha = sparkle.alphaStart = Math.random() * 0.7 + 0.6;
+            sparkle.scale = Math.random() + 0.3;
+            sparkle.life = sparkle.lifeMax = Math.random() * 100 + 50;
+            
+            var a = Math.PI * 2 * Math.random();
+            var v = (Math.random() - 0.5) * 30 * speed;
+            sparkle.vX = Math.cos(a) * v;
+            sparkle.vY = Math.sin(a) * v;
+            
+            sparkle.gotoAndPlay(Math.random() * sparkle.spriteSheet.getNumFrames() | 0);
+            spkls.addChild(sparkle);
+        }
+    }
+
+    // Initialize sparkles when DOM is ready
+    initSparkles();
     </script>

@@ -1,7 +1,7 @@
 const User = require("../../models/user-model");
-// const Order = require("../../models/order-schema");
-// const Product = require("../../models/product-schema");
-// const Category = require("../../models/category-schema");
+const Order = require("../../models/order-schema");
+const Product = require("../../models/product-schema");
+const Category = require("../../models/category-schema");
 
 const getDashboardStats = async (req, res) => {
   try {

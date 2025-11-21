@@ -363,7 +363,7 @@
         <span class="ms-2 fw-bold fs-4">miniTorque </span>
         <p> Premium Diecast Collection</p>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      <button class="navbar-toggler" type="button"  id="menuToggle" 
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <i class="ri-menu-line"></i>
       </button>
@@ -505,6 +505,32 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
+    //hamberger menu
+    document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navbarNav');
+    
+    if (menuToggle && navLinks) {
+        menuToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const isOpen = navLinks.classList.contains('show');
+            
+            if (isOpen) {
+                navLinks.classList.remove('show');
+                document.body.classList.remove('menu-open');
+                menuToggle.classList.remove('active');
+            } else {
+                navLinks.classList.add('show');
+                document.body.classList.add('menu-open');
+                menuToggle.classList.add('active');
+            }
+        });
+    }
+});
+
+
     document.addEventListener("DOMContentLoaded", function () {
       // Search functionality
       const searchFields = document.querySelectorAll(".search-field");
