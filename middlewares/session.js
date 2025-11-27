@@ -6,12 +6,12 @@ module.exports = session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/miniTorqueSessions',
+    mongoUrl: process.env.MONGO_URI ,
     collectionName: 'sessions'
   }),
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: false // set to true ONLY if using HTTPS
+    secure: process.env.NODE_ENV === 'production'
   }
 });
