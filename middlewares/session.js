@@ -6,7 +6,7 @@ module.exports = session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/miniTorqueSessions',
+    mongoUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/miniTorqueSessions',
     collectionName: 'sessions'
   }),
   cookie: {
