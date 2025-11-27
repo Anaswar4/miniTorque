@@ -196,7 +196,7 @@ const canUpdateStatus = ((!isFinalState && !isEntirelyUserCancelled) || isPartia
                                                                 Amount</span>
                                                             <span class="detail-value"
                                                                 style="font-weight: 700; color: <% if (isEntireOrderCancelled) { %>#dc2626<% } else { %>#059669<% } %>; font-size: 1.1em;">₹
-                                                                <%= order.finalAmountActive.toLocaleString() %></span>
+                                                                <%= order.finalAmount ? order.finalAmount.toLocaleString() : "0" %></span>
                                                         </div>
                                                         <% if (isEntireOrderCancelled) { %>
                                                             <div

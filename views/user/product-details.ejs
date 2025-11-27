@@ -929,7 +929,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ADD TO CART FUNCTIONALITY
     if (addToCartBtn) {
         addToCartBtn.addEventListener('click', async function () {
-            console.log(' Add to Cart clicked');
+    if (!window.isAuthenticated) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Please login first',
+            showConfirmButton: false,
+            timer: 2000
+        });
+        return; // Prevent further execution
+    }
             
             if (this.disabled) {
                 console.log(' Button is disabled');
@@ -993,8 +1003,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                         this.disabled = false;
                     }, 2000);
                 } else {
-                //  const msg = typeof result.message === 'string' ? result.message : 'Failed to add to cart';
-                //   throw new Error(msg);
                      throw new Error(result.message || 'Failed to add to cart');
                 }
             } catch (error) {
@@ -1027,10 +1035,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     // WISHLIST FUNCTIONALITY
     if (wishlistBtn) {
         wishlistBtn.addEventListener('click', async function () {
-            console.log(' Wishlist clicked');
-            
             const productId = this.dataset.productId;
-            console.log('Toggling wishlist for product:', productId);
+            if (!window.isAuthenticated) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Please login first',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      return; // Prevent further execution if not logged in
+    }
 
             // Disable button temporarily
             this.disabled = true;
@@ -1104,8 +1120,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     relatedAddToCartButtons.forEach((button, index) => {
         button.addEventListener('click', async function (e) {
+          if (!window.isAuthenticated) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Please login first',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      return; // Prevent further execution without login
+    }
             e.preventDefault();
-            console.log(`🛒 Related product ${index + 1} add to cart clicked`);
+            console.log(` Related product ${index + 1} add to cart clicked`);
             
             if (this.disabled) return;
 
@@ -1181,6 +1208,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     relatedWishlistButtons.forEach((button, index) => {
         button.addEventListener('click', async function (e) {
+          if (!window.isAuthenticated) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Please login first',
+        showConfirmButton: false,
+        timer: 2000
+      });
+      return; // Prevent further execution without login
+    }
             e.preventDefault();
             console.log(` Related product ${index + 1} wishlist clicked`);
             

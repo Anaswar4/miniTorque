@@ -110,7 +110,8 @@ const loadOrderDetails = async (req, res) => {
     // Get cart count for navbar
     const cart = await Cart.findOne({ userId }).lean();
     const cartCount = cart && cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-    
+console.log('Order discount:', order.discount);
+
     res.render('user/order-details', {
       user,
       order,
@@ -229,44 +230,52 @@ const cancelOrderItem = async (req, res) => {
       timestamp: new Date()
     });
 
-    // Credit wallet for cancelled item
-    let walletCreditAmount = 0;
-    let refundAmount = orderItem.totalPrice;
-    
-    // Apply payment method logic
-    if (order.paymentMethod === 'Cash on Delivery') {
-      if (order.paymentStatus === 'Completed') {
-        walletCreditAmount = refundAmount;
-      }
-    } else {
-      walletCreditAmount = refundAmount;
-    }
-    
-    if (walletCreditAmount > 0) {
-      try {
-        const wallet = await Wallet.getOrCreateWallet(userId);
-        await wallet.addMoney(
-          walletCreditAmount,
-          `Refund for cancelled item: ${orderItem.product.productName} (Order: ${order.orderId})`,
-          order.orderId
-        );
-      } catch (walletError) {
-        console.error('Error adding money to wallet:', walletError);
-      }
-    }
+  // wallet -Calculate the sum of all order items' (price * qty), after product/offer discount but before coupon
+const orderValue = order.orderedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+// Calculate coupon discount share for this item
+const lineValue = orderItem.price * orderItem.quantity;
+const couponShare = orderValue > 0
+  ? (lineValue / orderValue) * (order.couponDiscount || 0)
+  : 0;
+let walletCreditAmount = lineValue - couponShare;
+if (walletCreditAmount < 0) walletCreditAmount = 0; 
 
-    await order.save();
+// Apply payment method logic as before
+if (order.paymentMethod === 'Cash on Delivery') {
+  if (order.paymentStatus === 'Completed') {
+    // walletCreditAmount stays as calculated above
+  } else {
+    walletCreditAmount = 0;
+  }
+}
+// No else block needed, online orders always get refund
 
-    const responseMessage = walletCreditAmount > 0 
-      ? `Item cancelled successfully. ₹${walletCreditAmount} has been credited to your wallet.`
-      : 'Item cancelled successfully';
+if (walletCreditAmount > 0) {
+  try {
+    const wallet = await Wallet.getOrCreateWallet(userId);
+    await wallet.addMoney(
+      walletCreditAmount,
+      `Refund for cancelled item: ${orderItem.product.productName} (Order: ${order.orderId})`,
+      order.orderId
+    );
+  } catch (walletError) {
+    console.error('Error adding money to wallet:', walletError);
+  }
+}
 
-    res.status(200).json({
-      success: true,
-      message: responseMessage,
-      walletCredited: walletCreditAmount > 0,
-      creditAmount: walletCreditAmount
-    });
+await order.save();
+
+const responseMessage = walletCreditAmount > 0 
+  ? `Item cancelled successfully. ₹${walletCreditAmount.toFixed(2)} has been credited to your wallet.`
+  : 'Item cancelled successfully';
+
+res.status(200).json({
+  success: true,
+  message: responseMessage,
+  walletCredited: walletCreditAmount > 0,
+  creditAmount: walletCreditAmount
+});
+
 
   } catch (error) {
     console.error('Error cancelling order item:', error);

@@ -113,8 +113,8 @@ const getReturnRequests = async (req, res) => {
 const approveReturnRequest = async (req, res) => {
   try {
     const orderId = req.params.id;
-    const { adminNote, itemIds } = req.body; 
-    
+    const { adminNote, itemIds } = req.body;
+
     if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
       return res.status(400).json({
         success: false,
@@ -132,10 +132,10 @@ const approveReturnRequest = async (req, res) => {
         message: 'Order not found'
       });
     }
-    
+
     // Get current return request items
     let returnRequestItems = order.orderedItems.filter(item => item.status === 'Return Request');
-    
+
     if (returnRequestItems.length === 0) {
       return res.status(400).json({
         success: false,
@@ -143,7 +143,7 @@ const approveReturnRequest = async (req, res) => {
       });
     }
 
-    //  Determine if this is entire order return or individual items
+    // Determine if this is entire order return or individual items
     const activeItems = order.orderedItems.filter(item => item.status === 'Active');
     const allItemsBeingReturned = (activeItems.length + returnRequestItems.length) === order.orderedItems.length;
     const isEntireOrderReturn = order.status === 'Return Request' && allItemsBeingReturned;
@@ -151,14 +151,17 @@ const approveReturnRequest = async (req, res) => {
     let refundAmount = 0;
     let returnedItemsDescription = '';
 
+    // --- COUPON SPLIT LOGIC STARTS HERE ---
+    // Sum of all items, before coupon applied
+    const orderValue = order.orderedItems.reduce((sum, oi) => sum + (oi.price * oi.quantity), 0);
+
     if (isEntireOrderReturn) {
-      
-      
+
       // Check if already processed
-      const alreadyProcessed = order.orderedItems.every(item => 
+      const alreadyProcessed = order.orderedItems.every(item =>
         item.status === 'Returned' || item.returnApprovedAt
       );
-      
+
       if (alreadyProcessed) {
         return res.status(400).json({
           success: true,
@@ -169,15 +172,19 @@ const approveReturnRequest = async (req, res) => {
       order.status = 'Returned';
 
       const includedItems = [...activeItems, ...returnRequestItems];
+
       let amountAfterDiscount = 0;
       includedItems.forEach(item => {
-        amountAfterDiscount += item.totalPrice;
+        const lineValue = item.price * item.quantity;
+        const couponShare = orderValue > 0
+          ? (lineValue / orderValue) * (order.couponDiscount || 0)
+          : 0;
+        amountAfterDiscount += lineValue - couponShare;
       });
 
       if (includedItems.length > 0) {
         amountAfterDiscount += order.shippingCharges;
       }
-
       refundAmount = amountAfterDiscount;
 
       for (const item of order.orderedItems) {
@@ -188,7 +195,7 @@ const approveReturnRequest = async (req, res) => {
           if (!item.returnReason) {
             item.returnReason = 'Entire order return approved by admin';
           }
-          
+
           // Restore product stock
           await Product.findByIdAndUpdate(
             item.product._id,
@@ -200,15 +207,14 @@ const approveReturnRequest = async (req, res) => {
       returnedItemsDescription = 'Entire order';
 
     } else {
-      //  INDIVIDUAL ITEM RETURN - Only specific items being returned
-      // If itemIds provided, filter to those specific items
+      // INDIVIDUAL ITEM RETURN
       if (itemIds && Array.isArray(itemIds) && itemIds.length > 0) {
         returnRequestItems = returnRequestItems.filter(item => itemIds.includes(item._id.toString()));
       }
-      
+
       // Check if these specific items are already approved
       const itemsToApprove = returnRequestItems.filter(item => !item.returnApprovedAt);
-      
+
       if (itemsToApprove.length === 0) {
         return res.status(400).json({
           success: true,
@@ -216,19 +222,23 @@ const approveReturnRequest = async (req, res) => {
         });
       }
 
-      // Approve each individual item
+      // Approve each individual item (coupon split for each)
       for (const item of itemsToApprove) {
         item.status = 'Returned';
         item.returnApprovedAt = new Date();
 
-        const itemRefundAmount = item.totalPrice || (item.price * item.quantity);
+        const lineValue = item.price * item.quantity;
+        const couponShare = orderValue > 0
+          ? (lineValue / orderValue) * (order.couponDiscount || 0)
+          : 0;
+        const itemRefundAmount = lineValue - couponShare;
         refundAmount += itemRefundAmount;
 
         if (returnedItemsDescription) {
           returnedItemsDescription += ', ';
         }
         returnedItemsDescription += `${item.product.productName} (₹${itemRefundAmount.toFixed(2)})`;
-        
+
         // Restore product stock
         await Product.findByIdAndUpdate(
           item.product._id,
@@ -239,12 +249,10 @@ const approveReturnRequest = async (req, res) => {
       // Update order status based on remaining items
       const remainingActiveItems = order.orderedItems.filter(item => item.status === 'Active');
       const allReturnedItems = order.orderedItems.filter(item => item.status === 'Returned');
-      
+
       if (remainingActiveItems.length === 0 && allReturnedItems.length === order.orderedItems.length) {
-        // All items now returned
         order.status = 'Returned';
       } else {
-        // Some items still active
         order.status = 'Partially Returned';
       }
     }
@@ -290,6 +298,7 @@ const approveReturnRequest = async (req, res) => {
     });
   }
 };
+
 
 const rejectReturnRequest = async (req, res) => {
   try {

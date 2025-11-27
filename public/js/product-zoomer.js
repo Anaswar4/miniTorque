@@ -1,4 +1,4 @@
-// Enhanced Product Image Zoom Functionality for miniTorque
+// Enhanced Product Image Zoom Functionality for miniTorque 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize image magnifier functionality
     initImageMagnifier();
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Professional Image Magnifier with lens effect
+ * Professional Image Magnifier with lens effect 
  */
 function initImageMagnifier() {
     const mainImage = document.getElementById('mainImage');
@@ -32,30 +32,11 @@ function initImageMagnifier() {
     let isActive = false;
     const magnificationLevel = 2.5;
     
-    // Show magnifier glass and zoom result on mouseenter
-    zoomContainer.addEventListener('mouseenter', function() {
-        if (window.innerWidth > 768) { // Only on desktop
-            magnifierGlass.style.display = 'block';
-            zoomResult.style.display = 'block';
-            isActive = true;
-        }
-    });
-    
-    // Hide magnifier glass and zoom result on mouseleave
-    zoomContainer.addEventListener('mouseleave', function() {
-        magnifierGlass.style.display = 'none';
-        zoomResult.style.display = 'none';
-        isActive = false;
-    });
-    
-    // Update magnifier position on mousemove
-    zoomContainer.addEventListener('mousemove', function(e) {
-        if (!isActive || window.innerWidth <= 768) return;
-        
-        // Get cursor position
+    // Unified zoom calculation function for both mouse and touch
+    function updateZoom(clientX, clientY) {
         const rect = zoomContainer.getBoundingClientRect();
-        const cursorX = e.clientX - rect.left;
-        const cursorY = e.clientY - rect.top;
+        const cursorX = clientX - rect.left;
+        const cursorY = clientY - rect.top;
         
         // Calculate magnifier glass position
         const glassWidth = magnifierGlass.offsetWidth / 2;
@@ -82,63 +63,81 @@ function initImageMagnifier() {
         const percentX = (cursorX / rect.width) * 100;
         const percentY = (cursorY / rect.height) * 100;
         
+        // Get current image src (ensure it's fully loaded)
+        const currentImageSrc = mainImage.complete ? mainImage.src : mainImage.getAttribute('src');
+        
         // Update magnifier glass background
-        magnifierGlass.style.backgroundImage = `url('${mainImage.src}')`;
+        magnifierGlass.style.backgroundImage = `url('${currentImageSrc}')`;
         magnifierGlass.style.backgroundSize = `${rect.width * magnificationLevel}px ${rect.height * magnificationLevel}px`;
         magnifierGlass.style.backgroundPosition = `${percentX}% ${percentY}%`;
         
         // Update zoom result display
-        zoomResult.style.backgroundImage = `url('${mainImage.src}')`;
+        zoomResult.style.backgroundImage = `url('${currentImageSrc}')`;
         zoomResult.style.backgroundSize = `${rect.width * magnificationLevel}px ${rect.height * magnificationLevel}px`;
         zoomResult.style.backgroundPosition = `${percentX}% ${percentY}%`;
-    });
+    }
     
-    // Mobile touch handling
-    let touchActive = false;
-    
-    zoomContainer.addEventListener('touchstart', function(e) {
-        if (window.innerWidth <= 768) {
-            e.preventDefault();
-            touchActive = !touchActive;
-            
-            if (touchActive) {
+    // DESKTOP: Show magnifier glass and zoom result on mouseenter
+    zoomContainer.addEventListener('mouseenter', function() {
+        if (window.innerWidth > 768) { // Only on desktop
+            // Wait for image to be fully loaded before showing zoom
+            if (mainImage.complete) {
                 magnifierGlass.style.display = 'block';
                 zoomResult.style.display = 'block';
-                updateTouchZoom(e.touches[0]);
+                isActive = true;
             } else {
-                magnifierGlass.style.display = 'none';
-                zoomResult.style.display = 'none';
+                // If image not loaded, wait for it
+                mainImage.onload = function() {
+                    magnifierGlass.style.display = 'block';
+                    zoomResult.style.display = 'block';
+                    isActive = true;
+                };
             }
         }
     });
     
-    zoomContainer.addEventListener('touchmove', function(e) {
-        if (touchActive && window.innerWidth <= 768) {
-            e.preventDefault();
-            updateTouchZoom(e.touches[0]);
+    // DESKTOP: Hide magnifier glass and zoom result on mouseleave
+    zoomContainer.addEventListener('mouseleave', function() {
+        if (window.innerWidth > 768) {
+            magnifierGlass.style.display = 'none';
+            zoomResult.style.display = 'none';
+            isActive = false;
         }
     });
     
+    // DESKTOP: Update magnifier position on mousemove
+    zoomContainer.addEventListener('mousemove', function(e) {
+        if (window.innerWidth > 768 && isActive) {
+            updateZoom(e.clientX, e.clientY);
+        }
+    });
+    
+    // MOBILE: Touch start
+    zoomContainer.addEventListener('touchstart', function(e) {
+        if (window.innerWidth <= 768) {
+            e.preventDefault();
+            magnifierGlass.style.display = 'block';
+            zoomResult.style.display = 'block';
+            updateZoom(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+    
+    // MOBILE: Touch move
+    zoomContainer.addEventListener('touchmove', function(e) {
+        if (window.innerWidth <= 768) {
+            e.preventDefault();
+            updateZoom(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+    
+    // MOBILE: Touch end
     zoomContainer.addEventListener('touchend', function(e) {
-        if (window.innerWidth <= 768 && !touchActive) {
+        if (window.innerWidth <= 768) {
+            e.preventDefault();
             magnifierGlass.style.display = 'none';
             zoomResult.style.display = 'none';
         }
-    });
-    
-    function updateTouchZoom(touch) {
-        const rect = zoomContainer.getBoundingClientRect();
-        const touchX = touch.clientX - rect.left;
-        const touchY = touch.clientY - rect.top;
-        
-        // Simulate a mousemove event
-        const simulatedMouseEvent = new MouseEvent('mousemove', {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-        
-        zoomContainer.dispatchEvent(simulatedMouseEvent);
-    }
+    }, { passive: false });
 }
 
 /**
@@ -287,4 +286,3 @@ function preloadImages() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(preloadImages, 1000); // Delay to not interfere with main loading
 });
-

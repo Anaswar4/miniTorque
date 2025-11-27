@@ -159,7 +159,7 @@ router.get("/cart/validate", isUserAuthenticated, preventCache, checkUserBlocked
 router.get("/cart/count", isUserAuthenticated, preventCache, checkUserBlocked, cartController.getCartCount);
 
 
-// // Checkout-related routes
+// Checkout-related routes
 router.get("/checkout", isUserAuthenticated, preventCache, addUserContext, checkUserBlocked, checkoutController.loadCheckout);
 router.post("/checkout/place-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.placeOrder);
 router.post("/checkout/create-razorpay-order", isUserAuthenticated, preventCache, checkUserBlocked, checkoutController.createRazorpayOrder);

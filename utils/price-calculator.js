@@ -78,11 +78,12 @@ const calculateItemDiscount = (originalPrice, finalPrice, quantity) => {
 
 
 /**
- * Calculate cart summary totals with offer-based pricing
+ * Calculate cart summary totals with offer-based pricing AND coupon discount
  * @param {Array} cartItems - Array of cart items with product data and offer details
- * @returns {Object} Object containing subtotal, totalDiscount, and other summary data
+ * @param {number} couponDiscount - Coupon discount amount (default: 0)
+ * @returns {Object} Object containing subtotal, totalDiscount, couponDiscount, and other summary data
  */
-const calculateCartSummary = (cartItems) => {
+const calculateCartSummary = (cartItems, couponDiscount = 0) => {
   let subtotal = 0; // Total based on sale prices (before offers)
   let totalDiscount = 0; // Total discount from offers
   let totalItems = 0;
@@ -119,15 +120,42 @@ const calculateCartSummary = (cartItems) => {
 
   // Shipping calculation based on amount customer actually pays (after offers)
   const shippingCharges = finalAmountBeforeShipping >= 500 ? 0 : 50;
-  const finalAmount = finalAmountBeforeShipping + shippingCharges;
+  
+  // Calculate final amount BEFORE coupon
+  const finalAmountBeforeCoupon = finalAmountBeforeShipping + shippingCharges;
+  
+  // Apply coupon discount to get the actual final amount user pays
+  const finalAmount = finalAmountBeforeCoupon - couponDiscount;
 
   return {
     subtotal: Math.round(subtotal), // Subtotal based on sale prices
     totalDiscount: Math.round(totalDiscount), // Total discount from offers
+    couponDiscount: Math.round(couponDiscount), // Coupon discount amount
     shippingCharges,
-    finalAmount: Math.round(finalAmount), // Final amount to pay (after offers + shipping)
+    finalAmount: Math.round(finalAmount), // Final amount to pay (after offers + shipping - coupon)
     totalItems,
     amountAfterDiscount: Math.round(finalAmountBeforeShipping) // Amount after offers but before shipping
+  };
+};
+
+
+
+/**
+ * Calculate order summary for displaying order details
+ * Use this in Order Detail Pages (User & Admin), Return Requests, Wallet Credits
+ * @param {Object} order - Order object from database
+ * @returns {Object} Calculated order summary with all amounts
+ */
+const calculateOrderSummary = (order) => {
+  if (!order) return null;
+  
+  return {
+    subtotal: order.totalPrice || 0,
+    couponDiscount: order.discount || 0,
+    shippingCharges: order.shippingCharges || 0,
+    finalAmount: order.finalAmount || 0, // This is the amount user actually paid
+    displayAmount: order.finalAmount || 0, // Use this for display in UI
+    amountPaid: order.finalAmount || 0 // Use this for refunds/wallet credits
   };
 };
 
@@ -208,6 +236,7 @@ module.exports = {
   calculateItemTotal,
   calculateItemDiscount,
   calculateCartSummary,
+  calculateOrderSummary,
   syncCartItemPrice,
   syncAllCartPrices,
   calculateEffectivePrice 

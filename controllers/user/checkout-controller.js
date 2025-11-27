@@ -193,7 +193,7 @@ const loadCheckout = async (req, res) => {
 // Process order placement (for COD and Wallet)
 const placeOrder = async (req, res) => {
   try {
-    const userId = req.session.userId || req.session.googleUserId;  
+    const userId = req.session.userId || req.session.googleUserId;
     const { selectedAddressId, paymentMethod = 'Cash on Delivery', appliedCoupon } = req.body;
 
     // Validate address selection
@@ -205,14 +205,13 @@ const placeOrder = async (req, res) => {
     }
 
     // Get user's cart
-    const cart = await Cart.findOne({ userId })
-      .populate({
-        path: 'items.productId',
-        populate: {
-          path: 'category',
-          select: 'name isListed isDeleted categoryOffer'
-        }
-      });
+    const cart = await Cart.findOne({ userId }).populate({
+      path: 'items.productId',
+      populate: {
+        path: 'category',
+        select: 'name isListed isDeleted categoryOffer'
+      }
+    });
 
     if (!cart || !cart.items || cart.items.length === 0) {
       return res.status(400).json({
@@ -222,10 +221,10 @@ const placeOrder = async (req, res) => {
     }
 
     // Filter available items and validate stock
-    const cartItems = cart.items.filter(item => 
-      item.productId && 
-      item.productId.category && 
-      item.productId.category.isListed && 
+    const cartItems = cart.items.filter(item =>
+      item.productId &&
+      item.productId.category &&
+      item.productId.category.isListed &&
       !item.productId.category.isDeleted &&
       item.productId.isListed &&
       !item.productId.isDeleted
@@ -244,7 +243,7 @@ const placeOrder = async (req, res) => {
     // Get selected address
     const addressDoc = await Address.findOne({ userId });
     const selectedAddress = addressDoc.address.id(selectedAddressId);
-    
+
     if (!selectedAddress) {
       return res.status(400).json({
         success: false,
@@ -256,7 +255,7 @@ const placeOrder = async (req, res) => {
     if (cartItems.length > 0) {
       const products = cartItems.map(item => item.productId);
       const productsWithOffers = await applyBestOffersToProducts(products);
-      
+
       cartItems.forEach((item, index) => {
         item.productId = productsWithOffers[index];
       });
@@ -271,12 +270,12 @@ const placeOrder = async (req, res) => {
     cartItems.forEach(item => {
       const salePrice = item.productId.salePrice;
       const quantity = item.quantity;
-      
+
       let finalPrice = item.price || salePrice;
       if (item.productId.offerDetails && item.productId.offerDetails.finalPrice) {
         finalPrice = item.productId.offerDetails.finalPrice;
       }
-      
+
       subtotal += salePrice * quantity;
       const itemDiscount = calculateItemDiscount(salePrice, finalPrice, quantity);
       totalDiscount += itemDiscount;
@@ -292,12 +291,17 @@ const placeOrder = async (req, res) => {
     });
 
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
-    let finalAmount = amountAfterDiscount + shippingCharges;
 
-    //  Apply coupon discount if exists
+    // --- COUPON  HANDLING ---
+    let rawFinalAmount = amountAfterDiscount + shippingCharges;
+    let couponDiscount = 0;
+    let couponCode = null;
     if (appliedCoupon && appliedCoupon.discountAmount) {
-      finalAmount = finalAmount - appliedCoupon.discountAmount;
+      couponDiscount = Math.min(rawFinalAmount, appliedCoupon.discountAmount);
+      couponCode = appliedCoupon.code || null;
     }
+    let finalAmount = rawFinalAmount - couponDiscount;
+    if (finalAmount < 1) finalAmount = 1; // or 0 if you support free orders
 
     // Validate COD limit
     if (paymentMethod === 'Cash on Delivery' && finalAmount > 2000) {
@@ -324,6 +328,8 @@ const placeOrder = async (req, res) => {
       orderedItems,
       totalPrice: subtotal,
       discount: totalDiscount,
+      couponCode,            
+      couponDiscount,        
       shippingCharges,
       finalAmount,
       shippingAddress: {
@@ -386,6 +392,7 @@ const placeOrder = async (req, res) => {
   }
 };
 
+
 // Create Razorpay order 
 const createRazorpayOrder = async (req, res) => {
   try {
@@ -418,10 +425,10 @@ const createRazorpayOrder = async (req, res) => {
     }
 
     // Filter available items and validate stock
-    const cartItems = cart.items.filter(item => 
-      item.productId && 
-      item.productId.category && 
-      item.productId.category.isListed && 
+    const cartItems = cart.items.filter(item =>
+      item.productId &&
+      item.productId.category &&
+      item.productId.category.isListed &&
       !item.productId.category.isDeleted &&
       item.productId.isListed &&
       !item.productId.isDeleted
@@ -440,7 +447,7 @@ const createRazorpayOrder = async (req, res) => {
     // Get selected address
     const addressDoc = await Address.findOne({ userId });
     const selectedAddress = addressDoc.address.id(selectedAddressId);
-    
+
     if (!selectedAddress) {
       return res.status(400).json({
         success: false,
@@ -452,7 +459,7 @@ const createRazorpayOrder = async (req, res) => {
     if (cartItems.length > 0) {
       const products = cartItems.map(item => item.productId);
       const productsWithOffers = await applyBestOffersToProducts(products);
-      
+
       cartItems.forEach((item, index) => {
         item.productId = productsWithOffers[index];
       });
@@ -467,12 +474,12 @@ const createRazorpayOrder = async (req, res) => {
     cartItems.forEach(item => {
       const salePrice = item.productId.salePrice;
       const quantity = item.quantity;
-      
+
       let finalPrice = item.price || salePrice;
       if (item.productId.offerDetails && item.productId.offerDetails.finalPrice) {
         finalPrice = item.productId.offerDetails.finalPrice;
       }
-      
+
       subtotal += salePrice * quantity;
       const itemDiscount = calculateItemDiscount(salePrice, finalPrice, quantity);
       totalDiscount += itemDiscount;
@@ -488,12 +495,19 @@ const createRazorpayOrder = async (req, res) => {
     });
 
     const shippingCharges = amountAfterDiscount >= 500 ? 0 : 50;
-    let finalAmount = amountAfterDiscount + shippingCharges;
 
-    //  Apply coupon discount if exists
+    // ----- COUPON  HANDLING -----
+    let rawFinalAmount = amountAfterDiscount + shippingCharges;
+    let couponDiscount = 0;
+    let couponCode = null;
+
     if (appliedCoupon && appliedCoupon.discountAmount) {
-      finalAmount = finalAmount - appliedCoupon.discountAmount;
+      couponDiscount = Math.min(rawFinalAmount, appliedCoupon.discountAmount);
+      couponCode = appliedCoupon.code || null;
     }
+
+    let finalAmount = rawFinalAmount - couponDiscount;
+    if (finalAmount < 1) finalAmount = 1; // or 0 if "free" is allowed
 
     // Create order in database with Pending status
     const order = new Order({
@@ -501,6 +515,8 @@ const createRazorpayOrder = async (req, res) => {
       orderedItems,
       totalPrice: subtotal,
       discount: totalDiscount,
+      couponCode,        
+      couponDiscount,     
       shippingCharges,
       finalAmount,
       shippingAddress: {
@@ -560,7 +576,8 @@ const createRazorpayOrder = async (req, res) => {
   }
 };
 
-// Verify Razorpay payment (NEW FUNCTION)
+
+// Verify Razorpay payment 
 const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;

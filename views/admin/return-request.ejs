@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,348 +8,432 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="icon" type="image/png" href="/images/miniTorque.png.png"/>
-    <link rel="stylesheet" href="/css/admin/return-request.css"/>
+    <link rel="icon" type="image/png" href="/images/miniTorque.png.png" />
+    <link rel="stylesheet" href="/css/admin/return-request.css" />
 </head>
+
 <body>
     <%- include("../partials/sidebar") %>
 
-    <div class="main-content">
-        <!-- Breadcrumbs -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="/admin/get-orders">Orders</a></li>
-                <li class="breadcrumb-item active">Return Requests</li>
-            </ol>
-        </nav>
+        <div class="main-content">
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin/admin-dashboard">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/get-orders">Orders</a></li>
+                    <li class="breadcrumb-item active">Return Requests</li>
+                </ol>
+            </nav>
 
-        <!-- Page Header -->
-        <div class="page-header">
-            <h1 class="page-title">Return Requests Management</h1>
-            <p class="page-subtitle">Manage and track all customer return requests</p>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <i class="fas fa-clock pending"></i>
-                <h3 id="pendingCount">
-                    <%= returnRequests ? returnRequests.length : 0 %>
-                </h3>
-                <p>Pending Requests</p>
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">Return Requests Management</h1>
+                <p class="page-subtitle">Manage and track all customer return requests</p>
             </div>
-        </div>
 
-        <!-- Table Container -->
-        <div class="table-container">
-            <div class="table-header">
-                <div class="results-info">
-                    <% if (returnRequests && returnRequests.length > 0) { %>
-                        Showing <span class="results-count"><%= startIdx + 1 %>-<%= endIdx %></span>
-                        of <span class="results-count"><%= totalRequests %></span> return requests
-                    <% } else { %>
-                        <span class="results-count">No return requests found</span>
-                    <% } %>
+            <!-- Statistics Cards -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <i class="fas fa-clock pending"></i>
+                    <h3 id="pendingCount">
+                        <%= returnRequests ? returnRequests.length : 0 %>
+                    </h3>
+                    <p>Pending Requests</p>
                 </div>
             </div>
 
-            <div class="table-wrapper">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th class="col-order-id">Order ID</th>
-                            <th class="col-customer">Customer</th>
-                            <th class="col-products">Products</th>
-                            <th class="col-amount">Amount</th>
-                            <th class="col-date">Request Date</th>
-                            <th class="col-reason">Reason</th>
-                            <th class="col-status">Status</th>
-                            <th class="col-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (returnRequests && returnRequests.length > 0) { %>
-                            <% returnRequests.forEach(order => { %>
-                                <tr>
-                                    <td>
-                                        <div class="order-id-cell">
-                                            <i class="fas fa-receipt"></i>
-                                            <span><%= order.orderId %></span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="customer-info">
-                                            <div class="customer-avatar">
-                                                <%= order.userId?.fullName ? order.userId.fullName.charAt(0).toUpperCase() : 'U' %>
-                                            </div>
-                                            <div class="customer-details">
-                                                <div class="customer-name"><%= order.userId ? order.userId.fullName || 'Unknown Customer' : 'Unknown Customer' %></div>
-                                                <div class="customer-email"><%= order.userId ? order.userId.email || 'No email' : 'No email' %></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-    <div class="product-info">
-        <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
-            <% 
-            const returnItem = order.returnItems[0];
-            const product = returnItem.product;
-            let productImage = null;
-            let hasImage = false;
-            
-            if (product && product.productImages && product.productImages.length > 0) {
-                productImage = `/uploads/products/${product.productImages[0]}`;
-                hasImage = true;
-            } else if (product && product.mainImage) {
-                productImage = `/uploads/products/${product.mainImage}`;
-                hasImage = true;
-            }
-            %>
-            <% if (hasImage) { %>
-                <img src="<%= productImage %>" 
-                     alt="Product" class="product-image"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="product-placeholder" style="display: none;">
-                    <i class="fas fa-image"></i>
-                </div>
-            <% } else { %>
-                <div class="product-placeholder">
-                    <i class="fas fa-image"></i>
-                </div>
-            <% } %>
-            <div class="product-details">
-                <h6><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
-                <small>Qty: <%= returnItem.quantity || 1 %></small>
-            </div>
-        <% } else if (order.returnItems && order.returnItems.length > 0) { %>
-            <div class="product-details">
-                <% /* Show ALL products with their images */ %>
-                <% order.returnItems.forEach((item, index) => { %>
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <% 
-                        let productImage = null;
-                        let hasImage = false;
-                        const product = item.product;
-                        
-                        if (product && product.productImages && product.productImages.length > 0) {
-                            productImage = `/uploads/products/${product.productImages[0]}`;
-                            hasImage = true;
-                        } else if (product && product.mainImage) {
-                            productImage = `/uploads/products/${product.mainImage}`;
-                            hasImage = true;
-                        }
-                        %>
-                        
-                        <% if (hasImage) { %>
-                            <img src="<%= productImage %>" 
-                                 alt="Product" class="product-image"
-                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px;"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="product-placeholder" style="display: none; width: 40px; height: 40px; margin-right: 10px;">
-                                <i class="fas fa-image"></i>
-                            </div>
-                        <% } else { %>
-                            <div class="product-placeholder" style="width: 40px; height: 40px; margin-right: 10px;">
-                                <i class="fas fa-image"></i>
-                            </div>
-                        <% } %>
-                        
-                        <h6 style="margin: 0;"><%= product ? product.productName || 'Product Name' : 'Product Name' %></h6>
+            <!-- Table Container -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="results-info">
+                        <% if (returnRequests && returnRequests.length> 0) { %>
+                            Showing <span class="results-count">
+                                <%= startIdx + 1 %>-<%= endIdx %>
+                            </span>
+                            of <span class="results-count">
+                                <%= totalRequests %>
+                            </span> return requests
+                            <% } else { %>
+                                <span class="results-count">No return requests found</span>
+                                <% } %>
                     </div>
-                    <% if (index < order.returnItems.length - 1) { %>
-                        <hr style="margin: 8px 0;">
-                    <% } %>
-                <% }); %>
-                <small><%= order.returnItems.length %> items | Entire Order</small>
-            </div>
-        <% } else { %>
-            <div class="product-details">
-                <h6>No items</h6>
-                <small>No products found</small>
-            </div>
-        <% } %>
-    </div>
-</td>
+                </div>
 
-                                    <td>
-                                        <div class="amount-cell">
-                                            <i class="fas fa-rupee-sign"></i>
-                                            <span>₹<%= order.returnAmount ? order.returnAmount.toFixed(2) : '0.00' %></span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="date-cell">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <span><%= order.returnRequestedAt ? new Date(order.returnRequestedAt).toLocaleDateString('en-IN') : 'N/A' %></span>
-                                        </div>
-                                    </td>
-                                   <td>
-    <div class="reason-cell">
-        <div class="reason-text">
-            <% if (order.returnType === 'individual' && order.returnItems && order.returnItems.length > 0) { %>
-                <%= order.returnItems[0].returnReason || 'No reason provided' %>
-            <% } else if (order.returnItems && order.returnItems.length > 0) { %>
-                <% /* For entire order with multiple items, show all unique reasons */ %>
-                <% 
-                const reasons = order.returnItems
-                    .map(item => item.returnReason)
-                    .filter(reason => reason && reason.trim())
-                    .filter((reason, index, self) => self.indexOf(reason) === index); // Remove duplicates
-                
-                if (reasons.length > 0) {
-                %>
-                    <% reasons.forEach((reason, index) => { %>
-                        <%= reason %><%= index < reasons.length - 1 ? ', ' : '' %>
-                    <% }); %>
-                <% } else { %>
-                    <%= order.returnReason || 'No reason provided' %>
-                <% } %>
-            <% } else { %>
-                <%= order.returnReason || 'No reason provided' %>
-            <% } %>
-        </div>
-    </div>
-</td>
+                <div class="table-wrapper">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th class="col-order-id">Order ID</th>
+                                <th class="col-customer">Customer</th>
+                                <th class="col-products">Products</th>
+                                <th class="col-amount">Amount</th>
+                                <th class="col-date">Request Date</th>
+                                <th class="col-reason">Reason</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (returnRequests && returnRequests.length> 0) { %>
+                                <% returnRequests.forEach(order=> { %>
+                                    <tr>
+                                        <td>
+                                            <div class="order-id-cell">
+                                                <i class="fas fa-receipt"></i>
+                                                <span>
+                                                    <%= order.orderId %>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="customer-info">
+                                                <div class="customer-avatar">
+                                                    <%= order.userId?.fullName ?
+                                                        order.userId.fullName.charAt(0).toUpperCase() : 'U' %>
+                                                </div>
+                                                <div class="customer-details">
+                                                    <div class="customer-name">
+                                                        <%= order.userId ? order.userId.fullName || 'Unknown Customer'
+                                                            : 'Unknown Customer' %>
+                                                    </div>
+                                                    <div class="customer-email">
+                                                        <%= order.userId ? order.userId.email || 'No email' : 'No email'
+                                                            %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="product-info">
+                                                <% if (order.returnType==='individual' && order.returnItems &&
+                                                    order.returnItems.length> 0) { %>
+                                                    <% const returnItem=order.returnItems[0]; const
+                                                        product=returnItem.product; let productImage=null; let
+                                                        hasImage=false; if (product && product.productImages &&
+                                                        product.productImages.length> 0) {
+                                                        productImage = `/uploads/products/${product.productImages[0]}`;
+                                                        hasImage = true;
+                                                        } else if (product && product.mainImage) {
+                                                        productImage = `/uploads/products/${product.mainImage}`;
+                                                        hasImage = true;
+                                                        }
+                                                        %>
+                                                        <% if (hasImage) { %>
+                                                            <img src="<%= productImage %>" alt="Product"
+                                                                class="product-image"
+                                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                            <div class="product-placeholder" style="display: none;">
+                                                                <i class="fas fa-image"></i>
+                                                            </div>
+                                                            <% } else { %>
+                                                                <div class="product-placeholder">
+                                                                    <i class="fas fa-image"></i>
+                                                                </div>
+                                                                <% } %>
+                                                                    <div class="product-details">
+                                                                        <h6>
+                                                                            <%= product ? product.productName
+                                                                                || 'Product Name' : 'Product Name' %>
+                                                                        </h6>
+                                                                        <small>Qty: <%= returnItem.quantity || 1 %>
+                                                                                </small>
+                                                                    </div>
+                                                                    <% } else if (order.returnItems &&
+                                                                        order.returnItems.length> 0) { %>
+                                                                        <div class="product-details">
+                                                                            <% /* Show ALL products with their images */
+                                                                                %>
+                                                                                <% order.returnItems.forEach((item,
+                                                                                    index)=> { %>
+                                                                                    <div
+                                                                                        style="display: flex; align-items: center; margin-bottom: 8px;">
+                                                                                        <% let productImage=null; let
+                                                                                            hasImage=false; const
+                                                                                            product=item.product; if
+                                                                                            (product &&
+                                                                                            product.productImages &&
+                                                                                            product.productImages.length>
+                                                                                            0) {
+                                                                                            productImage =
+                                                                                            `/uploads/products/${product.productImages[0]}`;
+                                                                                            hasImage = true;
+                                                                                            } else if (product &&
+                                                                                            product.mainImage) {
+                                                                                            productImage =
+                                                                                            `/uploads/products/${product.mainImage}`;
+                                                                                            hasImage = true;
+                                                                                            }
+                                                                                            %>
+
+                                                                                            <% if (hasImage) { %>
+                                                                                                <img src="<%= productImage %>"
+                                                                                                    alt="Product"
+                                                                                                    class="product-image"
+                                                                                                    style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 10px;"
+                                                                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                                                                <div class="product-placeholder"
+                                                                                                    style="display: none; width: 40px; height: 40px; margin-right: 10px;">
+                                                                                                    <i
+                                                                                                        class="fas fa-image"></i>
+                                                                                                </div>
+                                                                                                <% } else { %>
+                                                                                                    <div class="product-placeholder"
+                                                                                                        style="width: 40px; height: 40px; margin-right: 10px;">
+                                                                                                        <i
+                                                                                                            class="fas fa-image"></i>
+                                                                                                    </div>
+                                                                                                    <% } %>
+
+                                                                                                        <h6
+                                                                                                            style="margin: 0;">
+                                                                                                            <%= product
+                                                                                                                ?
+                                                                                                                product.productName
+                                                                                                                || 'Product Name'
+                                                                                                                : 'Product Name'
+                                                                                                                %>
+                                                                                                        </h6>
+                                                                                    </div>
+                                                                                    <% if (index <
+                                                                                        order.returnItems.length - 1) {
+                                                                                        %>
+                                                                                        <hr style="margin: 8px 0;">
+                                                                                        <% } %>
+                                                                                            <% }); %>
+                                                                                                <small>
+                                                                                                    <%= order.returnItems.length
+                                                                                                        %> items |
+                                                                                                        Entire Order
+                                                                                                </small>
+                                                                        </div>
+                                                                        <% } else { %>
+                                                                            <div class="product-details">
+                                                                                <h6>No items</h6>
+                                                                                <small>No products found</small>
+                                                                            </div>
+                                                                            <% } %>
+                                            </div>
+                                        </td>
+                                        <%
+  // Find the sum of all items in the original order, after product discount (price * qty)
+  const orderValue = order.orderedItems.reduce((sum, oi) => sum + (oi.price * oi.quantity), 0);
+
+  // For returnItems in this request (could be one or many, but usually filtered to one per row)
+  let refundTotal = 0;
+  if (order.returnItems && order.returnItems.length > 0) {
+    order.returnItems.forEach(function(retItem) {
+      const lineValue = retItem.price * retItem.quantity;
+      // Proportional coupon split for this line
+      const couponShare = orderValue > 0
+        ? (lineValue / orderValue) * (order.couponDiscount || 0)
+        : 0;
+      refundTotal += lineValue - couponShare;
+    });
+  }
+%>
 
 
-                                    <td>
-                                        <div class="status-display">
-                                            <span class="status-badge status-pending">
-                                                <i class="fas fa-clock"></i>
-                                                <span>Pending</span>
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-action btn-success" 
-                                                    onclick="approveReturn('<%= order._id %>')"
-                                                    title="Approve Return">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn-action btn-danger" 
-                                                    onclick="rejectReturn('<%= order._id %>')"
-                                                    title="Reject Return">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                            <!-- <button class="btn-action btn-info" 
+                                            <td>
+                                                <div class="amount-cell">
+                                                    <i class="fas fa-rupee-sign"></i>
+                                                    <span>₹<%= refundTotal.toFixed(2) %></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="date-cell">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                    <span>
+                                                        <%= order.returnRequestedAt ? new
+                                                            Date(order.returnRequestedAt).toLocaleDateString('en-IN')
+                                                            : 'N/A' %>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="reason-cell">
+                                                    <div class="reason-text">
+                                                        <% if (order.returnType==='individual' && order.returnItems &&
+                                                            order.returnItems.length> 0) { %>
+                                                            <%= order.returnItems[0].returnReason
+                                                                || 'No reason provided' %>
+                                                                <% } else if (order.returnItems &&
+                                                                    order.returnItems.length> 0) { %>
+                                                                    <% /* For entire order with multiple items, show all
+                                                                        unique reasons */ %>
+                                                                        <% const reasons=order.returnItems .map(item=>
+                                                                            item.returnReason)
+                                                                            .filter(reason => reason && reason.trim())
+                                                                            .filter((reason, index, self) =>
+                                                                            self.indexOf(reason) === index); 
+                                                                           
+
+                                                                            if (reasons.length > 0) {
+                                                                            %>
+                                                                            <% reasons.forEach((reason, index)=> { %>
+                                                                                <%= reason %>
+                                                                                    <%= index < reasons.length - 1
+                                                                                        ? ', ' : '' %>
+                                                                                        <% }); %>
+                                                                                            <% } else { %>
+                                                                                                <%= order.returnReason
+                                                                                                    || 'No reason provided'
+                                                                                                    %>
+                                                                                                    <% } %>
+                                                                                                        <% } else { %>
+                                                                                                            <%= order.returnReason
+                                                                                                                || 'No reason provided'
+                                                                                                                %>
+                                                                                                                <% } %>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+
+                                            <td>
+                                                <div class="status-display">
+                                                    <span class="status-badge status-pending">
+                                                        <i class="fas fa-clock"></i>
+                                                        <span>Pending</span>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    <button class="btn-action btn-success"
+                                                        onclick="approveReturn('<%= order._id %>')"
+                                                        title="Approve Return">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button class="btn-action btn-danger"
+                                                        onclick="rejectReturn('<%= order._id %>')"
+                                                        title="Reject Return">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <!-- <button class="btn-action btn-info" 
                                                     onclick="viewReturnDetails('<%= order._id %>')"
                                                     title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </button> -->
-                                        </div>
-                                    </td>
-                                </tr>
-                            <% }); %>
-                        <% } else { %>
-                            <tr>
-                                <td colspan="8">
-                                    <div class="empty-state">
-                                        <i class="fas fa-inbox"></i>
-                                        <h4>No Return Requests</h4>
-                                        <p>There are currently no return requests to display.</p>
-                                        <small>Return requests will appear here when customers submit them.</small>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
+                                                </div>
+                                            </td>
+                                    </tr>
+                                    <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="8">
+                                                    <div class="empty-state">
+                                                        <i class="fas fa-inbox"></i>
+                                                        <h4>No Return Requests</h4>
+                                                        <p>There are currently no return requests to display.</p>
+                                                        <small>Return requests will appear here when customers submit
+                                                            them.</small>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- Pagination -->
-            <% if (returnRequests && returnRequests.length > 0) { %>
-                <div class="pagination-wrapper">
-                    <div class="pagination-info">
-                        Showing <span><%= startIdx + 1 %></span> to <span><%= endIdx %></span> of <span><%= totalRequests %></span> return requests
-                    </div>
-                    <nav aria-label="Return requests pagination">
-                        <ul class="pagination">
-                            <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            </li>
-                            
-                            <% for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
-                                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-                                    <a class="page-link" href="?page=<%= i %>">
-                                        <%= i %>
+                <!-- Pagination -->
+                <% if (returnRequests && returnRequests.length> 0) { %>
+                    <div class="pagination-wrapper">
+                        <div class="pagination-info">
+                            Showing <span>
+                                <%= startIdx + 1 %>
+                            </span> to <span>
+                                <%= endIdx %>
+                            </span> of <span>
+                                <%= totalRequests %>
+                            </span> return requests
+                        </div>
+                        <nav aria-label="Return requests pagination">
+                            <ul class="pagination">
+                                <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                    <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                        <i class="fas fa-chevron-left"></i>
                                     </a>
                                 </li>
-                            <% } %>
-                            
-                            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                                <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            <% } %>
+
+                                <% for (let i=Math.max(1, currentPage - 2); i <=Math.min(totalPages, currentPage + 2);
+                                    i++) { %>
+                                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                        <a class="page-link" href="?page=<%= i %>">
+                                            <%= i %>
+                                        </a>
+                                    </li>
+                                    <% } %>
+
+                                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                            </ul>
+                        </nav>
+                    </div>
+                    <% } %>
+            </div>
         </div>
-    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Return Request Management JavaScript
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Return Request Management JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize event listeners
-    initializeEventListeners();
-    
-    // Load return requests
-    loadReturnRequests();
-});
+            document.addEventListener('DOMContentLoaded', function () {
+                // Initialize event listeners
+                initializeEventListeners();
 
-function initializeEventListeners() {
-    // Search functionality
-    const searchInput = document.getElementById('returnSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(handleSearch, 300));
-    }
+                // Load return requests
+                loadReturnRequests();
+            });
 
-    // Status filter
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.addEventListener('change', handleStatusFilter);
-    }
-}
+            function initializeEventListeners() {
+                // Search functionality
+                const searchInput = document.getElementById('returnSearch');
+                if (searchInput) {
+                    searchInput.addEventListener('input', debounce(handleSearch, 300));
+                }
 
-// Debounce function for search
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+                // Status filter
+                const statusFilter = document.getElementById('statusFilter');
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', handleStatusFilter);
+                }
+            }
 
-function handleSearch() {
-    const searchTerm = document.getElementById('returnSearch').value;
-        loadReturnRequests(searchTerm);
-}
+            // Debounce function for search
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
 
-function handleStatusFilter() {
-    const statusFilter = document.getElementById('statusFilter').value;
-        loadReturnRequests(null, statusFilter);
-}
+            function handleSearch() {
+                const searchTerm = document.getElementById('returnSearch').value;
+                loadReturnRequests(searchTerm);
+            }
 
-function loadReturnRequests(searchTerm = '', statusFilter = '') {
-    // This function can be used for dynamic loading if needed
-}
+            function handleStatusFilter() {
+                const statusFilter = document.getElementById('statusFilter').value;
+                loadReturnRequests(null, statusFilter);
+            }
 
-// Approve return request with modern modal
-function approveReturn(requestId) {
-    Swal.fire({
-        title: '<i class="fas fa-check-circle text-success"></i> Approve Return Request',
-        html: `
+            function loadReturnRequests(searchTerm = '', statusFilter = '') {
+                // This function can be used for dynamic loading if needed
+            }
+
+            // Approve return request with modern modal
+            function approveReturn(requestId) {
+                Swal.fire({
+                    title: '<i class="fas fa-check-circle text-success"></i> Approve Return Request',
+                    html: `
             <div class="approval-modal-content">
                 <p class="modal-description">Are you sure you want to approve this return request?</p>
                 <div class="approval-details">
@@ -367,34 +452,34 @@ function approveReturn(requestId) {
                 </div>
             </div>
         `,
-        showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-check"></i> Approve Return',
-        cancelButtonText: '<i class="fas fa-times"></i> Cancel',
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#6c757d',
-        customClass: {
-            popup: 'modern-modal',
-            title: 'modern-modal-title',
-            content: 'modern-modal-content',
-            confirmButton: 'modern-btn modern-btn-success',
-            cancelButton: 'modern-btn modern-btn-secondary'
-        },
-        preConfirm: () => {
-            const adminNote = document.getElementById('adminNote').value;
-            return { adminNote };
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            executeApproval(requestId, result.value.adminNote);
-        }
-    });
-}
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check"></i> Approve Return',
+                    cancelButtonText: '<i class="fas fa-times"></i> Cancel',
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    customClass: {
+                        popup: 'modern-modal',
+                        title: 'modern-modal-title',
+                        content: 'modern-modal-content',
+                        confirmButton: 'modern-btn modern-btn-success',
+                        cancelButton: 'modern-btn modern-btn-secondary'
+                    },
+                    preConfirm: () => {
+                        const adminNote = document.getElementById('adminNote').value;
+                        return { adminNote };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        executeApproval(requestId, result.value.adminNote);
+                    }
+                });
+            }
 
-// Reject return request with modern modal
-function rejectReturn(requestId) {
-    Swal.fire({
-        title: '<i class="fas fa-times-circle text-danger"></i> Reject Return Request',
-        html: `
+            // Reject return request with modern modal
+            function rejectReturn(requestId) {
+                Swal.fire({
+                    title: '<i class="fas fa-times-circle text-danger"></i> Reject Return Request',
+                    html: `
             <div class="rejection-modal-content">
                 <p class="modal-description">Please provide a reason for rejecting this return request:</p>
                 <div class="form-group">
@@ -421,90 +506,90 @@ function rejectReturn(requestId) {
                 </div>
             </div>
         `,
-        showCancelButton: true,
-        confirmButtonText: '<i class="fas fa-times"></i> Reject Return',
-        cancelButtonText: '<i class="fas fa-arrow-left"></i> Cancel',
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        customClass: {
-            popup: 'modern-modal',
-            title: 'modern-modal-title',
-            content: 'modern-modal-content',
-            confirmButton: 'modern-btn modern-btn-danger',
-            cancelButton: 'modern-btn modern-btn-secondary'
-        },
-        preConfirm: () => {
-            const rejectionReason = document.getElementById('rejectionReason').value;
-            const customReason = document.getElementById('customRejectionReason').value;
-            
-            if (!rejectionReason) {
-                Swal.showValidationMessage('Please select a rejection reason');
-                return false;
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-times"></i> Reject Return',
+                    cancelButtonText: '<i class="fas fa-arrow-left"></i> Cancel',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    customClass: {
+                        popup: 'modern-modal',
+                        title: 'modern-modal-title',
+                        content: 'modern-modal-content',
+                        confirmButton: 'modern-btn modern-btn-danger',
+                        cancelButton: 'modern-btn modern-btn-secondary'
+                    },
+                    preConfirm: () => {
+                        const rejectionReason = document.getElementById('rejectionReason').value;
+                        const customReason = document.getElementById('customRejectionReason').value;
+
+                        if (!rejectionReason) {
+                            Swal.showValidationMessage('Please select a rejection reason');
+                            return false;
+                        }
+
+                        let finalReason = rejectionReason;
+                        if (rejectionReason === 'Other' && !customReason.trim()) {
+                            Swal.showValidationMessage('Please provide additional details for "Other" reason');
+                            return false;
+                        }
+
+                        if (rejectionReason === 'Other') {
+                            finalReason = customReason.trim();
+                        } else if (customReason.trim()) {
+                            finalReason += ` - ${customReason.trim()}`;
+                        }
+
+                        return { rejectionReason: finalReason };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        executeRejection(requestId, result.value.rejectionReason);
+                    }
+                });
             }
-            
-            let finalReason = rejectionReason;
-            if (rejectionReason === 'Other' && !customReason.trim()) {
-                Swal.showValidationMessage('Please provide additional details for "Other" reason');
-                return false;
+
+            function handleRejectionReasonChange() {
+                const reasonSelect = document.getElementById('rejectionReason');
+                const customTextarea = document.getElementById('customRejectionReason');
+
+                if (reasonSelect.value === 'Other') {
+                    customTextarea.required = true;
+                    customTextarea.placeholder = 'Please specify the reason for rejection...';
+                    customTextarea.focus();
+                } else {
+                    customTextarea.required = false;
+                    customTextarea.placeholder = 'Provide additional details about the rejection...';
+                }
             }
-            
-            if (rejectionReason === 'Other') {
-                finalReason = customReason.trim();
-            } else if (customReason.trim()) {
-                finalReason += ` - ${customReason.trim()}`;
-            }
-            
-            return { rejectionReason: finalReason };
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            executeRejection(requestId, result.value.rejectionReason);
-        }
-    });
-}
 
-function handleRejectionReasonChange() {
-    const reasonSelect = document.getElementById('rejectionReason');
-    const customTextarea = document.getElementById('customRejectionReason');
-    
-    if (reasonSelect.value === 'Other') {
-        customTextarea.required = true;
-        customTextarea.placeholder = 'Please specify the reason for rejection...';
-        customTextarea.focus();
-    } else {
-        customTextarea.required = false;
-        customTextarea.placeholder = 'Provide additional details about the rejection...';
-    }
-}
+            // Execute approval
+            async function executeApproval(requestId, adminNote) {
+                try {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Processing...',
+                        html: 'Approving return request and processing refund...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
 
-// Execute approval
-async function executeApproval(requestId, adminNote) {
-    try {
-        // Show loading
-        Swal.fire({
-            title: 'Processing...',
-            html: 'Approving return request and processing refund...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+                    const response = await fetch(`/admin/return-requests/${requestId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ adminNote })
+                    });
 
-        const response = await fetch(`/admin/return-requests/${requestId}/approve`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ adminNote })
-        });
+                    const result = await response.json();
 
-        const result = await response.json();
-
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Return Approved!',
-                html: `
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Return Approved!',
+                            html: `
                     <div class="success-content">
                         <p>${result.message}</p>
                         <div class="success-details">
@@ -520,61 +605,61 @@ async function executeApproval(requestId, adminNote) {
                         </div>
                     </div>
                 `,
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#28a745'
-            }).then(() => {
-                window.location.reload();
-            });
-        } else {
-            throw new Error(result.message || 'Failed to approve return request');
-        }
-    } catch (error) {
-        console.error('Error approving return:', error);
-        
-        let errorMessage = error.message || 'Failed to approve return request. Please try again.';
-        
-        Swal.fire({
-            icon: 'error',
-            title: 'Approval Failed',
-            html: `
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(result.message || 'Failed to approve return request');
+                    }
+                } catch (error) {
+                    console.error('Error approving return:', error);
+
+                    let errorMessage = error.message || 'Failed to approve return request. Please try again.';
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Approval Failed',
+                        html: `
                 <div class="error-details">
                     <p><strong>Error:</strong> ${errorMessage}</p>
                     <p class="text-muted small">Check the browser console for more details.</p>
                 </div>
             `,
-            confirmButtonColor: '#dc3545'
-        });
-    }
-}
-
-// Execute rejection
-async function executeRejection(requestId, rejectionReason) {
-    try {
-        // Show loading
-        Swal.fire({
-            title: 'Processing...',
-            html: 'Rejecting return request...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
             }
-        });
 
-        const response = await fetch(`/admin/return-requests/${requestId}/reject`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ rejectionReason })
-        });
+            // Execute rejection
+            async function executeRejection(requestId, rejectionReason) {
+                try {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Processing...',
+                        html: 'Rejecting return request...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
 
-        const result = await response.json();
+                    const response = await fetch(`/admin/return-requests/${requestId}/reject`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ rejectionReason })
+                    });
 
-        if (result.success) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Return Rejected',
-                html: `
+                    const result = await response.json();
+
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Return Rejected',
+                            html: `
                     <div class="rejection-success-content">
                         <p>${result.message}</p>
                         <div class="rejection-details">
@@ -587,107 +672,107 @@ async function executeRejection(requestId, rejectionReason) {
                         </div>
                     </div>
                 `,
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#6c757d'
-            }).then(() => {
-                window.location.reload();
-            });
-        } else {
-            throw new Error(result.message || 'Failed to reject return request');
-        }
-    } catch (error) {
-        console.error('Error rejecting return:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Rejection Failed',
-            text: error.message || 'Failed to reject return request. Please try again.',
-            confirmButtonColor: '#dc3545'
-        });
-    }
-}
-
-function processReturn(requestId) {
-    Swal.fire({
-        title: 'Process Return',
-        text: `Mark return request ${requestId} as completed?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Process',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#007bff'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // TODO: Implement process return functionality
-            showAlert('Return processed successfully', 'success');
-        }
-    });
-}
-
-async function viewReturnDetails(requestId) {
-    try {
-        // Show loading
-        Swal.fire({
-            title: 'Loading...',
-            html: 'Fetching return request details...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
+                            confirmButtonText: 'OK',
+                            confirmButtonColor: '#6c757d'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(result.message || 'Failed to reject return request');
+                    }
+                } catch (error) {
+                    console.error('Error rejecting return:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Rejection Failed',
+                        text: error.message || 'Failed to reject return request. Please try again.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
             }
-        });
 
-        // Fetch order details
-        const response = await fetch(`/admin/get-orders/${requestId}`);
-        const result = await response.json();
+            function processReturn(requestId) {
+                Swal.fire({
+                    title: 'Process Return',
+                    text: `Mark return request ${requestId} as completed?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Process',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#007bff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // TODO: Implement process return functionality
+                        showAlert('Return processed successfully', 'success');
+                    }
+                });
+            }
 
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to fetch order details');
-        }
+            async function viewReturnDetails(requestId) {
+                try {
+                    // Show loading
+                    Swal.fire({
+                        title: 'Loading...',
+                        html: 'Fetching return request details...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
 
-        const order = result.order;
-        
-        // Determine current status for display
-        let currentStatus = order.status;
-        let statusClass = 'info';
-        
-        if (order.returnRejectedAt && order.status === 'Delivered') {
-            currentStatus = 'Rejected';
-            statusClass = 'danger';
-        } else if (order.status === 'Return Request') {
-            currentStatus = 'Pending Review';
-            statusClass = 'warning';
-        } else if (order.status === 'Returned') {
-            currentStatus = 'Completed';
-            statusClass = 'success';
-        }
+                    // Fetch order details
+                    const response = await fetch(`/admin/get-orders/${requestId}`);
+                    const result = await response.json();
 
-        // Build timeline
-        let timeline = '';
-        if (order.returnRequestedAt) {
-            timeline += `<div class="timeline-item">
+                    if (!result.success) {
+                        throw new Error(result.message || 'Failed to fetch order details');
+                    }
+
+                    const order = result.order;
+
+                    // Determine current status for display
+                    let currentStatus = order.status;
+                    let statusClass = 'info';
+
+                    if (order.returnRejectedAt && order.status === 'Delivered') {
+                        currentStatus = 'Rejected';
+                        statusClass = 'danger';
+                    } else if (order.status === 'Return Request') {
+                        currentStatus = 'Pending Review';
+                        statusClass = 'warning';
+                    } else if (order.status === 'Returned') {
+                        currentStatus = 'Completed';
+                        statusClass = 'success';
+                    }
+
+                    // Build timeline
+                    let timeline = '';
+                    if (order.returnRequestedAt) {
+                        timeline += `<div class="timeline-item">
                 <i class="fas fa-clock text-primary"></i>
                 <span><strong>Return Requested:</strong> ${new Date(order.returnRequestedAt).toLocaleString()}</span>
             </div>`;
-        }
-        
-        if (order.returnApprovedAt) {
-            timeline += `<div class="timeline-item">
+                    }
+
+                    if (order.returnApprovedAt) {
+                        timeline += `<div class="timeline-item">
                 <i class="fas fa-check text-success"></i>
                 <span><strong>Return Approved:</strong> ${new Date(order.returnApprovedAt).toLocaleString()}</span>
             </div>`;
-        }
-        
-        if (order.returnRejectedAt) {
-            timeline += `<div class="timeline-item">
+                    }
+
+                    if (order.returnRejectedAt) {
+                        timeline += `<div class="timeline-item">
                 <i class="fas fa-times text-danger"></i>
                 <span><strong>Return Rejected:</strong> ${new Date(order.returnRejectedAt).toLocaleString()}</span>
             </div>`;
-        }
+                    }
 
-        // Build product list
-        let productList = '';
-        if (order.orderedItems && order.orderedItems.length > 0) {
-            order.orderedItems.forEach(item => {
-                productList += `
+                    // Build product list
+                    let productList = '';
+                    if (order.orderedItems && order.orderedItems.length > 0) {
+                        order.orderedItems.forEach(item => {
+                            productList += `
                     <div class="product-item">
                         <img src="${item.product?.productImages?.[0] || '/images/placeholder-product.jpg'}" 
                              alt="Product" class="product-thumb">
@@ -698,10 +783,10 @@ async function viewReturnDetails(requestId) {
                         </div>
                     </div>
                 `;
-            });
-        }
+                        });
+                    }
 
-        const detailsHtml = `
+                    const detailsHtml = `
             <div class="return-details-modal">
                 <div class="status-header">
                     <span class="badge bg-${statusClass} fs-6">${currentStatus}</span>
@@ -772,69 +857,70 @@ async function viewReturnDetails(requestId) {
             </div>
         `;
 
-        Swal.fire({
-            title: `Return Request Details - ${order.orderId}`,
-            html: detailsHtml,
-            width: '900px',
-            confirmButtonText: 'Close',
-            confirmButtonColor: '#6c757d',
-            customClass: {
-                popup: 'modern-modal-large return-details-popup'
+                    Swal.fire({
+                        title: `Return Request Details - ${order.orderId}`,
+                        html: detailsHtml,
+                        width: '900px',
+                        confirmButtonText: 'Close',
+                        confirmButtonColor: '#6c757d',
+                        customClass: {
+                            popup: 'modern-modal-large return-details-popup'
+                        }
+                    });
+
+                } catch (error) {
+                    console.error('Error fetching return details:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Failed to load return request details',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
             }
-        });
 
-    } catch (error) {
-        console.error('Error fetching return details:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Failed to load return request details',
-            confirmButtonColor: '#dc3545'
-        });
-    }
-}
+            function showAlert(message, type = 'info') {
+                const alertClass = type === 'success' ? 'alert-success' :
+                    type === 'error' ? 'alert-danger' :
+                        type === 'warning' ? 'alert-warning' : 'alert-info';
 
-function showAlert(message, type = 'info') {
-    const alertClass = type === 'success' ? 'alert-success' : 
-                     type === 'error' ? 'alert-danger' : 
-                     type === 'warning' ? 'alert-warning' : 'alert-info';
-    
-    Swal.fire({
-        title: type === 'success' ? 'Success!' : 
-               type === 'error' ? 'Error!' : 
-               type === 'warning' ? 'Warning!' : 'Info',
-        text: message,
-        icon: type === 'success' ? 'success' : 
-              type === 'error' ? 'error' : 
-              type === 'warning' ? 'warning' : 'info',
-        confirmButtonColor: '#000000',
-        confirmButtonText: 'OK'
-    });
-}
+                Swal.fire({
+                    title: type === 'success' ? 'Success!' :
+                        type === 'error' ? 'Error!' :
+                            type === 'warning' ? 'Warning!' : 'Info',
+                    text: message,
+                    icon: type === 'success' ? 'success' :
+                        type === 'error' ? 'error' :
+                            type === 'warning' ? 'warning' : 'info',
+                    confirmButtonColor: '#000000',
+                    confirmButtonText: 'OK'
+                });
+            }
 
-// Utility function to update table (for future use)
-function updateReturnTable(requests) {
-    // Update table with requests
-}
+            // Utility function to update table (for future use)
+            function updateReturnTable(requests) {
+                // Update table with requests
+            }
 
-// Utility function to update pagination (for future use)
-function updatePagination(pagination) {
-    // Update pagination
-}
-        // Toast notification system
-        function showToast(icon, title, timer = 3000) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'bottom-right',
-                showConfirmButton: false,
-                timer: timer,
-                timerProgressBar: true
-            });
-            Toast.fire({
-                icon: icon,
-                title: title
-            });
-        }
-    </script>
+            // Utility function to update pagination (for future use)
+            function updatePagination(pagination) {
+                // Update pagination
+            }
+            // Toast notification system
+            function showToast(icon, title, timer = 3000) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'bottom-right',
+                    showConfirmButton: false,
+                    timer: timer,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: icon,
+                    title: title
+                });
+            }
+        </script>
 </body>
+
 </html>
