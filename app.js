@@ -10,7 +10,7 @@ const userMiddleware = require('./middlewares/user-middleware');
 const app = express();
 
 // Initialize Passport configuration
-require('./config/passport'); // Load passport.js configuration
+require('./config/passport'); 
 
 // Route imports
 const authRoutes = require('./routes/user/user-route');
