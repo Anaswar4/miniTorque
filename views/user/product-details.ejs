@@ -106,7 +106,7 @@
             <% if (product.hasOffer) { %>
               <div class="d-flex align-items-baseline gap-2">
                 <h2 class="fs-3 fw-bold mb-0 text-danger">₹<%= product.finalPrice.toFixed(2) %></h2>
-                <span class="fs-5 text-decoration-line-through text-muted">₹<%= product.salePrice.toFixed(2) %></span>
+                <span class="fs-5 text-decoration-line-through text-muted">₹<%= product.regularPrice.toFixed(2) %></span>
                 <span class="badge bg-danger">-<%= product.offerPercentage %>% OFF</span>
               </div>
               <div class="savings-info mt-2">
@@ -858,14 +858,12 @@
 <script src="/js/product-zoomer.js"></script>
 
 <script>
-console.log(' Product Details Script Loading...');
-
 // Pass server data to client
 const serverWishlistIds = <%- JSON.stringify(userWishlistIds || []) %>;
 const currentProductId = '<%= product._id %>';
+window.isAuthenticated = <%= isAuthenticated %>;
 
-console.log('Server wishlist IDs:', serverWishlistIds);
-console.log('Current product ID:', currentProductId);
+
 
 document.addEventListener('DOMContentLoaded', async function () {
     // Initialize cart state first

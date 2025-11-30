@@ -544,7 +544,7 @@
                                                 <!--  final price with category offers -->
                                                 <% if (product.hasOffer) { %>
                                                     <span class="current-price">₹<%= product.finalPrice.toFixed(2) %></span>
-                                                    <span class="original-price">₹<%= product.salePrice.toFixed(2) %></span>
+                                                    <span class="original-price">₹<%= product.regularPrice.toFixed(2) %></span>
                                                     
                                                 <% } else { %>
                                                     <span class="current-price">₹<%= product.salePrice.toFixed(2) %></span>

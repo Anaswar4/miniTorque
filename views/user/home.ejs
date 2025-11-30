@@ -674,7 +674,7 @@ function displayProducts(products, containerId) {
                             <div class="price-section">
                                 <!--  Shows final price with category offers -->
                                 <span class="current-price">₹${finalPrice}</span>
-                                ${hasOffer ? `<span class="original-price">₹${product.salePrice.toFixed(2)}</span>` : ''}
+                                ${hasOffer ? `<span class="original-price">₹${product.regularPrice.toFixed(2)}</span>` : ''}
                             </div>
                             <button class="add-to-cart" 
                                     onclick="addToCart('${product._id}')"
