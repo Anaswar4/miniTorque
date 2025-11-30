@@ -378,7 +378,7 @@
                       <% if (relatedProduct.hasOffer) { %>
                         <div class="d-flex align-items-center gap-2">
                           <span class="fw-bold text-danger">₹<%= relatedProduct.finalPrice.toFixed(2) %></span>
-                          <span class="text-decoration-line-through text-muted small">₹<%= relatedProduct.salePrice.toFixed(2) %></span>
+                          <span class="text-decoration-line-through text-muted small">₹<%= relatedProduct.regularPrice.toFixed(2) %></span>
                         </div>
                       <% } else { %>
                         <span class="fw-bold">₹<%= relatedProduct.salePrice.toFixed(2) %></span>
